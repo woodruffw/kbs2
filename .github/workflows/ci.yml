@@ -24,6 +24,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: deps
+      if: matrix.platform == 'ubuntu-latest'
+      run: |
+        sudo apt install -y xorg-dev
+
     - name: Build
       run: cargo build
 
