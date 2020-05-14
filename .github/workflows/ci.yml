@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  schedule:
+    # run CI every day even if no PRs/merges occur
+    - cron: '0 12 * * *'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Lint
+        run: cargo fmt && git diff --exit-code
+  test:
+    strategy:
+      matrix:
+        platform: ["ubuntu-latest", "macos-latest"]
+    runs-on: ${{ matrix.platform }}
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: deps
+      if: matrix.platform == 'ubuntu-latest'
+      run: |
+        sudo apt install -y xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev
+
+    - name: Build
+      run: cargo build
+
+    - name: Test
+      run: cargo test
