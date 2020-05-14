@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use std::time::{SystemTime, UNIX_EPOCH};
+use crate::kbs2::error::Error;
+use crate::kbs2::util;
 
 // TODO(ww): Figure out how to generate this from the RecordKind enum below.
 pub static RECORD_KINDS: &'static [&'static str] = &["login", "environment", "unstructured"];
@@ -36,59 +37,67 @@ pub struct Field {
     pub value: String,
 }
 
-fn current_timestamp() -> u64 {
-    // NOTE(ww): This unwrap should be safe, since every time should be
-    // greater than or equal to the epoch.
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
-}
-
-pub fn new_login(label: &str, username: &str, password: &str) -> Record {
-    Record {
-        timestamp: current_timestamp(),
-        label: label.to_string(),
-        kind: RecordKind::Login,
-        fields: vec![
-            Field {
-                name: "username".into(),
-                value: username.into(),
-            },
-            Field {
-                name: "password".into(),
-                value: password.into(),
-            },
-        ],
+impl Record {
+    pub fn login(label: &str, username: &str, password: &str) -> Record {
+        Record {
+            timestamp: util::current_timestamp(),
+            label: label.to_string(),
+            kind: RecordKind::Login,
+            fields: vec![
+                Field {
+                    name: "username".into(),
+                    value: username.into(),
+                },
+                Field {
+                    name: "password".into(),
+                    value: password.into(),
+                },
+            ],
+        }
     }
-}
 
-pub fn new_environment(label: &str, variable: &str, value: &str) -> Record {
-    Record {
-        timestamp: current_timestamp(),
-        label: label.to_string(),
-        kind: RecordKind::Login,
-        fields: vec![
-            Field {
-                name: "variable".into(),
-                value: variable.into(),
-            },
-            Field {
-                name: "value".into(),
-                value: value.into(),
-            },
-        ],
+    pub fn environment(label: &str, variable: &str, value: &str) -> Record {
+        Record {
+            timestamp: util::current_timestamp(),
+            label: label.to_string(),
+            kind: RecordKind::Environment,
+            fields: vec![
+                Field {
+                    name: "variable".into(),
+                    value: variable.into(),
+                },
+                Field {
+                    name: "value".into(),
+                    value: value.into(),
+                },
+            ],
+        }
     }
-}
 
-pub fn new_unstructured(label: &str, contents: &str) -> Record {
-    Record {
-        timestamp: current_timestamp(),
-        label: label.to_string(),
-        kind: RecordKind::Login,
-        fields: vec![Field {
-            name: "contents".into(),
-            value: contents.into(),
-        }],
+    pub fn unstructured(label: &str, contents: &str) -> Record {
+        Record {
+            timestamp: util::current_timestamp(),
+            label: label.to_string(),
+            kind: RecordKind::Unstructured,
+            fields: vec![Field {
+                name: "contents".into(),
+                value: contents.into(),
+            }],
+        }
+    }
+
+    // TODO(ww): Add Login, Environment, etc traits for Record to provide a nicer
+    // interface than just get_expected_field.
+    pub fn get_expected_field(&self, name: &str) -> Result<&str, Error> {
+        Ok(&self
+            .fields
+            .iter()
+            .find(|f| f.name == name)
+            .ok_or(format!(
+                "missing {} field in {} record",
+                name,
+                self.kind.to_string()
+            ))?
+            .value)
     }
 }

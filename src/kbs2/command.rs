@@ -65,21 +65,21 @@ fn new_login(label: &str, terse: bool, session: &session::Session) -> Result<(),
     // TODO(ww): Passing whether or not a field is sensitive with this tuple is ugly.
     // We should really do something like Insensitive("username"), Sensitive("password"), etc.
     let fields = input::fields(&[("Username", false), ("Password", true)], terse)?;
-    let record = record::new_login(label, &fields[0], &fields[1]);
+    let record = record::Record::login(label, &fields[0], &fields[1]);
 
     session.add_record(&record)
 }
 
 fn new_environment(label: &str, terse: bool, session: &session::Session) -> Result<(), Error> {
     let fields = input::fields(&[("Variable", false), ("Value", true)], terse)?;
-    let record = record::new_environment(label, &fields[0], &fields[1]);
+    let record = record::Record::environment(label, &fields[0], &fields[1]);
 
     session.add_record(&record)
 }
 
 fn new_unstructured(label: &str, terse: bool, session: &session::Session) -> Result<(), Error> {
     let fields = input::fields(&[("Contents", false)], terse)?;
-    let record = record::new_unstructured(label, &fields[0]);
+    let record = record::Record::unstructured(label, &fields[0]);
 
     session.add_record(&record)
 }
@@ -159,12 +159,7 @@ pub fn pass(matches: &ArgMatches, config: config::Config) -> Result<(), Error> {
         return Err(format!("not a login record: {}", label).into());
     }
 
-    let password = record
-        .fields
-        .iter()
-        .find(|f| f.name == "password")
-        .ok_or("missing password field in login record")?;
-
+    let password = record.get_expected_field("password")?;
     if matches.is_present("clipboard") {
         let clipboard_duration = session.config.commands.pass.clipboard_duration;
         let clear_after = session.config.commands.pass.clear_after;
@@ -183,7 +178,7 @@ pub fn pass(matches: &ArgMatches, config: config::Config) -> Result<(), Error> {
                 let mut ctx: ClipboardContext =
                     ClipboardProvider::new().map_err(|_| "unable to grab the clipboard")?;
 
-                ctx.set_contents(password.value.to_owned())
+                ctx.set_contents(password.to_owned())
                     .map_err(|_| "unable to store to the clipboard")?;
 
                 std::thread::sleep(std::time::Duration::from_secs(clipboard_duration));
@@ -197,7 +192,33 @@ pub fn pass(matches: &ArgMatches, config: config::Config) -> Result<(), Error> {
             _ => {}
         }
     } else {
-        println!("{}", password.value);
+        println!("{}", password);
+    }
+
+    Ok(())
+}
+
+pub fn env(matches: &ArgMatches, config: config::Config) -> Result<(), Error> {
+    log::debug!("getting a environment variable");
+
+    let session = session::Session::new(config);
+    let label = matches.value_of("label").unwrap();
+    let record = session.get_record(&label)?;
+
+    if record.kind != record::RecordKind::Environment {
+        return Err(format!("not a environment record: {}", label).into());
+    }
+
+    let value = record.get_expected_field("value")?;
+    if matches.is_present("value-only") {
+        println!("{}", value);
+    } else {
+        let variable = record.get_expected_field("variable")?;
+        if matches.is_present("no-export") {
+            println!("{}={}", variable, value);
+        } else {
+            println!("export {}={}", variable, value);
+        }
     }
 
     Ok(())

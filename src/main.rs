@@ -117,6 +117,28 @@ fn app<'a, 'b>() -> App<'a, 'b> {
                         .long("clipboard"),
                 ),
         )
+        .subcommand(
+            App::new("env")
+                .about("get an environment record")
+                .arg(
+                    Arg::with_name("label")
+                        .help("the record's label")
+                        .index(1)
+                        .required(true),
+                )
+                .arg(
+                    Arg::with_name("value-only")
+                        .help("print only the environment variable value, not the variable name")
+                        .short("v")
+                        .long("--value-only"),
+                )
+                .arg(
+                    Arg::with_name("no-export")
+                        .help("print only VAR=val without `export`")
+                        .short("-n")
+                        .long("--no-export"),
+                ),
+        )
 }
 
 fn run() -> Result<(), kbs2::error::Error> {
@@ -144,6 +166,7 @@ fn run() -> Result<(), kbs2::error::Error> {
             ("rm", Some(matches)) => kbs2::command::rm(&matches, config),
             ("dump", Some(matches)) => kbs2::command::dump(&matches, config),
             ("pass", Some(matches)) => kbs2::command::pass(&matches, config),
+            ("env", Some(matches)) => kbs2::command::env(&matches, config),
             (cmd, Some(matches)) => {
                 let ext_args: Vec<&str> = match matches.values_of("") {
                     Some(values) => values.collect(),
