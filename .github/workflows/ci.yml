@@ -27,7 +27,7 @@ jobs:
     - name: deps
       if: matrix.platform == 'ubuntu-latest'
       run: |
-        sudo apt install -y xorg-dev
+        sudo apt install -y xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev
 
     - name: Build
       run: cargo build
