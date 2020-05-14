@@ -1,7 +1,7 @@
 kbs2
 ====
 
-**Warning! `kbs2` is alpha-quality software! You should probably use another secret manager!**
+**Warning! `kbs2` is alpha-quality software! Using `kbs2` means accepting that your secrets may be lost or compromised at any time!**
 
 `kbs2` is a command line utility for managing *secrets*.
 
