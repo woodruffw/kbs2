@@ -190,16 +190,22 @@ fn run() -> Result<(), kbs2::error::Error> {
         kbs2::command::init(&matches, &config_dir)
     } else {
         let config = kbs2::config::load(&config_dir)?;
-
         log::debug!("loaded config: {:?}", config);
 
+        let session = kbs2::session::Session::new(config);
+
+        if let Some(pre_hook) = &session.config.pre_hook {
+            log::debug!("pre-hook: {}", pre_hook);
+            session.config.call_hook(pre_hook, &[])?;
+        }
+
         match matches.subcommand() {
-            ("new", Some(matches)) => kbs2::command::new(&matches, config),
-            ("list", Some(matches)) => kbs2::command::list(&matches, config),
-            ("rm", Some(matches)) => kbs2::command::rm(&matches, config),
-            ("dump", Some(matches)) => kbs2::command::dump(&matches, config),
-            ("pass", Some(matches)) => kbs2::command::pass(&matches, config),
-            ("env", Some(matches)) => kbs2::command::env(&matches, config),
+            ("new", Some(matches)) => kbs2::command::new(&matches, &session)?,
+            ("list", Some(matches)) => kbs2::command::list(&matches, &session)?,
+            ("rm", Some(matches)) => kbs2::command::rm(&matches, &session)?,
+            ("dump", Some(matches)) => kbs2::command::dump(&matches, &session)?,
+            ("pass", Some(matches)) => kbs2::command::pass(&matches, &session)?,
+            ("env", Some(matches)) => kbs2::command::env(&matches, &session)?,
             (cmd, Some(matches)) => {
                 let cmd = format!("kbs2-{}", cmd);
 
@@ -211,17 +217,26 @@ fn run() -> Result<(), kbs2::error::Error> {
                 log::debug!("external command requested: {} (args: {:?})", cmd, ext_args);
 
                 match kbs2::util::run_with_status(&cmd, &ext_args) {
-                    Some(true) => Ok(()),
+                    Some(true) => (),
                     Some(false) => process::exit(2),
-                    None => Err(format!("no such command: {}", cmd).into()),
+                    None => return Err(format!("no such command: {}", cmd).into()),
                 }
             }
-            ("", None) => app
-                .clone()
-                .write_long_help(&mut io::stdout())
-                .map_err(|_| "failed to print help".into()),
+            ("", None) => {
+                return app
+                    .clone()
+                    .write_long_help(&mut io::stdout())
+                    .map_err(|_| "failed to print help".into())
+            }
             _ => unreachable!(),
         }
+
+        if let Some(post_hook) = &session.config.post_hook {
+            log::debug!("post-hook: {}", post_hook);
+            session.config.call_hook(post_hook, &[])?;
+        }
+
+        Ok(())
     }
 }
 

@@ -11,7 +11,6 @@ use crate::kbs2::error::Error;
 use crate::kbs2::input;
 use crate::kbs2::record;
 use crate::kbs2::session;
-use crate::kbs2::util;
 
 pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<(), Error> {
     log::debug!("initializing a new config");
@@ -23,16 +22,12 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<(), Error> {
     config::initialize(&config_dir)
 }
 
-pub fn new(matches: &ArgMatches, config: config::Config) -> Result<(), Error> {
+pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
     log::debug!("creating a new record");
-
-    let session = session::Session::new(config);
 
     if let Some(pre_hook) = &session.config.commands.new.pre_hook {
         log::debug!("pre-hook: {}", pre_hook);
-        if !util::run_with_status(pre_hook, &[]).unwrap_or(false) {
-            return Err(format!("pre-hook failed: {}", pre_hook).into());
-        }
+        session.config.call_hook(pre_hook, &[])?;
     }
 
     let label = matches.value_of("label").unwrap();
@@ -52,10 +47,7 @@ pub fn new(matches: &ArgMatches, config: config::Config) -> Result<(), Error> {
 
     if let Some(post_hook) = &session.config.commands.new.post_hook {
         log::debug!("post-hook: {}", post_hook);
-        if !util::run_with_status(post_hook, &[&label]).unwrap_or(false) {
-            // NOTE(ww): Maybe make this a warning instead?
-            return Err(format!("post-hook failed: {}", post_hook).into());
-        }
+        session.config.call_hook(post_hook, &[&label])?;
     }
 
     Ok(())
@@ -84,11 +76,10 @@ fn new_unstructured(label: &str, terse: bool, session: &session::Session) -> Res
     session.add_record(&record)
 }
 
-pub fn list(matches: &ArgMatches, config: config::Config) -> Result<(), Error> {
+pub fn list(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
     log::debug!("listing records");
 
     let (details, filter_kind) = (matches.is_present("details"), matches.is_present("kind"));
-    let session = session::Session::new(config);
 
     for label in session.record_labels()? {
         let mut display = String::new();
@@ -121,17 +112,15 @@ pub fn list(matches: &ArgMatches, config: config::Config) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn rm(matches: &ArgMatches, config: config::Config) -> Result<(), Error> {
+pub fn rm(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
     log::debug!("removing a record");
 
-    let session = session::Session::new(config);
     session.delete_record(matches.value_of("label").unwrap())
 }
 
-pub fn dump(matches: &ArgMatches, config: config::Config) -> Result<(), Error> {
+pub fn dump(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
     log::debug!("dumping a record");
 
-    let session = session::Session::new(config);
     let label = matches.value_of("label").unwrap();
     let record = session.get_record(&label)?;
 
@@ -148,10 +137,9 @@ pub fn dump(matches: &ArgMatches, config: config::Config) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn pass(matches: &ArgMatches, config: config::Config) -> Result<(), Error> {
+pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
     log::debug!("getting a login's password");
 
-    let session = session::Session::new(config);
     let label = matches.value_of("label").unwrap();
     let record = session.get_record(&label)?;
 
@@ -198,10 +186,9 @@ pub fn pass(matches: &ArgMatches, config: config::Config) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn env(matches: &ArgMatches, config: config::Config) -> Result<(), Error> {
+pub fn env(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
     log::debug!("getting a environment variable");
 
-    let session = session::Session::new(config);
     let label = matches.value_of("label").unwrap();
     let record = session.get_record(&label)?;
 

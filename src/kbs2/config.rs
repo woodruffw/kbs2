@@ -2,12 +2,14 @@ use dirs;
 use serde::{de, Deserialize, Serialize};
 use toml;
 
+use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::kbs2::backend::{AgeCLI, Backend};
 use crate::kbs2::error::Error;
+use crate::kbs2::util;
 
 // The default base config directory name, placed relative to the user's config
 // directory by default.
@@ -30,8 +32,6 @@ pub static KNOWN_AGE_CLIS: &'static [&(&'static str, &'static str)] =
 
 #[derive(Default, Debug, Deserialize, Serialize)]
 pub struct Config {
-    #[serde(default)]
-    pub debug: bool,
     #[serde(rename = "age-backend")]
     pub age_backend: String,
     #[serde(rename = "age-keygen-backend")]
@@ -42,8 +42,39 @@ pub struct Config {
     pub keyfile: String,
     #[serde(deserialize_with = "deserialize_with_tilde")]
     pub store: String,
+    #[serde(deserialize_with = "deserialize_optional_with_tilde")]
+    #[serde(rename = "pre-hook")]
+    pub pre_hook: Option<String>,
+    #[serde(deserialize_with = "deserialize_optional_with_tilde")]
+    #[serde(rename = "post-hook")]
+    pub post_hook: Option<String>,
+    #[serde(default)]
+    #[serde(rename = "reentrant-hooks")]
+    pub reentrant_hooks: bool,
     #[serde(default)]
     pub commands: CommandConfigs,
+}
+
+impl Config {
+    // Hooks have the following behavior:
+    // 1. If reentrant-hooks is true *or* KBS2_HOOK is *not* present in the environment,
+    //    the hook is run.
+    // 2. If reentrant-hooks is false (the default) *and* KBS2_HOOK is already present
+    //    (indicating that we're already at least one layer deep), nothing is run.
+    pub fn call_hook(&self, cmd: &str, args: &[&str]) -> Result<(), Error> {
+        if self.reentrant_hooks || env::var("KBS2_HOOK").is_err() {
+            Command::new(cmd)
+                .args(args)
+                .current_dir(Path::new(&self.store))
+                .env("KBS2_HOOK", "1")
+                .status()
+                .map(|_| ())
+                .map_err(|_| format!("hook failed: {}", cmd).into())
+        } else {
+            util::warn("nested hook requested without reentrant-hooks; skipping");
+            Ok(())
+        }
+    }
 }
 
 #[derive(Default, Debug, Deserialize, Serialize)]
@@ -163,12 +194,14 @@ pub fn initialize(config_dir: &Path) -> Result<(), Error> {
     log::debug!("public key: {}", public_key);
 
     let serialized = toml::to_string(&Config {
-        debug: false,
         age_backend: backend.age,
         age_keygen_backend: backend.age_keygen,
         public_key: public_key,
         keyfile: keyfile.to_str().unwrap().into(),
         store: data_dir()?,
+        pre_hook: None,
+        post_hook: None,
+        reentrant_hooks: false,
         commands: Default::default(),
     })?;
 

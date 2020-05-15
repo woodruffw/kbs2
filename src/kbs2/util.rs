@@ -16,3 +16,7 @@ pub fn current_timestamp() -> u64 {
         .unwrap()
         .as_secs()
 }
+
+pub fn warn(msg: &str) {
+    eprintln!("Warn: {}", msg);
+}
