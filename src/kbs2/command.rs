@@ -9,7 +9,7 @@ use std::path::Path;
 use crate::kbs2::config;
 use crate::kbs2::error::Error;
 use crate::kbs2::input;
-use crate::kbs2::record;
+use crate::kbs2::record::{self, FieldKind::*};
 use crate::kbs2::session;
 
 pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<(), Error> {
@@ -54,23 +54,21 @@ pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<(), Error
 }
 
 fn new_login(label: &str, terse: bool, session: &session::Session) -> Result<(), Error> {
-    // TODO(ww): Passing whether or not a field is sensitive with this tuple is ugly.
-    // We should really do something like Insensitive("username"), Sensitive("password"), etc.
-    let fields = input::fields(&[("Username", false), ("Password", true)], terse)?;
+    let fields = input::fields(&[Insensitive("Username"), Sensitive("Password")], terse)?;
     let record = record::Record::login(label, &fields[0], &fields[1]);
 
     session.add_record(&record)
 }
 
 fn new_environment(label: &str, terse: bool, session: &session::Session) -> Result<(), Error> {
-    let fields = input::fields(&[("Variable", false), ("Value", true)], terse)?;
+    let fields = input::fields(&[Insensitive("Variable"), Sensitive("Value")], terse)?;
     let record = record::Record::environment(label, &fields[0], &fields[1]);
 
     session.add_record(&record)
 }
 
 fn new_unstructured(label: &str, terse: bool, session: &session::Session) -> Result<(), Error> {
-    let fields = input::fields(&[("Contents", false)], terse)?;
+    let fields = input::fields(&[Insensitive("Contents")], terse)?;
     let record = record::Record::unstructured(label, &fields[0]);
 
     session.add_record(&record)

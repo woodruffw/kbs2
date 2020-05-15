@@ -37,6 +37,12 @@ pub struct Field {
     pub value: String,
 }
 
+#[derive(Debug)]
+pub enum FieldKind {
+    Insensitive(&'static str),
+    Sensitive(&'static str),
+}
+
 impl Record {
     pub fn login(label: &str, username: &str, password: &str) -> Record {
         Record {
