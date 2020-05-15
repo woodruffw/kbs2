@@ -222,12 +222,10 @@ fn run() -> Result<(), kbs2::error::Error> {
                     None => return Err(format!("no such command: {}", cmd).into()),
                 }
             }
-            ("", None) => {
-                return app
-                    .clone()
-                    .write_long_help(&mut io::stdout())
-                    .map_err(|_| "failed to print help".into())
-            }
+            ("", None) => app
+                .clone()
+                .write_long_help(&mut io::stdout())
+                .map_err(|_| "failed to print help")?,
             _ => unreachable!(),
         }
 
