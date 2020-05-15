@@ -56,6 +56,12 @@ fn app<'a>() -> App<'a> {
                         .long("force"),
                 )
                 .arg(
+                    Arg::with_name("terse")
+                        .about("read fields in a terse format, even when connected to a tty")
+                        .short('t')
+                        .long("terse"),
+                )
+                .arg(
                     Arg::with_name("kind")
                         .about("the kind of record to create")
                         .index(1)
@@ -195,6 +201,8 @@ fn run() -> Result<(), kbs2::error::Error> {
             ("pass", Some(matches)) => kbs2::command::pass(&matches, config),
             ("env", Some(matches)) => kbs2::command::env(&matches, config),
             (cmd, Some(matches)) => {
+                let cmd = format!("kbs2-{}", cmd);
+
                 let ext_args: Vec<&str> = match matches.values_of("") {
                     Some(values) => values.collect(),
                     None => vec![],
@@ -202,7 +210,7 @@ fn run() -> Result<(), kbs2::error::Error> {
 
                 log::debug!("external command requested: {} (args: {:?})", cmd, ext_args);
 
-                match kbs2::util::run_with_status(cmd, &ext_args) {
+                match kbs2::util::run_with_status(&cmd, &ext_args) {
                     Some(true) => Ok(()),
                     Some(false) => process::exit(2),
                     None => Err(format!("no such command: {}", cmd).into()),

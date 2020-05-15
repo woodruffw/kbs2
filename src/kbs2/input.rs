@@ -11,6 +11,10 @@ fn terse_fields(names: &[(&str, bool)]) -> Result<Vec<String>, Error> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
 
+    if input.ends_with('\n') {
+        input.pop();
+    }
+
     let fields = input.split(TERSE_IFS).collect::<Vec<&str>>();
     if fields.len() == names.len() {
         Ok(fields.iter().map(|f| f.to_string()).collect())
