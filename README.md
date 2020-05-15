@@ -85,7 +85,45 @@ run each with `--help` to see a full set of supported options.
 
 ## CLI documentation
 
+None yet. Watch this space.
+
 ## Configuration and customization
+
+### Configuration
+
+`kbs2` stores its configuration in `<config dir>/kbs2/kbs2.conf`, where `<config dir>` is determined
+by your host system. On Linux, for example, it's `~/.config`.
+
+`kbs2.conf` is TOML-formatted, and might look something like this after a clean start with `kbs2 init`:
+
+```toml
+debug = false
+age-backend = "rage"
+age-keygen-backend = "rage-keygen"
+public-key = "age1elujxyndwy0n9j2e2elmk9ns8vtltg69q620dr0sz4nu5fgj95xsl2peea"
+keyfile = "/home/william/.config/kbs2/key"
+store = "/home/william/.local/share/kbs2"
+
+[commands.pass]
+clipboard-duration = 10
+clear-after = true
+x11-clipboard = "Clipboard"
+```
+
+Documentation of each configuration field to come.
+
+### Customization
+
+`kbs2` supports `git`-style subcommands, allowing you to easily write your own.
+
+For example, running the following:
+
+```
+$ kbs2 frobulate --xyz
+```
+
+will cause `kbs2` to run `kbs2-frobulate --xyz`. Custom commands are allowed to read from and
+write to the config file under the `[commands.<name>]` hierarchy.
 
 ## Why another password manager?
 
@@ -118,3 +156,4 @@ deteriorating codebase.
 
 `kbs2` is my attempt to reproduce the best parts of KBSecret in a faster language. Apart from the
 name and some high-level design decisions, it shares nothing in common with the original KBSecret.
+It's only named `kbs2` because I'm used to typing "kbs" in my terminal.
