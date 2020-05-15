@@ -1,6 +1,7 @@
 [package]
 name = "kbs2"
 description = "A secret manager backed by age"
+license = "MIT"
 license-file = "LICENSE"
 homepage = "https://github.com/woodruffw/kbs2"
 version = "0.0.1-alpha.2"
