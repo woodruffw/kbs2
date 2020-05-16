@@ -125,6 +125,9 @@ $ kbs2 frobulate --xyz
 will cause `kbs2` to run `kbs2-frobulate --xyz`. Custom commands are allowed to read from and
 write to the config file under the `[commands.<name>]` hierarchy.
 
+The [kbs2-ext-cmds](https://github.com/woodruffw/kbs2-ext-cmds) repository contains several useful
+external commands.
+
 ## Why another password manager?
 
 No good reason. See the [history section](#history).
