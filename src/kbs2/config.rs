@@ -5,7 +5,7 @@ use toml;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use crate::kbs2::backend::{AgeCLI, Backend};
 use crate::kbs2::error::Error;
@@ -44,9 +44,11 @@ pub struct Config {
     pub store: String,
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]
     #[serde(rename = "pre-hook")]
+    #[serde(default)]
     pub pre_hook: Option<String>,
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]
     #[serde(rename = "post-hook")]
+    #[serde(default)]
     pub post_hook: Option<String>,
     #[serde(default)]
     #[serde(rename = "reentrant-hooks")]
@@ -67,6 +69,8 @@ impl Config {
                 .args(args)
                 .current_dir(Path::new(&self.store))
                 .env("KBS2_HOOK", "1")
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
                 .status()
                 .map(|_| ())
                 .map_err(|_| format!("hook failed: {}", cmd).into())
