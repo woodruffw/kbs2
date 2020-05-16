@@ -7,8 +7,8 @@ kbs2
 
 `kbs2` is a command line utility for managing *secrets*.
 
-`kbs2` uses [rage](https://github.com/str4d/rage) by default, although it can be configured use any
-[age](https://github.com/FiloSottile/age)-compatible CLI.
+`kbs2` uses the age Rust crate by default, although it can be
+configured to use any [age](https://github.com/FiloSottile/age)-compatible CLI.
 
 Quick links:
 
