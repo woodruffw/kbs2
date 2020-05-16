@@ -1,4 +1,6 @@
-use std::io::Write;
+use secrecy::ExposeSecret;
+
+use std::io::{Read, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
 
@@ -92,5 +94,76 @@ impl Backend for AgeCLI {
         }
 
         Ok(serde_json::from_str(std::str::from_utf8(&output.stdout)?)?)
+    }
+}
+
+pub struct RageLib {
+    pubkey: age::keys::RecipientKey,
+    identities: Vec<age::keys::Identity>,
+}
+
+impl RageLib {
+    pub fn new(config: &config::Config) -> Result<RageLib, Error> {
+        let pubkey = config
+            .public_key
+            .parse::<age::keys::RecipientKey>()
+            .map_err(|e| format!("unable to parse public key (backend reports: {:?})", e))?;
+
+        let identities = age::keys::Identity::from_file(config.keyfile.clone())?;
+
+        if identities.len() != 1 {
+            return Err(format!(
+                "expected exactly one private key in the keyfile, but got {}",
+                identities.len()
+            )
+            .into());
+        }
+
+        Ok(RageLib {
+            pubkey: pubkey,
+            identities: identities,
+        })
+    }
+}
+
+impl Backend for RageLib {
+    fn create_keypair(&self, path: &Path) -> Result<String, Error> {
+        let key = age::SecretKey::generate();
+
+        std::fs::write(path, key.to_string().expose_secret())?;
+
+        Ok(key.to_public().to_string())
+    }
+
+    fn encrypt(&self, _config: &config::Config, record: &Record) -> Result<String, Error> {
+        let encryptor = age::Encryptor::with_recipients(vec![self.pubkey.clone()]);
+        let mut encrypted = vec![];
+        let mut writer = encryptor.wrap_output(&mut encrypted, age::Format::AsciiArmor)?;
+        writer.write_all(serde_json::to_string(record)?.as_bytes())?;
+        writer.finish()?;
+
+        Ok(String::from_utf8(encrypted)?)
+    }
+
+    fn decrypt(&self, _config: &config::Config, encrypted: &str) -> Result<Record, Error> {
+        let decryptor = match age::Decryptor::new(encrypted.as_bytes())
+            .map_err(|e| format!("unable to load private key (backend reports: {:?})", e))?
+        {
+            age::Decryptor::Recipients(d) => d,
+            // NOTE(ww): kbs2 doesn't support secret keys with passphrases.
+            _ => unreachable!(),
+        };
+
+        let mut decrypted = String::new();
+
+        decryptor
+            .decrypt(&self.identities)
+            .map_err(|e| format!("unable to decrypt (backend reports: {:?})", e))
+            .and_then(|mut r| {
+                r.read_to_string(&mut decrypted)
+                    .map_err(|_| "i/o error while decrypting".into())
+            })?;
+
+        Ok(serde_json::from_str(&decrypted)?)
     }
 }

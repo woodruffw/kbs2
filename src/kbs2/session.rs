@@ -13,14 +13,22 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(config: config::Config) -> Session {
-        Session {
-            backend: Box::new(backend::AgeCLI {
+    pub fn new(config: config::Config) -> Result<Session, Error> {
+        let backend: Box<dyn backend::Backend> = if config.age_backend == "rage-lib" {
+            log::debug!("using rage-lib backend");
+            Box::new(backend::RageLib::new(&config)?)
+        } else {
+            log::debug!("using CLI backend with age: {}", &config.age_backend);
+            Box::new(backend::AgeCLI {
                 age: config.age_backend.clone(),
                 age_keygen: config.age_keygen_backend.clone(),
-            }),
+            })
+        };
+
+        Ok(Session {
+            backend: backend,
             config: config,
-        }
+        })
     }
 
     pub fn record_labels(&self) -> Result<Vec<String>, Error> {
