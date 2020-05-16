@@ -46,6 +46,7 @@ impl Backend for AgeCLI {
             .arg(&config.public_key)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()?;
 
         {
@@ -59,6 +60,10 @@ impl Backend for AgeCLI {
         let output = child.wait_with_output()?;
         log::debug!("output: {:?}", output);
 
+        if !output.status.success() {
+            return Err("encryption failed; misformatted key or empty input?".into());
+        }
+
         Ok(String::from_utf8(output.stdout)?)
     }
 
@@ -69,17 +74,22 @@ impl Backend for AgeCLI {
             .arg(&config.keyfile)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()?;
 
         {
             let stdin = child
                 .stdin
                 .as_mut()
-                .ok_or::<Error>("couldn't get input for encrypting".into())?;
+                .ok_or::<Error>("couldn't get input for decrypting".into())?;
             stdin.write_all(encrypted.as_bytes())?;
         }
 
         let output = child.wait_with_output()?;
+
+        if !output.status.success() {
+            return Err("decryption failed; bad key or corrupted record?".into());
+        }
 
         Ok(serde_json::from_str(std::str::from_utf8(&output.stdout)?)?)
     }
