@@ -1,4 +1,5 @@
 use secrecy::ExposeSecret;
+use serde::{Deserialize, Serialize};
 
 use std::io::{Read, Write};
 use std::path::Path;
@@ -8,24 +9,42 @@ use crate::kbs2::config;
 use crate::kbs2::error::Error;
 use crate::kbs2::record::Record;
 
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+pub enum BackendKind {
+    AgeCLI,
+    RageCLI,
+    RageLib,
+}
+
+impl Default for BackendKind {
+    fn default() -> Self {
+        BackendKind::RageLib
+    }
+}
+
 pub trait Backend {
-    fn create_keypair(&self, path: &Path) -> Result<String, Error>;
+    fn create_keypair(path: &Path) -> Result<String, Error>
+    where
+        Self: Sized;
     fn encrypt(&self, config: &config::Config, record: &Record) -> Result<String, Error>;
     fn decrypt(&self, config: &config::Config, encrypted: &str) -> Result<Record, Error>;
 }
 
-pub struct AgeCLI {
-    pub age: String,
-    pub age_keygen: String,
+pub trait CLIBackend {
+    fn age() -> &'static str;
+    fn age_keygen() -> &'static str;
 }
 
-impl Backend for AgeCLI {
-    fn create_keypair(&self, path: &Path) -> Result<String, Error> {
+impl<T> Backend for T
+where
+    T: CLIBackend,
+{
+    fn create_keypair(path: &Path) -> Result<String, Error> {
         if path.exists() {
             std::fs::remove_file(path)?;
         }
 
-        match Command::new(&self.age_keygen).arg("-o").arg(path).output() {
+        match Command::new(T::age_keygen()).arg("-o").arg(path).output() {
             Err(e) => Err(e.into()),
             Ok(output) => {
                 log::debug!("output: {:?}", output);
@@ -42,7 +61,7 @@ impl Backend for AgeCLI {
     }
 
     fn encrypt(&self, config: &config::Config, record: &Record) -> Result<String, Error> {
-        let mut child = Command::new(&self.age)
+        let mut child = Command::new(T::age())
             .arg("-a")
             .arg("-r")
             .arg(&config.public_key)
@@ -70,7 +89,7 @@ impl Backend for AgeCLI {
     }
 
     fn decrypt(&self, config: &config::Config, encrypted: &str) -> Result<Record, Error> {
-        let mut child = Command::new(&self.age)
+        let mut child = Command::new(T::age())
             .arg("-d")
             .arg("-i")
             .arg(&config.keyfile)
@@ -94,6 +113,30 @@ impl Backend for AgeCLI {
         }
 
         Ok(serde_json::from_str(std::str::from_utf8(&output.stdout)?)?)
+    }
+}
+
+pub struct AgeCLI {}
+
+impl CLIBackend for AgeCLI {
+    fn age() -> &'static str {
+        "age"
+    }
+
+    fn age_keygen() -> &'static str {
+        "age-keygen"
+    }
+}
+
+pub struct RageCLI {}
+
+impl CLIBackend for RageCLI {
+    fn age() -> &'static str {
+        "rage"
+    }
+
+    fn age_keygen() -> &'static str {
+        "rage-keygen"
     }
 }
 
@@ -127,7 +170,7 @@ impl RageLib {
 }
 
 impl Backend for RageLib {
-    fn create_keypair(&self, path: &Path) -> Result<String, Error> {
+    fn create_keypair(path: &Path) -> Result<String, Error> {
         let key = age::SecretKey::generate();
 
         std::fs::write(path, key.to_string().expose_secret())?;

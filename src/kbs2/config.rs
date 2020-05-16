@@ -7,7 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use crate::kbs2::backend::{AgeCLI, Backend};
+use crate::kbs2::backend::{Backend, BackendKind, RageLib};
 use crate::kbs2::error::Error;
 use crate::kbs2::util;
 
@@ -27,15 +27,10 @@ pub static DEFAULT_KEY_BASENAME: &'static str = "key";
 // the user's data directory by default.
 pub static STORE_BASEDIR: &'static str = "kbs2";
 
-pub static KNOWN_AGE_CLIS: &'static [&(&'static str, &'static str)] =
-    &[&("rage", "rage-keygen"), &("age", "age-keygen")];
-
 #[derive(Default, Debug, Deserialize, Serialize)]
 pub struct Config {
     #[serde(rename = "age-backend")]
-    pub age_backend: String,
-    #[serde(rename = "age-keygen-backend")]
-    pub age_keygen_backend: String,
+    pub age_backend: BackendKind,
     #[serde(rename = "public-key")]
     pub public_key: String,
     #[serde(deserialize_with = "deserialize_with_tilde")]
@@ -175,31 +170,15 @@ fn data_dir() -> Result<String, Error> {
     }
 }
 
-pub fn find_age_cli() -> Result<AgeCLI, Error> {
-    for (age, age_keygen) in KNOWN_AGE_CLIS {
-        if Command::new(age).arg("-h").output().is_ok()
-            && Command::new(age_keygen).arg("-h").output().is_ok()
-        {
-            return Ok(AgeCLI {
-                age: (*age).into(),
-                age_keygen: (*age_keygen).into(),
-            });
-        }
-    }
-
-    Err("couldn't find an age-compatible CLI".into())
-}
-
 pub fn initialize(config_dir: &Path) -> Result<(), Error> {
-    let backend = find_age_cli()?;
-
+    // NOTE(ww): Default initialization uses the rage-lib backend unconditionally.
     let keyfile = config_dir.join(DEFAULT_KEY_BASENAME);
-    let public_key = backend.create_keypair(&keyfile)?;
+    let public_key = RageLib::create_keypair(&keyfile)?;
+
     log::debug!("public key: {}", public_key);
 
     let serialized = toml::to_string(&Config {
-        age_backend: backend.age,
-        age_keygen_backend: backend.age_keygen,
+        age_backend: BackendKind::RageLib,
         public_key: public_key,
         keyfile: keyfile.to_str().unwrap().into(),
         store: data_dir()?,
