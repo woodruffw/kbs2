@@ -192,7 +192,7 @@ fn run() -> Result<(), kbs2::error::Error> {
         let config = kbs2::config::load(&config_dir)?;
         log::debug!("loaded config: {:?}", config);
 
-        let session = kbs2::session::Session::new(config);
+        let session = kbs2::session::Session::new(config)?;
 
         if let Some(pre_hook) = &session.config.pre_hook {
             log::debug!("pre-hook: {}", pre_hook);

@@ -2,7 +2,7 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
-use crate::kbs2::backend;
+use crate::kbs2::backend::{self, BackendKind};
 use crate::kbs2::config;
 use crate::kbs2::error::Error;
 use crate::kbs2::record;
@@ -13,14 +13,19 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(config: config::Config) -> Session {
-        Session {
-            backend: Box::new(backend::AgeCLI {
-                age: config.age_backend.clone(),
-                age_keygen: config.age_keygen_backend.clone(),
-            }),
+    pub fn new(config: config::Config) -> Result<Session, Error> {
+        log::debug!("backend: {:?}", config.age_backend);
+
+        let backend: Box<dyn backend::Backend> = match config.age_backend {
+            BackendKind::RageLib => Box::new(backend::RageLib::new(&config)?),
+            BackendKind::RageCLI => Box::new(backend::RageCLI {}),
+            BackendKind::AgeCLI => Box::new(backend::AgeCLI {}),
+        };
+
+        Ok(Session {
+            backend: backend,
             config: config,
-        }
+        })
     }
 
     pub fn record_labels(&self) -> Result<Vec<String>, Error> {

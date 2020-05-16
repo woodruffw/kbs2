@@ -7,8 +7,8 @@ kbs2
 
 `kbs2` is a command line utility for managing *secrets*.
 
-It uses [age](https://github.com/FiloSottile/age) (or an age-compatible CLI, like
-[rage](https://github.com/str4d/rage)) for encryption and decryption.
+`kbs2` uses the age Rust crate by default, although it can be
+configured to use any [age](https://github.com/FiloSottile/age)-compatible CLI.
 
 Quick links:
 
@@ -29,16 +29,10 @@ Quick links:
 $ cargo install kbs2
 ```
 
-To actually *use* `kbs2`, you'll need to have an age-compatible CLI installed.
-
-You can install `rage` via `cargo` as well:
-
-```bash
-$ cargo install rage
-```
-
-Alternatively, you can install `age`. The `age` README documents
-[several installation methods](https://github.com/FiloSottile/age#installation).
+After installation, `kbs2` is completely ready for use. See the
+[Configuration](#configuration) section for some *optional* changes that you can
+make, like switching out the use of the [age crate](https://docs.rs/age/)
+for an `age`-compatible CLI.
 
 ## Quick start guide
 
@@ -97,9 +91,7 @@ by your host system. On Linux, for example, it's `~/.config`.
 `kbs2.conf` is TOML-formatted, and might look something like this after a clean start with `kbs2 init`:
 
 ```toml
-debug = false
-age-backend = "rage"
-age-keygen-backend = "rage-keygen"
+age-backend = "RageLib"
 public-key = "age1elujxyndwy0n9j2e2elmk9ns8vtltg69q620dr0sz4nu5fgj95xsl2peea"
 keyfile = "/home/william/.config/kbs2/key"
 store = "/home/william/.local/share/kbs2"
@@ -110,7 +102,21 @@ clear-after = true
 x11-clipboard = "Clipboard"
 ```
 
-Documentation of each configuration field to come.
+#### `age-backend` (default: `"RageLib`")
+
+The `age-backend` setting tells `kbs2` how to operate on age-formatted keypairs and encrypted
+records. The supported options are `"RageLib"`, `"AgeCLI`", and `"RageCLI"`:
+
+* `"RageLib"`: Use the [age crate](https://docs.rs/age/) for all age operations. This is the default
+setting, and offers the best performance.
+
+* `"AgeCLI"`: Use the `age` and `age-keygen` binaries for all all age operations. This setting
+requires that `age` and `age-keygen` are already installed; see the
+[age README](https://github.com/FiloSottile/age#installation) for instructions.
+
+* `"RageCLI"`: Use the `rage` and `rage-keygen` binaries for all age operations. This setting
+requires that `rage` and `rage-keygen` are already installed; see the
+[rage README](https://github.com/str4d/rage#installation) for instructions.
 
 ### Customization
 
