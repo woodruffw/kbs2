@@ -79,7 +79,8 @@ fn app<'a>() -> App<'a> {
                         .about("use the given generator to generate sensitive fields")
                         .short('g')
                         .long("generator")
-                        .takes_value(true),
+                        .takes_value(true)
+                        .default_value("default"),
                 ),
         )
         .subcommand(
