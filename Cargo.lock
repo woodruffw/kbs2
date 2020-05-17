@@ -600,6 +600,7 @@ dependencies = [
  "env_logger",
  "log",
  "nix",
+ "rand",
  "secrecy",
  "serde",
  "serde_json",

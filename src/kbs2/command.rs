@@ -12,6 +12,7 @@ use std::process;
 
 use crate::kbs2::config;
 use crate::kbs2::error::Error;
+use crate::kbs2::generator::Generator;
 use crate::kbs2::input;
 use crate::kbs2::record::{self, FieldKind::*};
 use crate::kbs2::session;
@@ -42,11 +43,18 @@ pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<(), Error
 
     let terse = atty::isnt(Stream::Stdin) || matches.is_present("terse");
 
+    let generator = match matches.value_of("generator") {
+        Some(generator_name) => Some(session.config.get_generator(generator_name).ok_or(
+            format!("couldn't find a generator named {}", generator_name),
+        )?),
+        None => None,
+    };
+
     // TODO: new_* below is a little silly. This should be de-duped.
     match matches.value_of("kind").unwrap() {
-        "login" => new_login(label, terse, &session)?,
-        "environment" => new_environment(label, terse, &session)?,
-        "unstructured" => new_unstructured(label, terse, &session)?,
+        "login" => new_login(label, terse, &session, &generator)?,
+        "environment" => new_environment(label, terse, &session, &generator)?,
+        "unstructured" => new_unstructured(label, terse, &session, &generator)?,
         _ => unreachable!(),
     }
 
@@ -58,22 +66,45 @@ pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<(), Error
     Ok(())
 }
 
-fn new_login(label: &str, terse: bool, session: &session::Session) -> Result<(), Error> {
-    let fields = input::fields(&[Insensitive("Username"), Sensitive("Password")], terse)?;
+fn new_login(
+    label: &str,
+    terse: bool,
+    session: &session::Session,
+    generator: &Option<Box<&dyn Generator>>,
+) -> Result<(), Error> {
+    let fields = input::fields(
+        &[Insensitive("Username"), Sensitive("Password")],
+        terse,
+        &generator,
+    )?;
     let record = record::Record::login(label, &fields[0], &fields[1]);
 
     session.add_record(&record)
 }
 
-fn new_environment(label: &str, terse: bool, session: &session::Session) -> Result<(), Error> {
-    let fields = input::fields(&[Insensitive("Variable"), Sensitive("Value")], terse)?;
+fn new_environment(
+    label: &str,
+    terse: bool,
+    session: &session::Session,
+    generator: &Option<Box<&dyn Generator>>,
+) -> Result<(), Error> {
+    let fields = input::fields(
+        &[Insensitive("Variable"), Sensitive("Value")],
+        terse,
+        &generator,
+    )?;
     let record = record::Record::environment(label, &fields[0], &fields[1]);
 
     session.add_record(&record)
 }
 
-fn new_unstructured(label: &str, terse: bool, session: &session::Session) -> Result<(), Error> {
-    let fields = input::fields(&[Insensitive("Contents")], terse)?;
+fn new_unstructured(
+    label: &str,
+    terse: bool,
+    session: &session::Session,
+    generator: &Option<Box<&dyn Generator>>,
+) -> Result<(), Error> {
+    let fields = input::fields(&[Insensitive("Contents")], terse, &generator)?;
     let record = record::Record::unstructured(label, &fields[0]);
 
     session.add_record(&record)
@@ -226,15 +257,9 @@ pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
             None => return Err("no editor configured to edit with".into()),
         };
 
-    let args = match shell_words::split(&editor) {
-        Ok(editor_args) => editor_args
-            .split_first()
-            .map(|t| (t.0.to_owned(), t.1.to_owned())),
-        Err(_) => return Err("failed to parse editor arguments".into()),
-    }
-    .ok_or::<Error>("blank editor?".into())?;
+    let (editor, editor_args) = util::parse_and_split_args(&editor)?;
 
-    log::debug!("editor: {}", args.0);
+    log::debug!("editor: {}", editor);
 
     let label = matches.value_of("label").unwrap();
     let record = session.get_record(&label)?;
@@ -242,8 +267,8 @@ pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
     let mut file = tempfile::NamedTempFile::new()?;
     file.write_all(&serde_json::to_vec_pretty(&record)?)?;
 
-    if !process::Command::new(args.0)
-        .args(args.1)
+    if !process::Command::new(&editor)
+        .args(&editor_args)
         .arg(file.path())
         .output()
         .map_or(false, |o| o.status.success())

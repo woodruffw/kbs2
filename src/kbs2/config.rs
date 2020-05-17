@@ -9,6 +9,7 @@ use std::process::{Command, Stdio};
 
 use crate::kbs2::backend::{Backend, BackendKind, RageLib};
 use crate::kbs2::error::Error;
+use crate::kbs2::generator::Generator;
 use crate::kbs2::util;
 
 // The default base config directory name, placed relative to the user's config
@@ -50,6 +51,8 @@ pub struct Config {
     pub reentrant_hooks: bool,
     #[serde(default)]
     pub commands: CommandConfigs,
+    #[serde(default)]
+    pub generators: Vec<GeneratorConfig>,
 }
 
 impl Config {
@@ -73,6 +76,17 @@ impl Config {
             util::warn("nested hook requested without reentrant-hooks; skipping");
             Ok(())
         }
+    }
+
+    pub fn get_generator(&self, name: &str) -> Option<Box<&dyn Generator>> {
+        for generator_config in self.generators.iter() {
+            let generator = generator_config.into_box();
+            if generator.name() == name {
+                return Some(generator);
+            }
+        }
+
+        None
     }
 }
 
@@ -121,6 +135,35 @@ impl Default for PassConfig {
             x11_clipboard: X11Clipboard::Clipboard,
         }
     }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum GeneratorConfig {
+    Command(GeneratorCommandConfig),
+    Internal(GeneratorInternalConfig),
+}
+
+impl GeneratorConfig {
+    fn into_box(&self) -> Box<&dyn Generator> {
+        match self {
+            GeneratorConfig::Command(g) => Box::new(g),
+            GeneratorConfig::Internal(g) => Box::new(g),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GeneratorCommandConfig {
+    pub name: String,
+    pub command: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GeneratorInternalConfig {
+    pub name: String,
+    pub alphabet: String,
+    pub length: u32,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -184,6 +227,7 @@ pub fn initialize(config_dir: &Path) -> Result<(), Error> {
         post_hook: None,
         reentrant_hooks: false,
         commands: Default::default(),
+        generators: Default::default(),
     })?;
 
     fs::write(config_dir.join(CONFIG_BASENAME), serialized)?;
