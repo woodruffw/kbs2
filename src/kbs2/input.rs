@@ -23,13 +23,17 @@ fn terse_fields(
     // NOTE(ww): Handling generated inputs in terse mode is a bit of a mess.
     // First, we collect all inputs, expecting blank slots where we'll fill
     // in the generated values.
-    let mut fields = input.split(TERSE_IFS).map(|s| s.to_string()).collect::<Vec<String>>();
+    let mut fields = input
+        .split(TERSE_IFS)
+        .map(|s| s.to_string())
+        .collect::<Vec<String>>();
     if fields.len() != names.len() {
         return Err(format!(
             "field count mismatch: expected {}, found {}",
             names.len(),
             fields.len()
-        ).into());
+        )
+        .into());
     }
 
     // Then, if we have a generator configured, we iterate over the
