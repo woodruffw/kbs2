@@ -3,12 +3,16 @@ use dialoguer::{Input, Password};
 use std::io::{self, Read};
 
 use crate::kbs2::error::Error;
+use crate::kbs2::generator::Generator;
 use crate::kbs2::record::FieldKind::{self, *};
 
 // TODO(ww): Make this configurable.
 pub static TERSE_IFS: &'static str = "\x01";
 
-fn terse_fields(names: &[FieldKind]) -> Result<Vec<String>, Error> {
+fn terse_fields(
+    names: &[FieldKind],
+    generator: &Option<Box<&dyn Generator>>,
+) -> Result<Vec<String>, Error> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
 
@@ -16,26 +20,48 @@ fn terse_fields(names: &[FieldKind]) -> Result<Vec<String>, Error> {
         input.pop();
     }
 
-    let fields = input.split(TERSE_IFS).collect::<Vec<&str>>();
-    if fields.len() == names.len() {
-        Ok(fields.iter().map(|f| f.to_string()).collect())
-    } else {
-        Err(format!(
+    // NOTE(ww): Handling generated inputs in terse mode is a bit of a mess.
+    // First, we collect all inputs, expecting blank slots where we'll fill
+    // in the generated values.
+    let mut fields = input.split(TERSE_IFS).map(|s| s.to_string()).collect::<Vec<String>>();
+    if fields.len() != names.len() {
+        return Err(format!(
             "field count mismatch: expected {}, found {}",
             names.len(),
             fields.len()
-        )
-        .as_str()
-        .into())
+        ).into());
     }
+
+    // Then, if we have a generator configured, we iterate over the
+    // fields and insert them as appropriate.
+    if let Some(generator) = generator {
+        for (i, name) in names.iter().enumerate() {
+            if let Sensitive(_) = name {
+                let field = fields.get_mut(i).unwrap();
+                field.clear();
+                field.push_str(&generator.secret()?);
+            }
+        }
+    }
+
+    Ok(fields)
 }
 
-fn interactive_fields(names: &[FieldKind]) -> Result<Vec<String>, Error> {
+fn interactive_fields(
+    names: &[FieldKind],
+    generator: &Option<Box<&dyn Generator>>,
+) -> Result<Vec<String>, Error> {
     let mut fields = vec![];
 
     for name in names {
         let field = match name {
-            Sensitive(name) => Password::new().with_prompt(*name).interact()?,
+            Sensitive(name) => {
+                if let Some(generator) = generator {
+                    generator.secret()?
+                } else {
+                    Password::new().with_prompt(*name).interact()?
+                }
+            }
             Insensitive(name) => Input::<String>::new().with_prompt(*name).interact()?,
         };
 
@@ -45,10 +71,14 @@ fn interactive_fields(names: &[FieldKind]) -> Result<Vec<String>, Error> {
     Ok(fields)
 }
 
-pub fn fields(names: &[FieldKind], terse: bool) -> Result<Vec<String>, Error> {
+pub fn fields(
+    names: &[FieldKind],
+    terse: bool,
+    generator: &Option<Box<&dyn Generator>>,
+) -> Result<Vec<String>, Error> {
     if terse {
-        terse_fields(names)
+        terse_fields(names, generator)
     } else {
-        interactive_fields(names)
+        interactive_fields(names, generator)
     }
 }
