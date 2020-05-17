@@ -81,9 +81,10 @@ impl Config {
 pub struct CommandConfigs {
     pub new: NewConfig,
     pub pass: PassConfig,
+    pub edit: EditConfig,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct NewConfig {
     // TODO(ww): This deserialize_with is ugly. There's probably a better way to do this.
@@ -93,15 +94,6 @@ pub struct NewConfig {
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]
     #[serde(rename = "post-hook")]
     pub post_hook: Option<String>,
-}
-
-impl Default for NewConfig {
-    fn default() -> Self {
-        NewConfig {
-            pre_hook: None,
-            post_hook: None,
-        }
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -129,6 +121,12 @@ impl Default for PassConfig {
             x11_clipboard: X11Clipboard::Clipboard,
         }
     }
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
+pub struct EditConfig {
+    pub editor: Option<String>,
 }
 
 fn deserialize_with_tilde<'de, D>(deserializer: D) -> Result<String, D::Error>
