@@ -3,14 +3,19 @@ use clap::ArgMatches;
 use clipboard::{ClipboardContext, ClipboardProvider};
 use inflector::Inflector;
 use nix::unistd::{fork, ForkResult};
+use tempfile;
 
+use std::env;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
+use std::process;
 
 use crate::kbs2::config;
 use crate::kbs2::error::Error;
 use crate::kbs2::input;
 use crate::kbs2::record::{self, FieldKind::*};
 use crate::kbs2::session;
+use crate::kbs2::util;
 
 pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<(), Error> {
     log::debug!("initializing a new config");
@@ -205,6 +210,59 @@ pub fn env(matches: &ArgMatches, session: &session::Session) -> Result<(), Error
             println!("export {}={}", variable, value);
         }
     }
+
+    Ok(())
+}
+
+pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
+    log::debug!("editing a record");
+
+    let editor =
+        match env::var("EDITOR")
+            .ok()
+            .or(session.config.commands.edit.editor.as_ref().cloned())
+        {
+            Some(editor) => editor,
+            None => return Err("no editor configured to edit with".into()),
+        };
+
+    let args = match shell_words::split(&editor) {
+        Ok(editor_args) => editor_args
+            .split_first()
+            .map(|t| (t.0.to_owned(), t.1.to_owned())),
+        Err(_) => return Err("failed to parse editor arguments".into()),
+    }
+    .ok_or::<Error>("blank editor?".into())?;
+
+    log::debug!("editor: {}", args.0);
+
+    let label = matches.value_of("label").unwrap();
+    let record = session.get_record(&label)?;
+
+    let mut file = tempfile::NamedTempFile::new()?;
+    file.write_all(&serde_json::to_vec_pretty(&record)?)?;
+
+    if !process::Command::new(args.0)
+        .args(args.1)
+        .arg(file.path())
+        .output()
+        .map_or(false, |o| o.status.success())
+    {
+        return Err("failed to run the editor".into());
+    }
+
+    // Rewind, pull the changed contents, deserialize back into a record.
+    file.seek(SeekFrom::Start(0))?;
+    let mut record_contents = vec![];
+    file.read_to_end(&mut record_contents)?;
+
+    let mut record = serde_json::from_slice::<record::Record>(&record_contents)?;
+
+    // Users can't modify these fields, at least not with `kbs2 edit`.
+    record.label = label.into();
+    record.timestamp = util::current_timestamp();
+
+    session.add_record(&record)?;
 
     Ok(())
 }

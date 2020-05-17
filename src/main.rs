@@ -146,13 +146,29 @@ fn app<'a>() -> App<'a> {
                     Arg::with_name("value-only")
                         .about("print only the environment variable value, not the variable name")
                         .short('v')
-                        .long("--value-only"),
+                        .long("value-only"),
                 )
                 .arg(
                     Arg::with_name("no-export")
                         .about("print only VAR=val without `export`")
                         .short('n')
-                        .long("--no-export"),
+                        .long("no-export"),
+                ),
+        )
+        .subcommand(
+            App::new("edit")
+                .about("modify a record with a text editor")
+                .arg(
+                    Arg::with_name("label")
+                        .about("the record's label")
+                        .index(1)
+                        .required(true),
+                )
+                .arg(
+                    Arg::with_name("preserve-timestamp")
+                        .about("don't update the record's timestamp")
+                        .short('p')
+                        .long("preserve-timestamp"),
                 ),
         )
 }
@@ -206,6 +222,7 @@ fn run() -> Result<(), kbs2::error::Error> {
             ("dump", Some(matches)) => kbs2::command::dump(&matches, &session)?,
             ("pass", Some(matches)) => kbs2::command::pass(&matches, &session)?,
             ("env", Some(matches)) => kbs2::command::env(&matches, &session)?,
+            ("edit", Some(matches)) => kbs2::command::edit(&matches, &session)?,
             (cmd, Some(matches)) => {
                 let cmd = format!("kbs2-{}", cmd);
 
