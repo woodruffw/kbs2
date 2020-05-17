@@ -263,6 +263,42 @@ Any additional hook behavior is documented under that hook's configuration setti
 
 ##### Reentrancy
 
+`kbs2`'s hooks are non-reentrant by default.
+
+To understand what that means, imagine the following hook setup:
+
+```toml
+pre-hook = "~/.config/kbs2/hooks/pre.sh"
+```
+
+```bash
+# ~/.config/kbs2/hooks/pre.sh
+
+kbs2 some-other-command
+```
+
+and then:
+
+```bash
+$ kbs2 list
+```
+
+In this setting, most users would expect `pre.sh` to be run exactly once: on `kbs2 list`.
+
+However, naively, it *ought* to execute twice: once for `kbs2 list`, and again for
+`kbs2 some-other-command`. In other words, naively, hooks would *reenter* themselves whenever
+they use `kbs2` internally.
+
+Most users find this confusing and would consider it an impediment to hook writing, so `kbs2`
+does **not** do this by default. However, **should** you wish for reentrant hooks, you have two
+options:
+
+* You can set `reentrant-hooks` to `true` in the configuration. This will make *all* hooks
+reentrant &mdash; it's all or nothing, intentionally.
+* You can `unset` or otherwise delete the `KBS2_HOOK` environment variable in your hook
+before running `kbs2` internally. This allows you to control which hooks cause reentrancy.
+**Beware**: `KBS2_HOOK` is an implementation detail! Unset it at your own risk!
+
 ## Why another password manager?
 
 No good reason. See the [history section](#history).
