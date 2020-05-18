@@ -50,9 +50,9 @@ pub struct Config {
     #[serde(rename = "reentrant-hooks")]
     pub reentrant_hooks: bool,
     #[serde(default)]
-    pub commands: CommandConfigs,
-    #[serde(default)]
     pub generators: Vec<GeneratorConfig>,
+    #[serde(default)]
+    pub commands: CommandConfigs,
 }
 
 impl Config {
@@ -226,8 +226,8 @@ pub fn initialize(config_dir: &Path) -> Result<(), Error> {
         pre_hook: None,
         post_hook: None,
         reentrant_hooks: false,
-        commands: Default::default(),
         generators: Default::default(),
+        commands: Default::default(),
     })?;
 
     fs::write(config_dir.join(CONFIG_BASENAME), serialized)?;
