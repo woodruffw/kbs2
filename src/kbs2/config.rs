@@ -14,19 +14,19 @@ use crate::kbs2::util;
 
 // The default base config directory name, placed relative to the user's config
 // directory by default.
-pub static CONFIG_BASEDIR: &'static str = "kbs2";
+pub static CONFIG_BASEDIR: &str = "kbs2";
 
 // The default basename for the main config file, relative to the configuration
 // directory.
-pub static CONFIG_BASENAME: &'static str = "kbs2.conf";
+pub static CONFIG_BASENAME: &str = "kbs2.conf";
 
 // The default generate age key is placed in this file, relative to
 // the configuration directory.
-pub static DEFAULT_KEY_BASENAME: &'static str = "key";
+pub static DEFAULT_KEY_BASENAME: &str = "key";
 
 // The default base directory name for the secret store, placed relative to
 // the user's data directory by default.
-pub static STORE_BASEDIR: &'static str = "kbs2";
+pub static STORE_BASEDIR: &str = "kbs2";
 
 #[derive(Default, Debug, Deserialize, Serialize)]
 pub struct Config {
@@ -80,7 +80,7 @@ impl Config {
 
     pub fn get_generator(&self, name: &str) -> Option<Box<&dyn Generator>> {
         for generator_config in self.generators.iter() {
-            let generator = generator_config.into_box();
+            let generator = generator_config.as_box();
             if generator.name() == name {
                 return Some(generator);
             }
@@ -145,7 +145,7 @@ pub enum GeneratorConfig {
 }
 
 impl GeneratorConfig {
-    fn into_box(&self) -> Box<&dyn Generator> {
+    fn as_box(&self) -> Box<&dyn Generator> {
         match self {
             GeneratorConfig::Command(g) => Box::new(g),
             GeneratorConfig::Internal(g) => Box::new(g),
@@ -217,7 +217,7 @@ fn data_dir() -> Result<String, Error> {
         Some(dir) => Ok(dir
             .join(STORE_BASEDIR)
             .to_str()
-            .ok_or::<Error>("couldn't stringify user data dir".into())?
+            .ok_or_else(|| "couldn't stringify user data dir")?
             .into()),
         None => Err("couldn't find a suitable data directory for the secret store".into()),
     }
@@ -230,6 +230,7 @@ pub fn initialize(config_dir: &Path) -> Result<(), Error> {
 
     log::debug!("public key: {}", public_key);
 
+    #[allow(clippy::redundant_field_names)]
     let serialized = toml::to_string(&Config {
         age_backend: BackendKind::RageLib,
         public_key: public_key,

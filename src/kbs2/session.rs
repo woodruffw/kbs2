@@ -22,10 +22,7 @@ impl Session {
             BackendKind::AgeCLI => Box::new(backend::AgeCLI {}),
         };
 
-        Ok(Session {
-            backend: backend,
-            config: config,
-        })
+        Ok(Session { backend, config })
     }
 
     pub fn record_labels(&self) -> Result<Vec<String>, Error> {
@@ -67,7 +64,7 @@ impl Session {
 
         let record_path = Path::new(&self.config.store).join(label);
         let record_contents = fs::read_to_string(&record_path).map_err(|e| match e.kind() {
-            io::ErrorKind::NotFound => format!("no such record: {}", label).into(),
+            io::ErrorKind::NotFound => format!("no such record: {}", label),
             _ => e.to_string(),
         })?;
 

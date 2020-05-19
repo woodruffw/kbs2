@@ -74,7 +74,7 @@ where
             let stdin = child
                 .stdin
                 .as_mut()
-                .ok_or::<Error>("couldn't get input for encrypting".into())?;
+                .ok_or_else(|| "couldn't get input for encrypting")?;
             stdin.write_all(serde_json::to_string(record)?.as_bytes())?;
         }
 
@@ -102,7 +102,7 @@ where
             let stdin = child
                 .stdin
                 .as_mut()
-                .ok_or::<Error>("couldn't get input for decrypting".into())?;
+                .ok_or_else(|| "couldn't get input for decrypting")?;
             stdin.write_all(encrypted.as_bytes())?;
         }
 
@@ -162,10 +162,7 @@ impl RageLib {
             .into());
         }
 
-        Ok(RageLib {
-            pubkey: pubkey,
-            identities: identities,
-        })
+        Ok(RageLib { pubkey, identities })
     }
 }
 

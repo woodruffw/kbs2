@@ -4,7 +4,7 @@ use crate::kbs2::error::Error;
 use crate::kbs2::util;
 
 // TODO(ww): Figure out how to generate this from the RecordKind enum below.
-pub static RECORD_KINDS: &'static [&'static str] = &["login", "environment", "unstructured"];
+pub static RECORD_KINDS: &[&str] = &["login", "environment", "unstructured"];
 
 #[derive(Copy, Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum RecordKind {

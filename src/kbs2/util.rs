@@ -12,7 +12,7 @@ pub fn parse_and_split_args(argv: &str) -> Result<(String, Vec<String>), Error> 
     let (command, args) = args
         .split_first()
         .map(|t| (t.0.to_owned(), t.1.to_owned()))
-        .ok_or::<Error>("missing one or more arguments in command".into())?;
+        .ok_or_else(|| "missing one or more arguments in command")?;
 
     Ok((command, args))
 }

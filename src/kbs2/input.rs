@@ -7,7 +7,7 @@ use crate::kbs2::generator::Generator;
 use crate::kbs2::record::FieldKind::{self, *};
 
 // TODO(ww): Make this configurable.
-pub static TERSE_IFS: &'static str = "\x01";
+pub static TERSE_IFS: &str = "\x01";
 
 fn terse_fields(
     names: &[FieldKind],
