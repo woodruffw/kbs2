@@ -75,9 +75,15 @@ fn app<'a>() -> App<'a> {
                         .long("terse"),
                 )
                 .arg(
+                    Arg::with_name("generate")
+                        .about("generate sensitive fields instead of prompting for them")
+                        .short('g')
+                        .long("generate"),
+                )
+                .arg(
                     Arg::with_name("generator")
                         .about("use the given generator to generate sensitive fields")
-                        .short('g')
+                        .short('G')
                         .long("generator")
                         .takes_value(true)
                         .default_value("default"),

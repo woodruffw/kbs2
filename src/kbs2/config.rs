@@ -166,6 +166,18 @@ pub struct GeneratorInternalConfig {
     pub length: u32,
 }
 
+impl Default for GeneratorInternalConfig {
+    fn default() -> Self {
+        GeneratorInternalConfig {
+            name: "default".into(),
+            // NOTE(ww): This alphabet should be a decent default, as it contains
+            // symbols but not commonly blacklisted ones (e.g. %, $).
+            alphabet: "abcdefghijklmnopqrstuvwxyz0123456789(){}[]-_+=".into(),
+            length: 16,
+        }
+    }
+}
+
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct EditConfig {
@@ -226,7 +238,7 @@ pub fn initialize(config_dir: &Path) -> Result<(), Error> {
         pre_hook: None,
         post_hook: None,
         reentrant_hooks: false,
-        generators: Default::default(),
+        generators: vec![GeneratorConfig::Internal(Default::default())],
         commands: Default::default(),
     })?;
 

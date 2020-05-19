@@ -43,11 +43,15 @@ pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<(), Error
 
     let terse = atty::isnt(Stream::Stdin) || matches.is_present("terse");
 
-    let generator = match matches.value_of("generator") {
-        Some(generator_name) => Some(session.config.get_generator(generator_name).ok_or(
-            format!("couldn't find a generator named {}", generator_name),
-        )?),
-        None => None,
+    let generator = if matches.is_present("generate") {
+        let generator_name = matches.value_of("generator").unwrap();
+
+        Some(session.config.get_generator(generator_name).ok_or(format!(
+            "couldn't find a generator named {}",
+            generator_name
+        ))?)
+    } else {
+        None
     };
 
     // TODO: new_* below is a little silly. This should be de-duped.

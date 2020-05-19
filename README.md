@@ -249,7 +249,7 @@ These generators can be used with `kbs2 new`:
 
 ```bash
 # Notice: the user is not prompted for a password
-$ kbs2 new -g hexonly login pets.com
+$ kbs2 new -gG hexonly login pets.com
 Username: catlover2000
 ```
 
