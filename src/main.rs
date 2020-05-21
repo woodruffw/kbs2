@@ -3,7 +3,7 @@ use clap_generate::{generate, generators};
 
 use std::io;
 use std::path::Path;
-use std::process;
+use std::process::{self, Command};
 
 mod kbs2;
 
@@ -247,7 +247,14 @@ fn run() -> Result<(), kbs2::error::Error> {
 
                 log::debug!("external command requested: {} (args: {:?})", cmd, ext_args);
 
-                match kbs2::util::run_with_status(&cmd, &ext_args) {
+                let status = Command::new(&cmd)
+                    .args(&ext_args)
+                    .env("KBS2_STORE", &session.config.store)
+                    .env("KBS2_SUBCOMMAND", "1")
+                    .status()
+                    .map_or(None, |s| Some(s.success()));
+
+                match status {
                     Some(true) => (),
                     Some(false) => process::exit(2),
                     None => return Err(format!("no such command: {}", cmd).into()),

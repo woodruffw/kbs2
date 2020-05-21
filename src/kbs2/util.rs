@@ -17,13 +17,6 @@ pub fn parse_and_split_args(argv: &str) -> Result<(String, Vec<String>), Error> 
     Ok((command, args))
 }
 
-pub fn run_with_status(command: &str, args: &[&str]) -> Option<bool> {
-    Command::new(command)
-        .args(args)
-        .status()
-        .map_or(None, |s| Some(s.success()))
-}
-
 pub fn run_with_output(command: &str, args: &[&str]) -> Result<String, Error> {
     let output = Command::new(command)
         .args(args)
