@@ -178,6 +178,11 @@ pub fn dump(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
 pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
     log::debug!("getting a login's password");
 
+    if let Some(pre_hook) = &session.config.commands.pass.pre_hook {
+        log::debug!("pre-hook: {}", pre_hook);
+        session.config.call_hook(pre_hook, &[])?;
+    }
+
     let label = matches.value_of("label").unwrap();
     let record = session.get_record(&label)?;
 
@@ -212,6 +217,11 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
                 if clear_after {
                     ctx.set_contents("".to_owned())
                         .map_err(|_| "unable to clear the clipboard")?;
+
+                    if let Some(clear_hook) = &session.config.commands.pass.clear_hook {
+                        log::debug!("clear-hook: {}", clear_hook);
+                        session.config.call_hook(clear_hook, &[])?;
+                    }
                 }
             }
             Err(_) => return Err("clipboard fork failed".into()),
@@ -219,6 +229,11 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
         }
     } else {
         println!("{}", password);
+    }
+
+    if let Some(post_hook) = &session.config.commands.pass.post_hook {
+        log::debug!("post-hook: {}", post_hook);
+        session.config.call_hook(post_hook, &[])?;
     }
 
     Ok(())

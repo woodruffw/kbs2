@@ -119,6 +119,15 @@ pub struct PassConfig {
     pub clear_after: bool,
     #[serde(rename = "x11-clipboard")]
     pub x11_clipboard: X11Clipboard,
+    #[serde(deserialize_with = "deserialize_optional_with_tilde")]
+    #[serde(rename = "pre-hook")]
+    pub pre_hook: Option<String>,
+    #[serde(deserialize_with = "deserialize_optional_with_tilde")]
+    #[serde(rename = "post-hook")]
+    pub post_hook: Option<String>,
+    #[serde(deserialize_with = "deserialize_optional_with_tilde")]
+    #[serde(rename = "clear-hook")]
+    pub clear_hook: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
@@ -133,6 +142,9 @@ impl Default for PassConfig {
             clipboard_duration: 10,
             clear_after: true,
             x11_clipboard: X11Clipboard::Clipboard,
+            pre_hook: None,
+            post_hook: None,
+            clear_hook: None,
         }
     }
 }
