@@ -153,7 +153,15 @@ pub fn list(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
 pub fn rm(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
     log::debug!("removing a record");
 
-    session.delete_record(matches.value_of("label").unwrap())
+    let label = matches.value_of("label").unwrap();
+    session.delete_record(label)?;
+
+    if let Some(post_hook) = &session.config.commands.rm.post_hook {
+        log::debug!("post-hook: {}", post_hook);
+        session.config.call_hook(post_hook, &[&label])?;
+    }
+
+    Ok(())
 }
 
 pub fn dump(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {

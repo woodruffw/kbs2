@@ -96,6 +96,7 @@ pub struct CommandConfigs {
     pub new: NewConfig,
     pub pass: PassConfig,
     pub edit: EditConfig,
+    pub rm: RmConfig,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -194,6 +195,14 @@ impl Default for GeneratorInternalConfig {
 #[serde(default)]
 pub struct EditConfig {
     pub editor: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
+pub struct RmConfig {
+    #[serde(deserialize_with = "deserialize_optional_with_tilde")]
+    #[serde(rename = "post-hook")]
+    pub post_hook: Option<String>,
 }
 
 fn deserialize_with_tilde<'de, D>(deserializer: D) -> Result<String, D::Error>
