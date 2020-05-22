@@ -210,6 +210,21 @@ The `commands.pass.x11-clipboard` setting determines which clipboard is used on 
 
 Valid options are `"Clipboard"` and `"Primary"`.
 
+### `commands.pass.pre-hook` (default: `None`)
+
+The `command.pass.pre-hook` setting is like the global `pre-hook` setting, except that it runs
+immediately before record access during `kbs2 pass` (and **only** `kbs2 pass`).
+
+### `command.pass.post-hook` (default: `None`)
+
+The `command.pass.post-hook` setting is like the global `post-hook` setting, except that it runs
+immediately after record access during `kbs2 pass` (and **only** `kbs2 pass`).
+
+### `command.pass.clear-hook` (default: `None`)
+
+The `command.pass.clear-hook` is like the other `command.pass` hooks, except that it only runs
+after the password has been cleared from the clipboard.
+
 ### `commands.edit.editor` (default: `None`)
 
 The `commands.edit.editor` setting controls which editor is used when opening a file with
@@ -221,6 +236,11 @@ This setting is allowed to contain flags. For example, the following would be sp
 [commands.edit]
 editor = "subl -w"
 ```
+
+### `commands.rm.post-hook` (default: `None`)
+
+The `command.rm.post-hook` setting is like the global `post-hook` setting, except that it runs
+immediately after record removal during `kbs2 rm` (and **only** `kbs2 rm`).
 
 ### Generators
 
