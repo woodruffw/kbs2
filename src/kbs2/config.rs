@@ -90,6 +90,47 @@ impl Config {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum GeneratorConfig {
+    Command(GeneratorCommandConfig),
+    Internal(GeneratorInternalConfig),
+}
+
+impl GeneratorConfig {
+    fn as_box(&self) -> Box<&dyn Generator> {
+        match self {
+            GeneratorConfig::Command(g) => Box::new(g),
+            GeneratorConfig::Internal(g) => Box::new(g),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GeneratorCommandConfig {
+    pub name: String,
+    pub command: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GeneratorInternalConfig {
+    pub name: String,
+    pub alphabet: String,
+    pub length: u32,
+}
+
+impl Default for GeneratorInternalConfig {
+    fn default() -> Self {
+        GeneratorInternalConfig {
+            name: "default".into(),
+            // NOTE(ww): This alphabet should be a decent default, as it contains
+            // symbols but not commonly blacklisted ones (e.g. %, $).
+            alphabet: "abcdefghijklmnopqrstuvwxyz0123456789(){}[]-_+=".into(),
+            length: 16,
+        }
+    }
+}
+
 #[derive(Default, Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct CommandConfigs {
@@ -146,47 +187,6 @@ impl Default for PassConfig {
             pre_hook: None,
             post_hook: None,
             clear_hook: None,
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum GeneratorConfig {
-    Command(GeneratorCommandConfig),
-    Internal(GeneratorInternalConfig),
-}
-
-impl GeneratorConfig {
-    fn as_box(&self) -> Box<&dyn Generator> {
-        match self {
-            GeneratorConfig::Command(g) => Box::new(g),
-            GeneratorConfig::Internal(g) => Box::new(g),
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct GeneratorCommandConfig {
-    pub name: String,
-    pub command: String,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct GeneratorInternalConfig {
-    pub name: String,
-    pub alphabet: String,
-    pub length: u32,
-}
-
-impl Default for GeneratorInternalConfig {
-    fn default() -> Self {
-        GeneratorInternalConfig {
-            name: "default".into(),
-            // NOTE(ww): This alphabet should be a decent default, as it contains
-            // symbols but not commonly blacklisted ones (e.g. %, $).
-            alphabet: "abcdefghijklmnopqrstuvwxyz0123456789(){}[]-_+=".into(),
-            length: 16,
         }
     }
 }
