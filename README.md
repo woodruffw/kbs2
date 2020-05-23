@@ -81,7 +81,243 @@ run each with `--help` to see a full set of supported options.
 
 ## CLI documentation
 
-None yet. Watch this space.
+### `kbs2 init`
+
+#### Usage
+
+```
+initialize kbs2 with a new config and keypair
+
+USAGE:
+    kbs2 init [FLAGS]
+
+FLAGS:
+    -f, --force                   overwrite the config and keyfile, if already present
+    -h, --help                    Prints help information
+        --insecure-not-wrapped    don't wrap the keypair with a master password
+```
+
+#### Examples
+
+Create a new config and keypair, prompting the user for a master password:
+
+```bash
+$ kbs2 init
+```
+
+Create a new config and keypair **without** a master password:
+
+```bash
+$ kbs2 init --insecure-not-wrapped
+```
+
+### `kbs2 unlock`
+
+#### Usage
+
+```
+unwrap the private key for use
+
+USAGE:
+    kbs2 unlock
+
+FLAGS:
+    -h, --help    Prints help information
+```
+
+#### Examples
+
+Unwrap the private key, allowing future commands to run without the master password:
+
+```bash
+$ kbs2 unlock
+```
+
+### `kbs2 lock`
+
+#### Usage
+
+```
+remove the unwrapped key, if any, from shared memory
+
+USAGE:
+    kbs2 lock
+
+FLAGS:
+    -h, --help    Prints help information
+```
+
+#### Examples
+
+Remove the unwrapped private key from shared memory, requiring future commands to prompt for
+the master password:
+
+```bash
+$ kbs2 lock
+```
+
+### `kbs2 new`
+
+#### Usage
+
+```
+create a new record
+
+USAGE:
+    kbs2 new [FLAGS] [OPTIONS] <kind> <label>
+
+ARGS:
+    <kind>     the kind of record to create [possible values: login, environment, unstructured]
+    <label>    the record's label
+
+FLAGS:
+    -f, --force       overwrite, if already present
+    -g, --generate    generate sensitive fields instead of prompting for them
+    -h, --help        Prints help information
+    -t, --terse       read fields in a terse format, even when connected to a tty
+
+OPTIONS:
+    -G, --generator <generator>    use the given generator to generate sensitive fields [default: default]
+```
+
+#### Examples
+
+Create a new `login` record named `foobar`:
+
+```bash
+$ kbs2 new login foobar
+Username: hasdrubal
+Password: [hidden]
+```
+
+Create a new `environment` record named `twitter-api`, overwriting it if it already exists:
+
+```bash
+$ kbs2 new -f environment twitter
+Variable: TWITTER_API
+Value: [hidden]
+```
+
+Create a new `login` record named `pets.com`, generating the password with the default generator:
+
+```bash
+$ kbs2 new -g login pets.com
+Username: hasdrubal
+```
+
+Create a new `login` record named `email`, getting the fields in a terse format:
+
+```bash
+$ kbs2 new -t login email < <(echo -e "bill@microsoft.com\x01hunter2")
+```
+
+### `kbs2 list`
+
+#### Usage
+
+```
+list records
+
+USAGE:
+    kbs2 list [FLAGS] [OPTIONS]
+
+FLAGS:
+    -d, --details    print (non-field) details for each record
+    -h, --help       Prints help information
+
+OPTIONS:
+    -k, --kind <kind>    list only records of this kind [possible values: login, environment, unstructured]
+```
+
+### `kbs2 rm`
+
+#### Usage
+
+```
+remove a record
+
+USAGE:
+    kbs2 rm <label>
+
+ARGS:
+    <label>    the record's label
+
+FLAGS:
+    -h, --help    Prints help information
+```
+
+### `kbs2 dump`
+
+#### Usage
+
+```
+dump a record
+
+USAGE:
+    kbs2 dump [FLAGS] <label>
+
+ARGS:
+    <label>    the record's label
+
+FLAGS:
+    -h, --help    Prints help information
+    -j, --json    dump in JSON format
+```
+
+### `kbs2 pass`
+
+#### Usage
+
+```
+get the password in a login record
+
+USAGE:
+    kbs2 pass [FLAGS] <label>
+
+ARGS:
+    <label>    the record's label
+
+FLAGS:
+    -c, --clipboard    copy the password to the clipboard
+    -h, --help         Prints help information
+```
+
+### `kbs2 env`
+
+#### Usage
+
+```
+get an environment record
+
+USAGE:
+    kbs2 env [FLAGS] <label>
+
+ARGS:
+    <label>    the record's label
+
+FLAGS:
+    -h, --help          Prints help information
+    -n, --no-export     print only VAR=val without `export`
+    -v, --value-only    print only the environment variable value, not the variable name
+```
+
+### `kbs2 edit`
+
+#### Usage
+
+```
+modify a record with a text editor
+
+USAGE:
+    kbs2 edit [FLAGS] <label>
+
+ARGS:
+    <label>    the record's label
+
+FLAGS:
+    -h, --help                  Prints help information
+    -p, --preserve-timestamp    don't update the record's timestamp
+```
 
 ## Configuration
 
