@@ -26,6 +26,9 @@ pub trait Backend {
     fn create_keypair(path: &Path) -> Result<String, Error>
     where
         Self: Sized;
+    // fn create_wrapped_keypair(path: &Path) -> Result<String, Error>
+    // where
+    //     Self: Sized;
     fn encrypt(&self, config: &config::Config, record: &Record) -> Result<String, Error>;
     fn decrypt(&self, config: &config::Config, encrypted: &str) -> Result<Record, Error>;
 }
@@ -116,7 +119,23 @@ where
     }
 }
 
-pub struct AgeCLI {}
+pub struct AgeCLI {
+    public_key: String,
+    keyfile: String,
+}
+
+impl AgeCLI {
+    pub fn new(config: &config::Config) -> Result<AgeCLI, Error> {
+        if config.wrapped {
+            Err("foo".into())
+        } else {
+            Ok(AgeCLI {
+                public_key: config.public_key.clone(),
+                keyfile: config.keyfile.clone(),
+            })
+        }
+    }
+}
 
 impl CLIBackend for AgeCLI {
     fn age() -> &'static str {
@@ -129,6 +148,12 @@ impl CLIBackend for AgeCLI {
 }
 
 pub struct RageCLI {}
+
+impl RageCLI {
+    pub fn new(config: &config::Config) -> Result<RageCLI, Error> {
+        Ok(RageCLI {})
+    }
+}
 
 impl CLIBackend for RageCLI {
     fn age() -> &'static str {

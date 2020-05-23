@@ -28,7 +28,7 @@ pub static DEFAULT_KEY_BASENAME: &str = "key";
 // the user's data directory by default.
 pub static STORE_BASEDIR: &str = "kbs2";
 
-#[derive(Default, Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     #[serde(rename = "age-backend")]
     pub age_backend: BackendKind,
@@ -36,6 +36,7 @@ pub struct Config {
     pub public_key: String,
     #[serde(deserialize_with = "deserialize_with_tilde")]
     pub keyfile: String,
+    pub wrapped: bool,
     #[serde(deserialize_with = "deserialize_with_tilde")]
     pub store: String,
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]
@@ -256,6 +257,7 @@ pub fn initialize(config_dir: &Path) -> Result<(), Error> {
         age_backend: BackendKind::RageLib,
         public_key: public_key,
         keyfile: keyfile.to_str().unwrap().into(),
+        wrapped: false,
         store: data_dir()?,
         pre_hook: None,
         post_hook: None,

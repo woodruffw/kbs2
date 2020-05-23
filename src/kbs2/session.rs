@@ -19,7 +19,7 @@ impl Session {
         let backend: Box<dyn backend::Backend> = match config.age_backend {
             BackendKind::RageLib => Box::new(backend::RageLib::new(&config)?),
             BackendKind::RageCLI => Box::new(backend::RageCLI {}),
-            BackendKind::AgeCLI => Box::new(backend::AgeCLI {}),
+            BackendKind::AgeCLI => Box::new(backend::AgeCLI::new(&config)?),
         };
 
         Ok(Session { backend, config })
