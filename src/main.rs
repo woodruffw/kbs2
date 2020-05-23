@@ -46,6 +46,8 @@ fn app<'a>() -> App<'a> {
                         .long("keygen"),
                 ),
         )
+        .subcommand(App::new("unlock").about("unwrap the private key for use"))
+        .subcommand(App::new("lock").about("remove the unwrapped key, if any, from shared memory"))
         .subcommand(
             App::new("new")
                 .about("create a new record")
@@ -215,9 +217,31 @@ fn run() -> Result<(), kbs2::error::Error> {
     log::debug!("config dir: {:?}", config_dir);
     std::fs::create_dir_all(&config_dir)?;
 
-    // `init` is a special case, since it doesn't have access to a preexisting config.
-    if let ("init", Some(matches)) = matches.subcommand() {
+    // Subcommand dispatch happens here. All subcommands take a `Session`, with four exceptions:
+    //
+    // * The empty subcommand (i.e., just `kbs2`) does nothing besides printing help.
+    //
+    // * `kbs2 init` doesn't have access to a preexisting config, and so needs to be separated
+    //   from the config-loading behavior of all other subcommands.
+    //
+    // * `kbs2 unlock` exists so that all commands that make use of a session don't have to
+    //   prompt for the master password themselves. That means that it can't take a session of
+    //   its own.
+    //
+    // * `kbs2 lock` exists to remove the shared memory object created by `kbs2 unlock`. Taking
+    //   a session would mean that it would attempt to pointlessly unlock the key before re-locking.
+    if let ("", None) = matches.subcommand() {
+        app.clone()
+            .write_long_help(&mut io::stdout())
+            .map_err(|_| "failed to print help".into())
+    } else if let ("init", Some(matches)) = matches.subcommand() {
         kbs2::command::init(&matches, &config_dir)
+    } else if let ("unlock", Some(matches)) = matches.subcommand() {
+        let config = kbs2::config::load(&config_dir)?;
+        kbs2::command::unlock(&matches, &config)
+    } else if let ("lock", Some(matches)) = matches.subcommand() {
+        let config = kbs2::config::load(&config_dir)?;
+        kbs2::command::lock(&matches, &config)
     } else {
         let config = kbs2::config::load(&config_dir)?;
         log::debug!("loaded config: {:?}", config);
@@ -260,10 +284,6 @@ fn run() -> Result<(), kbs2::error::Error> {
                     None => return Err(format!("no such command: {}", cmd).into()),
                 }
             }
-            ("", None) => app
-                .clone()
-                .write_long_help(&mut io::stdout())
-                .map_err(|_| "failed to print help")?,
             _ => unreachable!(),
         }
 

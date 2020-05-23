@@ -132,6 +132,14 @@ The `keyfile` setting records the path to the private half of the age keypair us
 `kbs2 init` pre-populates this setting; users should **not** modify it **unless** also modifying
 the `public-key` setting (e.g., to point to a pre-existing age keypair).
 
+### `wrapped` (default: `true`)
+
+The `wrapped` settings records whether `keyfile` is a "wrapped" private key, i.e. whether
+the private key itself is encrypted with a master password.
+
+By default, `kbs2 init` asks the user for a master password and creates a wrapped key.
+See the [`kbs2 init`](#kbs2-init) documentation for more information.
+
 ### `store` (default: `<user data directory>/kbs2`)
 
 The `store` setting records the path to the secret store, i.e. where records are kept.

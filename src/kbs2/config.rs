@@ -1,9 +1,18 @@
+use age::Decryptor;
 use dirs;
+use nix::errno::Errno;
+use nix::fcntl::OFlag;
+use nix::sys::mman;
+use nix::sys::stat::Mode;
+use nix::unistd;
 use serde::{de, Deserialize, Serialize};
 use toml;
 
+use std::convert::TryInto;
 use std::env;
 use std::fs;
+use std::io::Read;
+use std::os::unix::io::RawFd;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -24,11 +33,14 @@ pub static CONFIG_BASENAME: &str = "kbs2.conf";
 // the configuration directory.
 pub static DEFAULT_KEY_BASENAME: &str = "key";
 
+// The name for the POSIX shared memory object in which the unwrapped key is stored.
+pub static UNWRAPPED_KEY_SHM_NAME: &str = "/__kbs2_unwrapped_key";
+
 // The default base directory name for the secret store, placed relative to
 // the user's data directory by default.
 pub static STORE_BASEDIR: &str = "kbs2";
 
-#[derive(Default, Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     #[serde(rename = "age-backend")]
     pub age_backend: BackendKind,
@@ -36,6 +48,7 @@ pub struct Config {
     pub public_key: String,
     #[serde(deserialize_with = "deserialize_with_tilde")]
     pub keyfile: String,
+    pub wrapped: bool,
     #[serde(deserialize_with = "deserialize_with_tilde")]
     pub store: String,
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]
@@ -87,6 +100,73 @@ impl Config {
         }
 
         None
+    }
+
+    pub fn unwrap_keyfile_to_fd(&self) -> Result<RawFd, Error> {
+        // Unwrapping our password-protected keyfile and returning it as a raw file descriptor
+        // is a multi-step process.
+
+        // First, create the shared memory object that we'll eventually use
+        // to stash the unwrapped key. We do this early to allow it to fail ahead
+        // of the password prompt and decryption steps.
+        log::debug!("created shared memory object");
+        let unwrapped_fd = match mman::shm_open(
+            UNWRAPPED_KEY_SHM_NAME,
+            OFlag::O_RDWR | OFlag::O_CREAT | OFlag::O_EXCL,
+            Mode::S_IRUSR | Mode::S_IWUSR,
+        ) {
+            Ok(unwrapped_fd) => unwrapped_fd,
+            Err(nix::Error::Sys(Errno::EEXIST)) => {
+                return Err("unwrapped key already exists".into())
+            }
+            Err(e) => return Err(e.into()),
+        };
+
+        // Prompt the user for their "master" password (i.e., the one that decrypts their privkey).
+        let password = util::get_password()?;
+
+        // Read the wrapped key from disk.
+        let wrapped_key = std::fs::read(&self.keyfile)?;
+
+        // Create a new decryptor for the wrapped key.
+        let decryptor = match Decryptor::new(wrapped_key.as_slice())
+            .map_err(|e| format!("unable to load private key (backend reports: {:?})", e))?
+        {
+            Decryptor::Passphrase(d) => d,
+            _ => return Err("key unwrap failed; not a password-wrapped keyfile?".into()),
+        };
+
+        // ...and decrypt (i.e., unwrap) using the master password supplied above.
+        log::debug!("beginning key unwrap...");
+        let mut unwrapped_key = String::new();
+
+        // NOTE(ww): A work factor of 18 is an educated guess here; rage generated some
+        // encrypted messages that needed this factor.
+        decryptor
+            .decrypt(&password, Some(18))
+            .map_err(|e| format!("unable to decrypt (backend reports: {:?})", e))
+            .and_then(|mut r| {
+                r.read_to_string(&mut unwrapped_key)
+                    .map_err(|_| "i/o error while decrypting".into())
+            })?;
+        log::debug!("finished key unwrap!");
+
+        // Use ftruncate to tell the shared memory region how much space we'd like.
+        // NOTE(ww): as_bytes returns usize, but ftruncate takes an i64.
+        // We're already in big trouble if this conversion fails, so just unwrap.
+        log::debug!("truncating shm obj");
+        unistd::ftruncate(
+            unwrapped_fd,
+            unwrapped_key.as_bytes().len().try_into().unwrap(),
+        )?;
+
+        // Toss unwrapped_key into our shared memory.
+        unistd::write(unwrapped_fd, unwrapped_key.as_bytes())?;
+
+        // ...and seek back to the beginning, so that we can actually consume it.
+        unistd::lseek(unwrapped_fd, 0, unistd::Whence::SeekSet)?;
+
+        Ok(unwrapped_fd)
     }
 }
 
@@ -247,7 +327,7 @@ fn data_dir() -> Result<String, Error> {
 pub fn initialize(config_dir: &Path) -> Result<(), Error> {
     // NOTE(ww): Default initialization uses the rage-lib backend unconditionally.
     let keyfile = config_dir.join(DEFAULT_KEY_BASENAME);
-    let public_key = RageLib::create_keypair(&keyfile)?;
+    let public_key = RageLib::create_wrapped_keypair(&keyfile)?;
 
     log::debug!("public key: {}", public_key);
 
@@ -256,6 +336,7 @@ pub fn initialize(config_dir: &Path) -> Result<(), Error> {
         age_backend: BackendKind::RageLib,
         public_key: public_key,
         keyfile: keyfile.to_str().unwrap().into(),
+        wrapped: true,
         store: data_dir()?,
         pre_hook: None,
         post_hook: None,
