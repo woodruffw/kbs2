@@ -14,6 +14,7 @@ use std::process::{Command, Stdio};
 use crate::kbs2::config;
 use crate::kbs2::error::Error;
 use crate::kbs2::record::Record;
+use crate::kbs2::util;
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 pub enum BackendKind {
@@ -32,9 +33,9 @@ pub trait Backend {
     fn create_keypair(path: &Path) -> Result<String, Error>
     where
         Self: Sized;
-    // fn create_wrapped_keypair(path: &Path) -> Result<String, Error>
-    // where
-    //     Self: Sized;
+    fn create_wrapped_keypair(path: &Path) -> Result<String, Error>
+    where
+        Self: Sized;
     fn encrypt(&self, config: &config::Config, record: &Record) -> Result<String, Error>;
     fn decrypt(&self, config: &config::Config, encrypted: &str) -> Result<Record, Error>;
 }
@@ -67,6 +68,54 @@ where
                 Ok(public_key)
             }
         }
+    }
+
+    fn create_wrapped_keypair(path: &Path) -> Result<String, Error> {
+        if path.exists() {
+            std::fs::remove_file(path)?;
+        }
+
+        let private_key = match Command::new(T::age_keygen()).output() {
+            Err(e) => return Err(e.into()),
+            Ok(output) => String::from_utf8(output.stdout)?,
+        };
+
+        let public_key = match private_key
+            .lines()
+            .find(|l| l.starts_with("# public key: "))
+        {
+            Some(line) => line
+                .trim_start_matches("# public_key: ")
+                .trim_end()
+                .to_string(),
+            None => {
+                return Err(
+                    format!("couldn't find a public key in {} output", T::age_keygen()).into(),
+                )
+            }
+        };
+
+        // Wrap the generated private key. Our age CLI backend will handle prompting the user
+        // for a master password.
+        let mut child = Command::new(T::age())
+            .args(&["-a", "-p", "-o"])
+            .arg(path)
+            .spawn()?;
+
+        {
+            let stdin = child
+                .stdin
+                .as_mut()
+                .ok_or_else(|| "couldn't get input for encrypting")?;
+            stdin.write_all(private_key.as_bytes())?;
+        }
+
+        let status = child.wait()?;
+        if !status.success() {
+            return Err("key wrapping failed; password mismatch?".into());
+        }
+
+        Ok(public_key)
     }
 
     fn encrypt(&self, config: &config::Config, record: &Record) -> Result<String, Error> {
@@ -184,6 +233,8 @@ impl RageLib {
         let identities = if config.wrapped {
             log::debug!("config specifies a wrapped key");
 
+            // NOTE(ww): It's be nice if we could call open or one of the direct
+            // I/O helpers here, but UNWRAPPED_KEY_SHM_NAME isn't a real filename.
             let unwrapped_fd = match mman::shm_open(
                 config::UNWRAPPED_KEY_SHM_NAME,
                 OFlag::O_RDONLY,
@@ -221,11 +272,31 @@ impl RageLib {
 
 impl Backend for RageLib {
     fn create_keypair(path: &Path) -> Result<String, Error> {
-        let key = age::SecretKey::generate();
+        let keypair = age::SecretKey::generate();
 
-        std::fs::write(path, key.to_string().expose_secret())?;
+        std::fs::write(path, keypair.to_string().expose_secret())?;
 
-        Ok(key.to_public().to_string())
+        Ok(keypair.to_public().to_string())
+    }
+
+    fn create_wrapped_keypair(path: &Path) -> Result<String, Error> {
+        let password = util::get_password()?;
+        let keypair = age::SecretKey::generate();
+
+        let wrapped_key = {
+            let encryptor = age::Encryptor::with_user_passphrase(password);
+
+            let mut wrapped_key = vec![];
+            let mut writer = encryptor.wrap_output(&mut wrapped_key, age::Format::AsciiArmor)?;
+            writer.write_all(keypair.to_string().expose_secret().as_bytes())?;
+            writer.finish()?;
+
+            wrapped_key
+        };
+
+        std::fs::write(path, wrapped_key)?;
+
+        Ok(keypair.to_public().to_string())
     }
 
     fn encrypt(&self, _config: &config::Config, record: &Record) -> Result<String, Error> {

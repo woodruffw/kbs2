@@ -1,5 +1,6 @@
 use age::Decryptor;
 use dirs;
+use nix::errno::Errno;
 use nix::fcntl::OFlag;
 use nix::sys::mman;
 use nix::sys::stat::Mode;
@@ -33,7 +34,7 @@ pub static CONFIG_BASENAME: &str = "kbs2.conf";
 pub static DEFAULT_KEY_BASENAME: &str = "key";
 
 // The name for the POSIX shared memory object in which the unwrapped key is stored.
-pub static UNWRAPPED_KEY_SHM_NAME: &str = "__kbs2_unwrapped_key";
+pub static UNWRAPPED_KEY_SHM_NAME: &str = "/__kbs2_unwrapped_key";
 
 // The default base directory name for the secret store, placed relative to
 // the user's data directory by default.
@@ -105,6 +106,22 @@ impl Config {
         // Unwrapping our password-protected keyfile and returning it as a raw file descriptor
         // is a multi-step process.
 
+        // First, create the shared memory object that we'll eventually use
+        // to stash the unwrapped key. We do this early to allow it to fail ahead
+        // of the password prompt and decryption steps.
+        log::debug!("created shared memory object");
+        let unwrapped_fd = match mman::shm_open(
+            UNWRAPPED_KEY_SHM_NAME,
+            OFlag::O_RDWR | OFlag::O_CREAT | OFlag::O_EXCL,
+            Mode::S_IRUSR | Mode::S_IWUSR,
+        ) {
+            Ok(unwrapped_fd) => unwrapped_fd,
+            Err(nix::Error::Sys(Errno::EEXIST)) => {
+                return Err("unwrapped key already exists".into())
+            }
+            Err(e) => return Err(e.into()),
+        };
+
         // Prompt the user for their "master" password (i.e., the one that decrypts their privkey).
         let password = util::get_password()?;
 
@@ -119,7 +136,7 @@ impl Config {
             _ => return Err("key unwrap failed; not a password-wrapped keyfile?".into()),
         };
 
-        // ...and decrypt using the master password supplied above.
+        // ...and decrypt (i.e., unwrap) using the master password supplied above.
         log::debug!("beginning key unwrap...");
         let mut unwrapped_key = String::new();
 
@@ -134,18 +151,6 @@ impl Config {
             })?;
         log::debug!("finished key unwrap!");
 
-        // Next, we need to funnel unwrapped_key into a shared memory region.
-        // Start by actually created the shared memory object.
-        log::debug!("created shared memory object");
-        let unwrapped_fd = match mman::shm_open(
-            UNWRAPPED_KEY_SHM_NAME,
-            OFlag::O_RDWR | OFlag::O_CREAT | OFlag::O_EXCL,
-            Mode::S_IRUSR | Mode::S_IWUSR,
-        ) {
-            Ok(unwrapped_fd) => unwrapped_fd,
-            Err(e) => return Err(e.into()),
-        };
-
         // Use ftruncate to tell the shared memory region how much space we'd like.
         // NOTE(ww): as_bytes returns usize, but ftruncate takes an i64.
         // We're already in big trouble if this conversion fails, so just unwrap.
@@ -155,7 +160,7 @@ impl Config {
             unwrapped_key.as_bytes().len().try_into().unwrap(),
         )?;
 
-        // Toss unwrapped_key into our new region.
+        // Toss unwrapped_key into our shared memory.
         unistd::write(unwrapped_fd, unwrapped_key.as_bytes())?;
 
         // ...and seek back to the beginning, so that we can actually consume it.
@@ -322,7 +327,7 @@ fn data_dir() -> Result<String, Error> {
 pub fn initialize(config_dir: &Path) -> Result<(), Error> {
     // NOTE(ww): Default initialization uses the rage-lib backend unconditionally.
     let keyfile = config_dir.join(DEFAULT_KEY_BASENAME);
-    let public_key = RageLib::create_keypair(&keyfile)?;
+    let public_key = RageLib::create_wrapped_keypair(&keyfile)?;
 
     log::debug!("public key: {}", public_key);
 
@@ -331,7 +336,7 @@ pub fn initialize(config_dir: &Path) -> Result<(), Error> {
         age_backend: BackendKind::RageLib,
         public_key: public_key,
         keyfile: keyfile.to_str().unwrap().into(),
-        wrapped: false,
+        wrapped: true,
         store: data_dir()?,
         pre_hook: None,
         post_hook: None,

@@ -2,7 +2,9 @@ use atty::Stream;
 use clap::ArgMatches;
 use clipboard::{ClipboardContext, ClipboardProvider};
 use inflector::Inflector;
-use nix::unistd::{fork, ForkResult};
+use nix::errno::Errno;
+use nix::sys::mman;
+use nix::unistd::{self, fork, ForkResult};
 use tempfile;
 
 use std::env;
@@ -26,6 +28,36 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<(), Error> {
     }
 
     config::initialize(&config_dir)
+}
+
+pub fn unlock(_matches: &ArgMatches, config: &config::Config) -> Result<(), Error> {
+    log::debug!("unlock requested");
+
+    if !config.wrapped {
+        return Err("unlock requested but wrapped=false in config".into());
+    }
+
+    // NOTE(ww): All of the unwrapping happens in unwrap_keyfile_to_fd.
+    // The unwrapped data is persistent in shared memory once we return successfully,
+    // so all we need to do is clean up the file descriptor.
+    let unwrapped_fd = config.unwrap_keyfile_to_fd()?;
+    unistd::close(unwrapped_fd)?;
+
+    Ok(())
+}
+
+pub fn lock(_matches: &ArgMatches, config: &config::Config) -> Result<(), Error> {
+    log::debug!("lock requested");
+
+    if !config.wrapped {
+        util::warn("config says that key isn't wrapped, trying anyways...");
+    }
+
+    match mman::shm_unlink(config::UNWRAPPED_KEY_SHM_NAME) {
+        Ok(()) => Ok(()),
+        Err(nix::Error::Sys(Errno::ENOENT)) => Err("no unwrapped key to remove".into()),
+        Err(e) => Err(e.into()),
+    }
 }
 
 pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
