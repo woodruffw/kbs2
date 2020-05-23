@@ -119,20 +119,14 @@ where
     }
 }
 
-pub struct AgeCLI {
-    public_key: String,
-    keyfile: String,
-}
+pub struct AgeCLI {}
 
 impl AgeCLI {
     pub fn new(config: &config::Config) -> Result<AgeCLI, Error> {
         if config.wrapped {
-            Err("foo".into())
+            Err("the RageCLI backend doesn't support wrapped keys".into())
         } else {
-            Ok(AgeCLI {
-                public_key: config.public_key.clone(),
-                keyfile: config.keyfile.clone(),
-            })
+            Ok(AgeCLI {})
         }
     }
 }
@@ -151,7 +145,11 @@ pub struct RageCLI {}
 
 impl RageCLI {
     pub fn new(config: &config::Config) -> Result<RageCLI, Error> {
-        Ok(RageCLI {})
+        if config.wrapped {
+            Err("the RageCLI backend doesn't support wrapped keys".into())
+        } else {
+            Ok(RageCLI {})
+        }
     }
 }
 
@@ -177,7 +175,11 @@ impl RageLib {
             .parse::<age::keys::RecipientKey>()
             .map_err(|e| format!("unable to parse public key (backend reports: {:?})", e))?;
 
-        let identities = age::keys::Identity::from_file(config.keyfile.clone())?;
+        let identities = if config.wrapped {
+            unimplemented!();
+        } else {
+            age::keys::Identity::from_file(config.keyfile.clone())?
+        };
 
         if identities.len() != 1 {
             return Err(format!(
