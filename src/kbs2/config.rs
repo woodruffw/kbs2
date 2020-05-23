@@ -324,10 +324,15 @@ fn data_dir() -> Result<String, Error> {
     }
 }
 
-pub fn initialize(config_dir: &Path) -> Result<(), Error> {
+pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<(), Error> {
     // NOTE(ww): Default initialization uses the rage-lib backend unconditionally.
     let keyfile = config_dir.join(DEFAULT_KEY_BASENAME);
-    let public_key = RageLib::create_wrapped_keypair(&keyfile)?;
+
+    let public_key = if wrapped {
+        RageLib::create_wrapped_keypair(&keyfile)?
+    } else {
+        RageLib::create_keypair(&keyfile)?
+    };
 
     log::debug!("public key: {}", public_key);
 

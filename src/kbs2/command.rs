@@ -27,7 +27,7 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<(), Error> {
         return Err("refusing to overwrite your current config without --force".into());
     }
 
-    config::initialize(&config_dir)
+    config::initialize(&config_dir, !matches.is_present("insecure-not-wrapped"))
 }
 
 pub fn unlock(_matches: &ArgMatches, config: &config::Config) -> Result<(), Error> {

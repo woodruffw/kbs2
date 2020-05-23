@@ -12,6 +12,7 @@ fn app<'a>() -> App<'a> {
     // The latter probably won't work with env!, though.
     App::new(env!("CARGO_PKG_NAME"))
         .setting(AppSettings::AllowExternalSubcommands)
+        .setting(AppSettings::VersionlessSubcommands)
         .version(env!("CARGO_PKG_VERSION"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
@@ -32,18 +33,17 @@ fn app<'a>() -> App<'a> {
         )
         .subcommand(
             App::new("init")
-                .about("initialize kbs2 with a new config")
+                .about("initialize kbs2 with a new config and keypair")
                 .arg(
                     Arg::with_name("force")
-                        .about("overwrite, if already present")
+                        .about("overwrite the config and keyfile, if already present")
                         .short('f')
                         .long("force"),
                 )
                 .arg(
-                    Arg::with_name("keygen")
-                        .about("generate a new key with the config")
-                        .short('k')
-                        .long("keygen"),
+                    Arg::with_name("insecure-not-wrapped")
+                        .about("don't wrap the keypair with a master password")
+                        .long("insecure-not-wrapped"),
                 ),
         )
         .subcommand(App::new("unlock").about("unwrap the private key for use"))
