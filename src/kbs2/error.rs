@@ -81,3 +81,11 @@ impl From<serde_json::error::Error> for Error {
         }
     }
 }
+
+impl From<nix::Error> for Error {
+    fn from(err: nix::Error) -> Error {
+        Error {
+            message: err.to_string(),
+        }
+    }
+}

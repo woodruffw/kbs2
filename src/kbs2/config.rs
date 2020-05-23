@@ -24,6 +24,8 @@ pub static CONFIG_BASENAME: &str = "kbs2.conf";
 // the configuration directory.
 pub static DEFAULT_KEY_BASENAME: &str = "key";
 
+pub static UNWRAPPED_KEY_SHM_NAME: &str = "__kbs2_unwrapped_key";
+
 // The default base directory name for the secret store, placed relative to
 // the user's data directory by default.
 pub static STORE_BASEDIR: &str = "kbs2";

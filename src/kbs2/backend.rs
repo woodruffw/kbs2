@@ -1,7 +1,14 @@
+use nix::errno::Errno;
+use nix::fcntl::OFlag;
+use nix::sys::mman;
+use nix::sys::stat::Mode;
+use nix::unistd;
 use secrecy::ExposeSecret;
 use serde::{Deserialize, Serialize};
 
+use std::fs::File;
 use std::io::{Read, Write};
+use std::os::unix::io::FromRawFd;
 use std::path::Path;
 use std::process::{Command, Stdio};
 
@@ -176,6 +183,21 @@ impl RageLib {
             .map_err(|e| format!("unable to parse public key (backend reports: {:?})", e))?;
 
         let identities = if config.wrapped {
+            let unwrapped_fd = match mman::shm_open(
+                config::UNWRAPPED_KEY_SHM_NAME,
+                OFlag::O_RDONLY,
+                Mode::empty(),
+            ) {
+                Ok(unwrapped_fd) => unwrapped_fd,
+                Err(nix::Error::Sys(Errno::ENOENT)) => unreachable!(),
+                Err(e) => return Err(e.into()),
+            };
+
+            // NOTE(ww): This should always be safe, as we either directly
+            // return a fresh fd from shm_open or indirectly return a fresh one
+            // via unwrap_keyfile_to_fd.
+            let file = unsafe { File::from_raw_fd(unwrapped_fd) };
+            unistd::close(unwrapped_fd)?;
             unimplemented!();
         } else {
             age::keys::Identity::from_file(config.keyfile.clone())?
