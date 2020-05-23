@@ -47,7 +47,7 @@ pub fn get_password() -> Result<SecretString, Error> {
             .interact()
             .map_err(|e| e.into())
     } else {
-        Err("foo".into())
+        Err("Couldn't get pinentry program for password prompt".into())
     }
 }
 
