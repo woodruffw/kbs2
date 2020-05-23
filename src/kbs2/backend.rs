@@ -182,13 +182,18 @@ impl RageLib {
             .map_err(|e| format!("unable to parse public key (backend reports: {:?})", e))?;
 
         let identities = if config.wrapped {
+            log::debug!("config specifies a wrapped key");
+
             let unwrapped_fd = match mman::shm_open(
                 config::UNWRAPPED_KEY_SHM_NAME,
                 OFlag::O_RDONLY,
                 Mode::empty(),
             ) {
                 Ok(unwrapped_fd) => unwrapped_fd,
-                Err(nix::Error::Sys(Errno::ENOENT)) => config.unwrap_keyfile_to_fd()?,
+                Err(nix::Error::Sys(Errno::ENOENT)) => {
+                    log::debug!("unwrapped key not available, requesting unwrap");
+                    config.unwrap_keyfile_to_fd()?
+                }
                 Err(e) => return Err(e.into()),
             };
 

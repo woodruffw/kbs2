@@ -1,8 +1,13 @@
 use age::Decryptor;
 use dirs;
+use nix::fcntl::OFlag;
+use nix::sys::mman;
+use nix::sys::stat::Mode;
+use nix::unistd;
 use serde::{de, Deserialize, Serialize};
 use toml;
 
+use std::convert::TryInto;
 use std::env;
 use std::fs;
 use std::io::Read;
@@ -114,17 +119,48 @@ impl Config {
         };
 
         // ...and decrypt using the master password supplied above.
+        log::debug!("beginning key unwrap...");
         let mut unwrapped_key = String::new();
+
+        // NOTE(ww): A work factor of 18 is an educated guess here; rage generated some
+        // encrypted messages that needed this factor.
         decryptor
-            .decrypt(&password, None)
+            .decrypt(&password, Some(18))
             .map_err(|e| format!("unable to decrypt (backend reports: {:?})", e))
             .and_then(|mut r| {
                 r.read_to_string(&mut unwrapped_key)
                     .map_err(|_| "i/o error while decrypting".into())
             })?;
+        log::debug!("finished key unwrap!");
 
         // Next, we need to funnel unwrapped_key into a shared memory region.
-        Err("lol".into())
+        // Start by actually created the shared memory object.
+        log::debug!("created shared memory object");
+        let unwrapped_fd = match mman::shm_open(
+            UNWRAPPED_KEY_SHM_NAME,
+            OFlag::O_RDWR | OFlag::O_CREAT | OFlag::O_EXCL,
+            Mode::S_IRUSR | Mode::S_IWUSR,
+        ) {
+            Ok(unwrapped_fd) => unwrapped_fd,
+            Err(e) => return Err(e.into()),
+        };
+
+        // Use ftruncate to tell the shared memory region how much space we'd like.
+        // NOTE(ww): as_bytes returns usize, but ftruncate takes an i64.
+        // We're already in big trouble if this conversion fails, so just unwrap.
+        log::debug!("truncating shm obj");
+        unistd::ftruncate(
+            unwrapped_fd,
+            unwrapped_key.as_bytes().len().try_into().unwrap(),
+        )?;
+
+        // Toss unwrapped_key into our new region.
+        unistd::write(unwrapped_fd, unwrapped_key.as_bytes())?;
+
+        // ...and seek back to the beginning, so that we can actually consume it.
+        unistd::lseek(unwrapped_fd, 0, unistd::Whence::SeekSet)?;
+
+        Ok(unwrapped_fd)
     }
 }
 
