@@ -89,3 +89,11 @@ impl From<nix::Error> for Error {
         }
     }
 }
+
+impl From<pinentry::Error> for Error {
+    fn from(err: pinentry::Error) -> Error {
+        Error {
+            message: err.to_string(),
+        }
+    }
+}

@@ -1,3 +1,6 @@
+use pinentry::PassphraseInput;
+use secrecy::SecretString;
+
 use std::process::{Command, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -34,6 +37,18 @@ pub fn run_with_output(command: &str, args: &[&str]) -> Result<String, Error> {
     }
 
     Ok(output)
+}
+
+pub fn get_password() -> Result<SecretString, Error> {
+    if let Some(mut input) = PassphraseInput::with_default_binary() {
+        input
+            .with_description("Enter your master kbs2 password")
+            .with_prompt("Password:")
+            .interact()
+            .map_err(|e| e.into())
+    } else {
+        Err("foo".into())
+    }
 }
 
 pub fn current_timestamp() -> u64 {

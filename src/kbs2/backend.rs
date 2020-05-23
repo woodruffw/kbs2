@@ -2,12 +2,11 @@ use nix::errno::Errno;
 use nix::fcntl::OFlag;
 use nix::sys::mman;
 use nix::sys::stat::Mode;
-use nix::unistd;
 use secrecy::ExposeSecret;
 use serde::{Deserialize, Serialize};
 
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{BufReader, Read, Write};
 use std::os::unix::io::FromRawFd;
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -189,7 +188,7 @@ impl RageLib {
                 Mode::empty(),
             ) {
                 Ok(unwrapped_fd) => unwrapped_fd,
-                Err(nix::Error::Sys(Errno::ENOENT)) => unreachable!(),
+                Err(nix::Error::Sys(Errno::ENOENT)) => config.unwrap_keyfile_to_fd()?,
                 Err(e) => return Err(e.into()),
             };
 
@@ -197,8 +196,8 @@ impl RageLib {
             // return a fresh fd from shm_open or indirectly return a fresh one
             // via unwrap_keyfile_to_fd.
             let file = unsafe { File::from_raw_fd(unwrapped_fd) };
-            unistd::close(unwrapped_fd)?;
-            unimplemented!();
+            let reader = BufReader::new(file);
+            age::keys::Identity::from_buffer(reader)?
         } else {
             age::keys::Identity::from_file(config.keyfile.clone())?
         };

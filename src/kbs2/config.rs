@@ -1,9 +1,12 @@
+use age::Decryptor;
 use dirs;
 use serde::{de, Deserialize, Serialize};
 use toml;
 
 use std::env;
 use std::fs;
+use std::io::Read;
+use std::os::unix::io::RawFd;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -90,6 +93,38 @@ impl Config {
         }
 
         None
+    }
+
+    pub fn unwrap_keyfile_to_fd(&self) -> Result<RawFd, Error> {
+        // Unwrapping our password-protected keyfile and returning it as a raw file descriptor
+        // is a multi-step process.
+
+        // Prompt the user for their "master" password (i.e., the one that decrypts their privkey).
+        let password = util::get_password()?;
+
+        // Read the wrapped key from disk.
+        let wrapped_key = std::fs::read(&self.keyfile)?;
+
+        // Create a new decryptor for the wrapped key.
+        let decryptor = match Decryptor::new(wrapped_key.as_slice())
+            .map_err(|e| format!("unable to load private key (backend reports: {:?})", e))?
+        {
+            Decryptor::Passphrase(d) => d,
+            _ => return Err("key unwrap failed; not a password-wrapped keyfile?".into()),
+        };
+
+        // ...and decrypt using the master password supplied above.
+        let mut unwrapped_key = String::new();
+        decryptor
+            .decrypt(&password, None)
+            .map_err(|e| format!("unable to decrypt (backend reports: {:?})", e))
+            .and_then(|mut r| {
+                r.read_to_string(&mut unwrapped_key)
+                    .map_err(|_| "i/o error while decrypting".into())
+            })?;
+
+        // Next, we need to funnel unwrapped_key into a shared memory region.
+        Err("lol".into())
     }
 }
 
