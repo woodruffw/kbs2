@@ -217,7 +217,9 @@ fn run() -> Result<(), kbs2::error::Error> {
     log::debug!("config dir: {:?}", config_dir);
     std::fs::create_dir_all(&config_dir)?;
 
-    // Subcommand dispatch happens here. All subcommands take a `Session`, with three exceptions:
+    // Subcommand dispatch happens here. All subcommands take a `Session`, with four exceptions:
+    //
+    // * The empty subcommand (i.e., just `kbs2`) does nothing besides printing help.
     //
     // * `kbs2 init` doesn't have access to a preexisting config, and so needs to be separated
     //   from the config-loading behavior of all other subcommands.
@@ -228,7 +230,11 @@ fn run() -> Result<(), kbs2::error::Error> {
     //
     // * `kbs2 lock` exists to remove the shared memory object created by `kbs2 unlock`. Taking
     //   a session would mean that it would attempt to pointlessly unlock the key before re-locking.
-    if let ("init", Some(matches)) = matches.subcommand() {
+    if let ("", None) = matches.subcommand() {
+        app.clone()
+            .write_long_help(&mut io::stdout())
+            .map_err(|_| "failed to print help".into())
+    } else if let ("init", Some(matches)) = matches.subcommand() {
         kbs2::command::init(&matches, &config_dir)
     } else if let ("unlock", Some(matches)) = matches.subcommand() {
         let config = kbs2::config::load(&config_dir)?;
@@ -278,10 +284,6 @@ fn run() -> Result<(), kbs2::error::Error> {
                     None => return Err(format!("no such command: {}", cmd).into()),
                 }
             }
-            ("", None) => app
-                .clone()
-                .write_long_help(&mut io::stdout())
-                .map_err(|_| "failed to print help")?,
             _ => unreachable!(),
         }
 
