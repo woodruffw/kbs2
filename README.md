@@ -193,7 +193,7 @@ Password: [hidden]
 Create a new `environment` record named `twitter-api`, overwriting it if it already exists:
 
 ```bash
-$ kbs2 new -f environment twitter
+$ kbs2 new -f environment twitter-api
 Variable: TWITTER_API
 Value: [hidden]
 ```
@@ -229,6 +229,43 @@ OPTIONS:
     -k, --kind <kind>    list only records of this kind [possible values: login, environment, unstructured]
 ```
 
+#### Examples
+
+List all records, one per line:
+
+```bash
+$ kbs2 list
+foobar
+twitter-api
+pets.com
+email
+```
+
+List (non-sensitive) details for each record:
+
+```bash
+$ kbs2 list -d
+foobar
+  Kind: login
+  Timestamp: 1590277900
+twitter-api
+  Kind: environment
+  Timestamp: 1590277907
+pets.com
+  Kind: login
+  Timestamp: 1590277920
+email
+  Kind: login
+  Timestamp: 1590277953
+```
+
+List only environment records:
+
+```bash
+$ kbs2 list -k environment
+twitter-api
+```
+
 ### `kbs2 rm`
 
 #### Usage
@@ -244,6 +281,14 @@ ARGS:
 
 FLAGS:
     -h, --help    Prints help information
+```
+
+#### Examples
+
+Remove the `foobar` record:
+
+```bash
+$ kbs2 rm foobar
 ```
 
 ### `kbs2 dump`
@@ -264,6 +309,39 @@ FLAGS:
     -j, --json    dump in JSON format
 ```
 
+#### Examples
+
+Dump the `twitter-api` record:
+
+```bash
+$ kbs2 dump twitter-api
+Label: twitter-api
+  Kind: environment
+  Variable: TWITTER_API
+  Value: 92h2890fn83fb2378fbf283bf73fbxkfnso90
+```
+
+Dump the `pets.com` record in JSON format:
+
+```bash
+$ kbs2 dump -j pets.com | json_pp
+{
+   "kind" : "Login",
+   "timestamp" : 1590277920,
+   "label" : "pets.com",
+   "fields" : [
+      {
+         "name" : "username",
+         "value" : "hasdrubal"
+      },
+      {
+         "name" : "password",
+         "value" : "hunter2"
+      }
+   ]
+}
+```
+
 ### `kbs2 pass`
 
 #### Usage
@@ -280,6 +358,21 @@ ARGS:
 FLAGS:
     -c, --clipboard    copy the password to the clipboard
     -h, --help         Prints help information
+```
+
+#### Examples
+
+Get the password for the `pets.com` record:
+
+```bash
+$ kbs2 pass pets.com
+hunter2
+```
+
+Copy the password for the `pets.com` record into the clipboard:
+
+```bash
+$ kbs2 pass -c pets.com
 ```
 
 ### `kbs2 env`
@@ -301,6 +394,22 @@ FLAGS:
     -v, --value-only    print only the environment variable value, not the variable name
 ```
 
+#### Examples
+
+Get an environment record in `export`-able form:
+
+```bash
+$ kbs2 env twitter-api
+export TWITTER_API=92h2890fn83fb2378fbf283bf73fbxkfnso90
+```
+
+Get just the value in an environment record:
+
+```bash
+$ kbs2 env -v twitter-api
+92h2890fn83fb2378fbf283bf73fbxkfnso90
+```
+
 ### `kbs2 edit`
 
 #### Usage
@@ -317,6 +426,20 @@ ARGS:
 FLAGS:
     -h, --help                  Prints help information
     -p, --preserve-timestamp    don't update the record's timestamp
+```
+
+#### Examples
+
+Open the `email` record for editing:
+
+```bash
+$ kbs2 edit email
+```
+
+Open the `email` record for editing with a custom `$EDITOR`:
+
+```bash
+$ EDITOR=vim kbs2 edit email
 ```
 
 ## Configuration
