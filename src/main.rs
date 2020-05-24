@@ -187,6 +187,7 @@ fn app<'a>() -> App<'a> {
                         .long("preserve-timestamp"),
                 ),
         )
+        .subcommand(App::new("upgrade-records").about("update record formats"))
 }
 
 fn run() -> Result<(), kbs2::error::Error> {
@@ -261,6 +262,9 @@ fn run() -> Result<(), kbs2::error::Error> {
             ("pass", Some(matches)) => kbs2::command::pass(&matches, &session)?,
             ("env", Some(matches)) => kbs2::command::env(&matches, &session)?,
             ("edit", Some(matches)) => kbs2::command::edit(&matches, &session)?,
+            ("upgrade-records", Some(matches)) => {
+                kbs2::command::upgrade_records(&matches, &session)?
+            }
             (cmd, Some(matches)) => {
                 let cmd = format!("kbs2-{}", cmd);
 
