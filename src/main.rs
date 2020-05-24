@@ -16,7 +16,7 @@ fn app<'a>() -> App<'a> {
         .version(env!("CARGO_PKG_VERSION"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
-            Arg::with_name("config")
+            Arg::with_name("config-dir")
                 .about("use the specified config directory")
                 .short('c')
                 .long("config-dir")
