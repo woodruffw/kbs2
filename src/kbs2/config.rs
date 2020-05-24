@@ -1,5 +1,4 @@
 use age::Decryptor;
-use dirs;
 use nix::errno::Errno;
 use nix::fcntl::OFlag;
 use nix::sys::mman;
@@ -306,22 +305,13 @@ where
 }
 
 pub fn find_config_dir() -> Result<PathBuf, Error> {
-    match dirs::config_dir() {
-        Some(path) => Ok(path.join(CONFIG_BASEDIR)),
-        // NOTE(ww): Probably excludes *BSD users for no good reason.
-        None => Err("couldn't find a suitable config directory".into()),
-    }
+    let home = util::home_dir()?;
+    Ok(home.join(".config").join(CONFIG_BASEDIR))
 }
 
-fn data_dir() -> Result<String, Error> {
-    match dirs::data_dir() {
-        Some(dir) => Ok(dir
-            .join(STORE_BASEDIR)
-            .to_str()
-            .ok_or_else(|| "couldn't stringify user data dir")?
-            .into()),
-        None => Err("couldn't find a suitable data directory for the secret store".into()),
-    }
+fn data_dir() -> Result<PathBuf, Error> {
+    let home = util::home_dir()?;
+    Ok(home.join(".local/share").join(STORE_BASEDIR))
 }
 
 pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<(), Error> {
@@ -342,7 +332,7 @@ pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<(), Error> {
         public_key: public_key,
         keyfile: keyfile.to_str().unwrap().into(),
         wrapped: wrapped,
-        store: data_dir()?,
+        store: data_dir()?.to_str().unwrap().into(),
         pre_hook: None,
         post_hook: None,
         reentrant_hooks: false,

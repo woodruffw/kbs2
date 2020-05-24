@@ -1,6 +1,7 @@
 use pinentry::PassphraseInput;
 use secrecy::SecretString;
 
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -62,4 +63,11 @@ pub fn current_timestamp() -> u64 {
 
 pub fn warn(msg: &str) {
     eprintln!("Warn: {}", msg);
+}
+
+pub fn home_dir() -> Result<PathBuf, Error> {
+    match home::home_dir() {
+        Some(dir) => Ok(dir),
+        None => Err("couldn't find the user's home directory".into()),
+    }
 }
