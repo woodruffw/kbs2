@@ -76,6 +76,23 @@ impl Session {
         }
     }
 
+    pub fn get_record_v1(&self, label: &str) -> Result<record::RecordV1, Error> {
+        if !self.has_record(label) {
+            return Err(format!("no such record: {}", label).into());
+        }
+
+        let record_path = Path::new(&self.config.store).join(label);
+        let record_contents = fs::read_to_string(&record_path).map_err(|e| match e.kind() {
+            io::ErrorKind::NotFound => format!("no such record: {}", label),
+            _ => e.to_string(),
+        })?;
+
+        match self.backend.decrypt_v1(&self.config, &record_contents) {
+            Ok(record) => Ok(record),
+            Err(e) => Err(e),
+        }
+    }
+
     pub fn add_record(&self, record: &record::Record) -> Result<(), Error> {
         let record_path = Path::new(&self.config.store).join(&record.label);
 

@@ -1,7 +1,6 @@
 use atty::Stream;
 use clap::ArgMatches;
 use clipboard::{ClipboardContext, ClipboardProvider};
-use inflector::Inflector;
 use nix::errno::Errno;
 use nix::sys::mman;
 use nix::unistd::{self, fork, ForkResult};
@@ -16,7 +15,7 @@ use crate::kbs2::config;
 use crate::kbs2::error::Error;
 use crate::kbs2::generator::Generator;
 use crate::kbs2::input;
-use crate::kbs2::record::{self, FieldKind::*};
+use crate::kbs2::record::{self, FieldKind::*, RecordBody};
 use crate::kbs2::session;
 use crate::kbs2::util;
 
@@ -159,7 +158,7 @@ pub fn list(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
 
             if filter_kind {
                 let kind = matches.value_of("kind").unwrap();
-                if record.kind.to_string() != kind {
+                if record.body.to_string() != kind {
                     continue;
                 }
             }
@@ -169,7 +168,7 @@ pub fn list(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
             if details {
                 display.push_str(&format!(
                     "\n\tKind: {}\n\tTimestamp: {}",
-                    record.kind, record.timestamp
+                    record.body, record.timestamp
                 ));
             }
         } else {
@@ -205,10 +204,16 @@ pub fn dump(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
     if matches.is_present("json") {
         println!("{}", serde_json::to_string(&record)?);
     } else {
-        println!("Label: {}\n\tKind: {}", label, record.kind.to_string());
+        println!("Label: {}\n\tKind: {}", label, record.body);
 
-        for field in record.fields {
-            println!("\t{}: {}", field.name.to_sentence_case(), field.value);
+        match record.body {
+            RecordBody::Login(l) => {
+                println!("\tUsername: {}\n\tPassword: {}", l.username, l.password)
+            }
+            RecordBody::Environment(e) => {
+                println!("\tVariable: {}\n\tValue: {}", e.variable, e.value)
+            }
+            RecordBody::Unstructured(u) => println!("\tContents: {}", u.contents),
         }
     }
 
@@ -226,11 +231,12 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
     let label = matches.value_of("label").unwrap();
     let record = session.get_record(&label)?;
 
-    if record.kind != record::RecordKind::Login {
-        return Err(format!("not a login record: {}", label).into());
-    }
+    let login = match record.body {
+        RecordBody::Login(l) => l,
+        _ => return Err(format!("not a login record: {}", label).into()),
+    };
 
-    let password = record.get_expected_field("password")?;
+    let password = login.password;
     if matches.is_present("clipboard") {
         let clipboard_duration = session.config.commands.pass.clipboard_duration;
         let clear_after = session.config.commands.pass.clear_after;
@@ -285,19 +291,18 @@ pub fn env(matches: &ArgMatches, session: &session::Session) -> Result<(), Error
     let label = matches.value_of("label").unwrap();
     let record = session.get_record(&label)?;
 
-    if record.kind != record::RecordKind::Environment {
-        return Err(format!("not a environment record: {}", label).into());
-    }
+    let environment = match record.body {
+        RecordBody::Environment(e) => e,
+        _ => return Err(format!("not an environment record: {}", label).into()),
+    };
 
-    let value = record.get_expected_field("value")?;
     if matches.is_present("value-only") {
-        println!("{}", value);
+        println!("{}", environment.value);
     } else {
-        let variable = record.get_expected_field("variable")?;
         if matches.is_present("no-export") {
-            println!("{}={}", variable, value);
+            println!("{}={}", environment.variable, environment.value);
         } else {
-            println!("export {}={}", variable, value);
+            println!("export {}={}", environment.variable, environment.value);
         }
     }
 
@@ -346,6 +351,18 @@ pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
     record.timestamp = util::current_timestamp();
 
     session.add_record(&record)?;
+
+    Ok(())
+}
+
+pub fn upgrade_records(_matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
+    log::debug!("upgrading records");
+
+    for label in session.record_labels()?.iter() {
+        let record_v1 = session.get_record_v1(&label)?;
+        let record = record_v1.to_record();
+        session.add_record(&record)?;
+    }
 
     Ok(())
 }

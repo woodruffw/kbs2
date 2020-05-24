@@ -13,7 +13,7 @@ use std::process::{Command, Stdio};
 
 use crate::kbs2::config;
 use crate::kbs2::error::Error;
-use crate::kbs2::record::Record;
+use crate::kbs2::record::{Record, RecordV1};
 use crate::kbs2::util;
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
@@ -38,6 +38,7 @@ pub trait Backend {
         Self: Sized;
     fn encrypt(&self, config: &config::Config, record: &Record) -> Result<String, Error>;
     fn decrypt(&self, config: &config::Config, encrypted: &str) -> Result<Record, Error>;
+    fn decrypt_v1(&self, config: &config::Config, encrypted: &str) -> Result<RecordV1, Error>;
 }
 
 pub trait CLIBackend {
@@ -147,6 +148,33 @@ where
     }
 
     fn decrypt(&self, config: &config::Config, encrypted: &str) -> Result<Record, Error> {
+        let mut child = Command::new(T::age())
+            .arg("-d")
+            .arg("-i")
+            .arg(&config.keyfile)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()?;
+
+        {
+            let stdin = child
+                .stdin
+                .as_mut()
+                .ok_or_else(|| "couldn't get input for decrypting")?;
+            stdin.write_all(encrypted.as_bytes())?;
+        }
+
+        let output = child.wait_with_output()?;
+
+        if !output.status.success() {
+            return Err("decryption failed; bad key or corrupted record?".into());
+        }
+
+        Ok(serde_json::from_str(std::str::from_utf8(&output.stdout)?)?)
+    }
+
+    fn decrypt_v1(&self, config: &config::Config, encrypted: &str) -> Result<RecordV1, Error> {
         let mut child = Command::new(T::age())
             .arg("-d")
             .arg("-i")
@@ -310,6 +338,28 @@ impl Backend for RageLib {
     }
 
     fn decrypt(&self, _config: &config::Config, encrypted: &str) -> Result<Record, Error> {
+        let decryptor = match age::Decryptor::new(encrypted.as_bytes())
+            .map_err(|e| format!("unable to load private key (backend reports: {:?})", e))?
+        {
+            age::Decryptor::Recipients(d) => d,
+            // NOTE(ww): kbs2 doesn't support secret keys with passphrases.
+            _ => unreachable!(),
+        };
+
+        let mut decrypted = String::new();
+
+        decryptor
+            .decrypt(&self.identities)
+            .map_err(|e| format!("unable to decrypt (backend reports: {:?})", e))
+            .and_then(|mut r| {
+                r.read_to_string(&mut decrypted)
+                    .map_err(|_| "i/o error while decrypting".into())
+            })?;
+
+        Ok(serde_json::from_str(&decrypted)?)
+    }
+
+    fn decrypt_v1(&self, _config: &config::Config, encrypted: &str) -> Result<RecordV1, Error> {
         let decryptor = match age::Decryptor::new(encrypted.as_bytes())
             .map_err(|e| format!("unable to load private key (backend reports: {:?})", e))?
         {
