@@ -17,9 +17,9 @@ fn app<'a>() -> App<'a> {
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
             Arg::with_name("config")
-                .about("use the specified config file")
+                .about("use the specified config directory")
                 .short('c')
-                .long("config")
+                .long("config-dir")
                 .value_name("FILE")
                 .takes_value(true),
         )
@@ -209,7 +209,7 @@ fn run() -> Result<(), kbs2::error::Error> {
         return Ok(());
     }
 
-    let config_dir = match matches.value_of("config") {
+    let config_dir = match matches.value_of("config-dir") {
         Some(path) => Path::new(path).to_path_buf(),
         None => kbs2::config::find_config_dir()?,
     };
