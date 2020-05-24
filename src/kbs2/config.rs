@@ -341,7 +341,7 @@ pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<(), Error> {
         age_backend: BackendKind::RageLib,
         public_key: public_key,
         keyfile: keyfile.to_str().unwrap().into(),
-        wrapped: true,
+        wrapped: wrapped,
         store: data_dir()?,
         pre_hook: None,
         post_hook: None,
