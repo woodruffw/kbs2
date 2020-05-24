@@ -16,6 +16,8 @@ impl Session {
     pub fn new(config: config::Config) -> Result<Session, Error> {
         log::debug!("backend: {:?}", config.age_backend);
 
+        fs::create_dir_all(&config.store)?;
+
         let backend: Box<dyn backend::Backend> = match config.age_backend {
             BackendKind::RageLib => Box::new(backend::RageLib::new(&config)?),
             BackendKind::RageCLI => Box::new(backend::RageCLI::new(&config)?),
