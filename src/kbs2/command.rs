@@ -361,10 +361,7 @@ pub fn generate(matches: &ArgMatches, session: &session::Session) -> Result<(), 
         match session.config.get_generator(generator_name) {
             Some(generator) => generator,
             None => {
-                return Err(format!(
-                    "couldn't find a generator named {}",
-                    generator_name
-                ).into())
+                return Err(format!("couldn't find a generator named {}", generator_name).into())
             }
         }
     };
