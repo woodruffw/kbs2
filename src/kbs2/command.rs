@@ -354,15 +354,3 @@ pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
 
     Ok(())
 }
-
-pub fn upgrade_records(_matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
-    log::debug!("upgrading records");
-
-    for label in session.record_labels()?.iter() {
-        let record_v1 = session.get_record_v1(&label)?;
-        let record = record_v1.to_record();
-        session.add_record(&record)?;
-    }
-
-    Ok(())
-}
