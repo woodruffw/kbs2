@@ -187,6 +187,16 @@ fn app<'a>() -> App<'a> {
                         .long("preserve-timestamp"),
                 ),
         )
+        .subcommand(
+            App::new("generate")
+                .about("generate secret values using a generator")
+                .arg(
+                    Arg::with_name("generator")
+                        .about("the generator to use")
+                        .index(1)
+                        .default_value("default"),
+                ),
+        )
 }
 
 fn run() -> Result<(), kbs2::error::Error> {
@@ -261,6 +271,7 @@ fn run() -> Result<(), kbs2::error::Error> {
             ("pass", Some(matches)) => kbs2::command::pass(&matches, &session)?,
             ("env", Some(matches)) => kbs2::command::env(&matches, &session)?,
             ("edit", Some(matches)) => kbs2::command::edit(&matches, &session)?,
+            ("generate", Some(matches)) => kbs2::command::generate(&matches, &session)?,
             (cmd, Some(matches)) => {
                 let cmd = format!("kbs2-{}", cmd);
 

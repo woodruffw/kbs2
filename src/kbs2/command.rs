@@ -354,3 +354,17 @@ pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
 
     Ok(())
 }
+
+pub fn generate(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
+    let generator = {
+        let generator_name = matches.value_of("generator").unwrap();
+        match session.config.get_generator(generator_name) {
+            Some(generator) => generator,
+            None => {
+                return Err(format!("couldn't find a generator named {}", generator_name).into())
+            }
+        }
+    };
+
+    Ok(println!("{}", generator.secret()?))
+}
