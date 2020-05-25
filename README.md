@@ -326,20 +326,17 @@ Dump the `pets.com` record in JSON format:
 ```bash
 $ kbs2 dump -j pets.com | json_pp
 {
-   "kind" : "Login",
-   "timestamp" : 1590277920,
+   "timestamp" : 1590363392,
    "label" : "pets.com",
-   "fields" : [
-      {
-         "name" : "username",
-         "value" : "hasdrubal"
+   "body" : {
+      "fields" : {
+         "username" : "hasdrubal",
+         "password" : "hunter2"
       },
-      {
-         "name" : "password",
-         "value" : "hunter2"
-      }
-   ]
+      "kind" : "Login"
+   }
 }
+
 ```
 
 ### `kbs2 pass`
