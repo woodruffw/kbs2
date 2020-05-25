@@ -44,7 +44,8 @@ Initialize a new `kbs2` configuration:
 $ kbs2 init
 ```
 
-`kbs2 init` will automatically discover an appropriate age CLI and generate a keypair with it.
+`kbs2 init` will automatically generate a configuration file and keypair, prompting you for
+a "master" password.
 
 Create a new login record:
 
@@ -728,6 +729,52 @@ before running `kbs2` internally. This allows you to control which hooks cause r
 No good reason. See the [history section](#history).
 
 ## Technical details
+
+### Threat model
+
+`kbs2`'s threat model is similar to that of most password and secret managers. In particular:
+
+* `kbs2` does *not* attempt to defend against the `root` user *or* arbitrary code executed by the
+current user.
+* `kbs2` tries to avoid operations that would result in secret material (i.e. the private key
+and the decrypted contents of records) being saved or cached on disk, but does *not* attempt to
+present the consumers of secret material from doing so.
+* `kbs2`, by default, attempts to prevent offline private key extraction by encrypting the private
+key at rest with a master password. `kbs2` does *not* attempt to prevent the user from mishandling
+their master password.
+
+### Cryptography
+
+`kbs2` does **not** implement any cryptography on its own &mdash; it uses *only* the cryptographic
+primitives supplied by an [age](https://github.com/FiloSottile/age) implementation.
+
+The particulars of `kbs2`'s cryptographic usage are as follows:
+
+* Every `kbs2` configuration file specifies a symmetric keypair. The public key is
+stored in the `public-key` configuration setting, while the private key is stored in the file
+referenced by the `keyfile` setting.
+* By default, `kbs2` "wraps" (i.e. encrypts) the private key with a master password. This makes
+offline key extraction attacks more difficult (although not impossible) and makes the consequences
+of wrapped private key disclosure less severe. Users *may* choose to use a non-wrapped key by
+passing `--insecure-not-wrapped` to `kbs2 init`.
+
+### Key unwrapping and persistence
+
+As mentioned under [Threat Model](#threat-model) and [Cryptography](#cryptography), `kbs2` uses
+a wrapped private key by default.
+
+Without any persistence, wrapped key usage would be tedious: the user would have to re-enter
+their master password on each `kbs2` action, defeating the point of having a secret manager.
+
+To avoid this, `kbs2` establishes persistence of the unwrapped key with a POSIX shared memory
+object (specifically, an object named `/__kbs2_unwrapped_key`). This is done after first use
+*or* explicitly with `kbs2 unlock`. The unwrapped key can be de-persisted either by rebooting
+the machine *or* by running `kbs2 lock`.
+
+Unlike like `ssh-agent` and `gpg-agent`, `kbs2`'s shared memory object is *not* tied to a user's
+session. This means that logging out and logging back in does *not* require the user to re-enter
+their master password *unless* they have otherwise configured their system to run `kbs2 lock`
+before the end of their session.
 
 ## Hacking
 
