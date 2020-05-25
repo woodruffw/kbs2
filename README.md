@@ -512,6 +512,15 @@ Read the [Hooks](#hooks) documentation for more details.
 
 The `post-hook` setting can be used to run a command after (almost) every `kbs2` invocation.
 
+There are currently four cases when the configured `post-hook` will *not* run:
+
+* `kbs2` (i.e., no subcommand)
+* `kbs2 init`
+* `kbs2 unlock`
+* `kbs2 lock`
+
+All other subcommands, including custom subcommands, will cause the configured `post-hook` to run.
+
 Read the [Hooks](#hooks) documentation for more details.
 
 ### `reentrant-hooks` (default: `false`)
