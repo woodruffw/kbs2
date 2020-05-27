@@ -1,4 +1,5 @@
 use age::Decryptor;
+use memmap::Mmap;
 use nix::errno::Errno;
 use nix::fcntl::OFlag;
 use nix::sys::mman;
@@ -10,8 +11,9 @@ use toml;
 use std::convert::TryInto;
 use std::env;
 use std::fs;
-use std::io::Read;
-use std::os::unix::io::RawFd;
+use std::io::{Read, Write};
+use std::ops::DerefMut;
+use std::os::unix::io::FromRawFd;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -101,14 +103,14 @@ impl Config {
         None
     }
 
-    pub fn unwrap_keyfile_to_fd(&self) -> Result<RawFd, Error> {
+    pub fn unwrap_keyfile(&self) -> Result<fs::File, Error> {
         // Unwrapping our password-protected keyfile and returning it as a raw file descriptor
         // is a multi-step process.
 
         // First, create the shared memory object that we'll eventually use
         // to stash the unwrapped key. We do this early to allow it to fail ahead
         // of the password prompt and decryption steps.
-        log::debug!("created shared memory object");
+        log::debug!("creating shared memory object");
         let unwrapped_fd = match mman::shm_open(
             UNWRAPPED_KEY_SHM_NAME,
             OFlag::O_RDWR | OFlag::O_CREAT | OFlag::O_EXCL,
@@ -159,13 +161,21 @@ impl Config {
             unwrapped_key.as_bytes().len().try_into().unwrap(),
         )?;
 
+        // NOTE(ww): This is safe, assuming nix::shm_open doesn't lie about
+        // success when returning a file descriptor.
+        let file = unsafe { fs::File::from_raw_fd(unwrapped_fd) };
+
         // Toss unwrapped_key into our shared memory.
-        unistd::write(unwrapped_fd, unwrapped_key.as_bytes())?;
+        // Ideally we'd just call write(2) here, but that only works on Linux.
+        // See the NOTE under RageLib::new() for more ranting about
+        // macOS concessions.
+        log::debug!("writing the unwrapped key");
+        {
+            let mut mmap = unsafe { Mmap::map(&file)? }.make_mut()?;
+            mmap.deref_mut().write_all(unwrapped_key.as_bytes())?;
+        }
 
-        // ...and seek back to the beginning, so that we can actually consume it.
-        unistd::lseek(unwrapped_fd, 0, unistd::Whence::SeekSet)?;
-
-        Ok(unwrapped_fd)
+        Ok(file)
     }
 }
 
