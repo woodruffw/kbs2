@@ -3,7 +3,7 @@ name = "kbs2"
 description = "A secret manager backed by age"
 license = "MIT"
 homepage = "https://github.com/woodruffw/kbs2"
-version = "0.0.14"
+version = "0.0.15"
 authors = ["William Woodruff <william@yossarian.net>"]
 edition = "2018"
 
