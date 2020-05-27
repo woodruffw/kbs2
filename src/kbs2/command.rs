@@ -3,7 +3,7 @@ use clap::ArgMatches;
 use clipboard::{ClipboardContext, ClipboardProvider};
 use nix::errno::Errno;
 use nix::sys::mman;
-use nix::unistd::{self, fork, ForkResult};
+use nix::unistd::{fork, ForkResult};
 use tempfile;
 
 use std::env;
@@ -36,11 +36,9 @@ pub fn unlock(_matches: &ArgMatches, config: &config::Config) -> Result<(), Erro
         return Err("unlock requested but wrapped=false in config".into());
     }
 
-    // NOTE(ww): All of the unwrapping happens in unwrap_keyfile_to_fd.
-    // The unwrapped data is persistent in shared memory once we return successfully,
-    // so all we need to do is clean up the file descriptor.
-    let unwrapped_fd = config.unwrap_keyfile_to_fd()?;
-    unistd::close(unwrapped_fd)?;
+    // NOTE(ww): All of the unwrapping happens in unwrap_keyfile.
+    // The unwrapped data is persistent in shared memory once we return successfully.
+    config.unwrap_keyfile()?;
 
     Ok(())
 }
