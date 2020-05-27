@@ -261,12 +261,12 @@ impl RageLib {
             // *says* is supposed to return an accurate size for the shared memory
             // object, but macOS still returns the aligned size.
             // We give up on doing it the right way and just find the index of the
-            // first NUL.
+            // first NUL (defaulting to len() for sensible platforms, like Linux).
             let unwrapped_key = unsafe { Mmap::map(&unwrapped_file)? };
             let nul_index = unwrapped_key
                 .iter()
                 .position(|&x| x == '\x00' as u8)
-                .ok_or_else(|| "couldn't find NUL terminator in shared memory")?;
+                .unwrap_or(unwrapped_key.len());
 
             let reader = BufReader::new(&unwrapped_key[..nul_index]);
             log::debug!("parsing unwrapped key");
