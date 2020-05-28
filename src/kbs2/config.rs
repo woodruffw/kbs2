@@ -124,17 +124,30 @@ impl Config {
         };
 
         // Prompt the user for their "master" password (i.e., the one that decrypts their privkey).
-        let password = util::get_password()?;
+        let password = util::get_password().or_else(|e| {
+            mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+            Err(e)
+        })?;
 
         // Read the wrapped key from disk.
-        let wrapped_key = std::fs::read(&self.keyfile)?;
+        let wrapped_key = std::fs::read(&self.keyfile).or_else(|e| {
+            mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+            Err(Error::from(e))
+        })?;
 
         // Create a new decryptor for the wrapped key.
-        let decryptor = match Decryptor::new(wrapped_key.as_slice())
-            .map_err(|e| format!("unable to load private key (backend reports: {:?})", e))?
-        {
-            Decryptor::Passphrase(d) => d,
-            _ => return Err("key unwrap failed; not a password-wrapped keyfile?".into()),
+        let decryptor = match Decryptor::new(wrapped_key.as_slice()) {
+            Ok(Decryptor::Passphrase(d)) => d,
+            Ok(_) => {
+                mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+                return Err("key unwrap failed; not a password-wrapped keyfile?".into());
+            }
+            Err(e) => {
+                mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+                return Err(
+                    format!("unable to load private key (backend reports: {:?})", e).into(),
+                );
+            }
         };
 
         // ...and decrypt (i.e., unwrap) using the master password supplied above.
@@ -149,6 +162,10 @@ impl Config {
             .and_then(|mut r| {
                 r.read_to_string(&mut unwrapped_key)
                     .map_err(|_| "i/o error while decrypting".into())
+            })
+            .or_else(|e| {
+                mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+                Err(Error::from(e))
             })?;
         log::debug!("finished key unwrap!");
 
@@ -159,7 +176,11 @@ impl Config {
         unistd::ftruncate(
             unwrapped_fd,
             unwrapped_key.as_bytes().len().try_into().unwrap(),
-        )?;
+        )
+        .or_else(|e| {
+            mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+            Err(Error::from(e))
+        })?;
 
         // NOTE(ww): This is safe, assuming nix::shm_open doesn't lie about
         // success when returning a file descriptor.
@@ -171,8 +192,17 @@ impl Config {
         // macOS concessions.
         log::debug!("writing the unwrapped key");
         {
-            let mut mmap = unsafe { Mmap::map(&file)? }.make_mut()?;
-            mmap.deref_mut().write_all(unwrapped_key.as_bytes())?;
+            let mut mmap = unsafe { Mmap::map(&file)? }.make_mut().or_else(|e| {
+                mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+                Err(Error::from(e))
+            })?;
+
+            mmap.deref_mut()
+                .write_all(unwrapped_key.as_bytes())
+                .or_else(|e| {
+                    mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+                    Err(Error::from(e))
+                })?;
         }
 
         Ok(file)
