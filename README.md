@@ -47,10 +47,10 @@ $ kbs2 init
 `kbs2 init` will automatically generate a configuration file and keypair, prompting you for
 a "master" password.
 
-Create a new login record:
+Create a new (login) record:
 
 ```bash
-$ kbs2 new login amazon
+$ kbs2 new amazon
 Username? jonf-bonzo
 Password? (hidden)
 ```
@@ -204,14 +204,14 @@ Value: [hidden]
 Create a new `login` record named `pets.com`, generating the password with the default generator:
 
 ```bash
-$ kbs2 new -g login pets.com
+$ kbs2 new -g pets.com
 Username: hasdrubal
 ```
 
 Create a new `login` record named `email`, getting the fields in a terse format:
 
 ```bash
-$ kbs2 new -t login email < <(echo -e "bill@microsoft.com\x01hunter2")
+$ kbs2 new -t email < <(echo -e "bill@microsoft.com\x01hunter2")
 ```
 
 ### `kbs2 list`
@@ -561,7 +561,7 @@ post-hook = "~/.config/kbs2/hooks/post-new.sh"
 would produce:
 
 ```bash
-$ kbs2 new login foo
+$ kbs2 new foo
 Username: bar
 Password: [hidden]
 [+] created foo
@@ -646,7 +646,7 @@ These generators can be used with `kbs2 new`:
 
 ```bash
 # Notice: the user is not prompted for a password
-$ kbs2 new -gG hexonly login pets.com
+$ kbs2 new -gG hexonly pets.com
 Username: catlover2000
 ```
 
