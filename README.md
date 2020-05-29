@@ -165,10 +165,9 @@ $ kbs2 lock
 create a new record
 
 USAGE:
-    kbs2 new [FLAGS] [OPTIONS] <kind> <label>
+    kbs2 new [FLAGS] [OPTIONS] <label>
 
 ARGS:
-    <kind>     the kind of record to create [possible values: login, environment, unstructured]
     <label>    the record's label
 
 FLAGS:
@@ -178,7 +177,10 @@ FLAGS:
     -t, --terse       read fields in a terse format, even when connected to a tty
 
 OPTIONS:
-    -G, --generator <generator>    use the given generator to generate sensitive fields [default: default]
+    -G, --generator <generator>    use the given generator to generate sensitive fields
+                                   [default: default]
+    -k, --kind <kind>              the kind of record to create [default: login]
+                                   [possible values: login, environment, unstructured]
 ```
 
 #### Examples
@@ -186,7 +188,7 @@ OPTIONS:
 Create a new `login` record named `foobar`:
 
 ```bash
-$ kbs2 new login foobar
+$ kbs2 new foobar
 Username: hasdrubal
 Password: [hidden]
 ```
@@ -194,7 +196,7 @@ Password: [hidden]
 Create a new `environment` record named `twitter-api`, overwriting it if it already exists:
 
 ```bash
-$ kbs2 new -f environment twitter-api
+$ kbs2 new -f -k environment twitter-api
 Variable: TWITTER_API
 Value: [hidden]
 ```
@@ -227,7 +229,8 @@ FLAGS:
     -h, --help       Prints help information
 
 OPTIONS:
-    -k, --kind <kind>    list only records of this kind [possible values: login, environment, unstructured]
+    -k, --kind <kind>    list only records of this kind
+                         [possible values: login, environment, unstructured]
 ```
 
 #### Examples
