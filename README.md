@@ -47,10 +47,10 @@ $ kbs2 init
 `kbs2 init` will automatically generate a configuration file and keypair, prompting you for
 a "master" password.
 
-Create a new login record:
+Create a new (login) record:
 
 ```bash
-$ kbs2 new login amazon
+$ kbs2 new amazon
 Username? jonf-bonzo
 Password? (hidden)
 ```
@@ -165,10 +165,9 @@ $ kbs2 lock
 create a new record
 
 USAGE:
-    kbs2 new [FLAGS] [OPTIONS] <kind> <label>
+    kbs2 new [FLAGS] [OPTIONS] <label>
 
 ARGS:
-    <kind>     the kind of record to create [possible values: login, environment, unstructured]
     <label>    the record's label
 
 FLAGS:
@@ -178,7 +177,10 @@ FLAGS:
     -t, --terse       read fields in a terse format, even when connected to a tty
 
 OPTIONS:
-    -G, --generator <generator>    use the given generator to generate sensitive fields [default: default]
+    -G, --generator <generator>    use the given generator to generate sensitive fields
+                                   [default: default]
+    -k, --kind <kind>              the kind of record to create [default: login]
+                                   [possible values: login, environment, unstructured]
 ```
 
 #### Examples
@@ -186,7 +188,7 @@ OPTIONS:
 Create a new `login` record named `foobar`:
 
 ```bash
-$ kbs2 new login foobar
+$ kbs2 new foobar
 Username: hasdrubal
 Password: [hidden]
 ```
@@ -194,7 +196,7 @@ Password: [hidden]
 Create a new `environment` record named `twitter-api`, overwriting it if it already exists:
 
 ```bash
-$ kbs2 new -f environment twitter-api
+$ kbs2 new -f -k environment twitter-api
 Variable: TWITTER_API
 Value: [hidden]
 ```
@@ -202,14 +204,14 @@ Value: [hidden]
 Create a new `login` record named `pets.com`, generating the password with the default generator:
 
 ```bash
-$ kbs2 new -g login pets.com
+$ kbs2 new -g pets.com
 Username: hasdrubal
 ```
 
 Create a new `login` record named `email`, getting the fields in a terse format:
 
 ```bash
-$ kbs2 new -t login email < <(echo -e "bill@microsoft.com\x01hunter2")
+$ kbs2 new -t email < <(echo -e "bill@microsoft.com\x01hunter2")
 ```
 
 ### `kbs2 list`
@@ -227,7 +229,8 @@ FLAGS:
     -h, --help       Prints help information
 
 OPTIONS:
-    -k, --kind <kind>    list only records of this kind [possible values: login, environment, unstructured]
+    -k, --kind <kind>    list only records of this kind
+                         [possible values: login, environment, unstructured]
 ```
 
 #### Examples
@@ -558,7 +561,7 @@ post-hook = "~/.config/kbs2/hooks/post-new.sh"
 would produce:
 
 ```bash
-$ kbs2 new login foo
+$ kbs2 new foo
 Username: bar
 Password: [hidden]
 [+] created foo
@@ -643,7 +646,7 @@ These generators can be used with `kbs2 new`:
 
 ```bash
 # Notice: the user is not prompted for a password
-$ kbs2 new -gG hexonly login pets.com
+$ kbs2 new -gG hexonly pets.com
 Username: catlover2000
 ```
 
