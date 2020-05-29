@@ -52,17 +52,19 @@ fn app<'a>() -> App<'a> {
             App::new("new")
                 .about("create a new record")
                 .arg(
-                    Arg::with_name("kind")
-                        .about("the kind of record to create")
-                        .index(1)
-                        .required(true)
-                        .possible_values(kbs2::record::RECORD_KINDS),
-                )
-                .arg(
                     Arg::with_name("label")
                         .about("the record's label")
-                        .index(2)
+                        .index(1)
                         .required(true),
+                )
+                .arg(
+                    Arg::with_name("kind")
+                        .about("the kind of record to create")
+                        .short('k')
+                        .long("kind")
+                        .takes_value(true)
+                        .possible_values(kbs2::record::RECORD_KINDS)
+                        .default_value("login"),
                 )
                 .arg(
                     Arg::with_name("force")
