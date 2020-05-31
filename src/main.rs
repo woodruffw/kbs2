@@ -286,6 +286,7 @@ fn run() -> Result<(), kbs2::error::Error> {
 
                 let status = Command::new(&cmd)
                     .args(&ext_args)
+                    .env("KBS2_CONFIG_DIR", &config_dir)
                     .env("KBS2_STORE", &session.config.store)
                     .env("KBS2_SUBCOMMAND", "1")
                     .status()
