@@ -314,6 +314,9 @@ impl Default for PassConfig {
 #[serde(default)]
 pub struct EditConfig {
     pub editor: Option<String>,
+    #[serde(deserialize_with = "deserialize_optional_with_tilde")]
+    #[serde(rename = "post-hook")]
+    pub post_hook: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]

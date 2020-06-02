@@ -355,6 +355,11 @@ pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
 
     session.add_record(&record)?;
 
+    if let Some(post_hook) = &session.config.commands.edit.post_hook {
+        log::debug!("post-hook: {}", post_hook);
+        session.config.call_hook(post_hook, &[])?;
+    }
+
     Ok(())
 }
 

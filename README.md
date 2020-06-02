@@ -614,6 +614,11 @@ This setting is allowed to contain flags. For example, the following would be sp
 editor = "subl -w"
 ```
 
+### `commands.edit.post-hook` (default: `None`)
+
+The `command.edit.post-hook` setting is like the global `post-hook` setting, except that it runs
+immediately after record editing during `kbs2 edit` (and **only** `kbs2 edit`).
+
 ### `commands.rm.post-hook` (default: `None`)
 
 The `command.rm.post-hook` setting is like the global `post-hook` setting, except that it runs
