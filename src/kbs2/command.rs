@@ -310,9 +310,14 @@ pub fn env(matches: &ArgMatches, session: &session::Session) -> Result<(), Error
 pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
     log::debug!("editing a record");
 
-    let editor = match env::var("EDITOR")
-        .ok()
-        .or_else(|| session.config.commands.edit.editor.as_ref().cloned())
+    let editor = match session
+        .config
+        .commands
+        .edit
+        .editor
+        .as_ref()
+        .cloned()
+        .or_else(|| env::var("EDITOR").ok())
     {
         Some(editor) => editor,
         None => return Err("no editor configured to edit with".into()),
@@ -320,7 +325,7 @@ pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
 
     let (editor, editor_args) = util::parse_and_split_args(&editor)?;
 
-    log::debug!("editor: {}", editor);
+    log::debug!("editor: {}, args: {:?}", editor, editor_args);
 
     let label = matches.value_of("label").unwrap();
     let record = session.get_record(&label)?;
