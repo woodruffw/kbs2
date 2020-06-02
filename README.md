@@ -605,7 +605,8 @@ after the password has been cleared from the clipboard.
 ### `commands.edit.editor` (default: `None`)
 
 The `commands.edit.editor` setting controls which editor is used when opening a file with
-`kbs2 edit`. The `$EDITOR` environment variable takes precedence over this setting.
+`kbs2 edit`. This setting takes precedence over the `$EDITOR` environment variable, which is
+used as a fallback.
 
 This setting is allowed to contain flags. For example, the following would be split correctly:
 
