@@ -787,6 +787,34 @@ before the end of their session.
 
 ## Hacking
 
+Hacking on `kbs2` is relatively straightforward. To build a fully functional development copy,
+just use `cargo build` in the repository root:
+
+```bash
+$ cargo build
+$ ./target/debug/kbs2 --help
+```
+
+Of note: some functionality in the age crate (which `kbs2` uses by default) has pathological
+performance in debug builds. In particular, decryption and key unwrapping are known to be
+particularly slow. To avoid this, use a release build:
+
+```bash
+$ cargo build --release
+$ ./target/debug/kbs2 --help
+```
+
+### Logging
+
+`kbs2` uses `log` and `env_logger` for logging. You can past `RUST_LOG=debug` in your environment
+to enable debug logging:
+
+```bash
+$ RUST_LOG=debug ./target/release/kbs2 list -k login
+```
+
+See the [`env_logger` documentation](https://docs.rs/env_logger/) for more possible `RUST_LOG` values.
+
 ## History
 
 TL;DR: `kbs2` is short for "[KBSecret](https://github.com/kbsecret/kbsecret) 2".
