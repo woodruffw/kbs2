@@ -250,6 +250,10 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
         match fork() {
             Ok(ForkResult::Child) => {
                 // TODO(ww): Support x11_clipboard config option.
+                if session.config.commands.pass.x11_clipboard == config::X11Clipboard::Primary {
+                    util::warn("primary clipboard requested but not yet supported");
+                }
+
                 let mut ctx: ClipboardContext =
                     ClipboardProvider::new().map_err(|_| "unable to grab the clipboard")?;
 
