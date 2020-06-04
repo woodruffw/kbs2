@@ -276,7 +276,11 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
             _ => {}
         }
     } else {
-        println!("{}", password);
+        if atty::isnt(Stream::Stdout) {
+            print!("{}", password);
+        } else {
+            println!("{}", password);
+        }
     }
 
     if let Some(post_hook) = &session.config.commands.pass.post_hook {
