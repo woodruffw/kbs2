@@ -76,7 +76,7 @@ impl Session {
         }
     }
 
-    pub fn add_record(&self, record: &record::Record) -> Result<(), Error> {
+    pub fn add_record(&self, record: &record::Record) -> anyhow::Result<()> {
         let record_path = Path::new(&self.config.store).join(&record.label);
 
         let record_contents = self.backend.encrypt(&self.config, record)?;

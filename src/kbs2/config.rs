@@ -357,7 +357,7 @@ fn data_dir() -> Result<PathBuf, Error> {
     Ok(home.join(".local/share").join(STORE_BASEDIR))
 }
 
-pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<(), Error> {
+pub fn initialize(config_dir: &Path, wrapped: bool) -> anyhow::Result<()> {
     // NOTE(ww): Default initialization uses the rage-lib backend unconditionally.
     let keyfile = config_dir.join(DEFAULT_KEY_BASENAME);
 
