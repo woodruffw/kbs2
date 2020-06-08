@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Result};
 use clap::{App, AppSettings, Arg};
 use clap_generate::{generate, generators};
 
@@ -201,7 +202,7 @@ fn app<'a>() -> App<'a> {
         )
 }
 
-fn run() -> Result<(), kbs2::error::Error> {
+fn run() -> Result<()> {
     let mut app = app();
     let matches = app.clone().get_matches();
 
@@ -245,7 +246,7 @@ fn run() -> Result<(), kbs2::error::Error> {
     if let ("", None) = matches.subcommand() {
         app.clone()
             .write_long_help(&mut io::stdout())
-            .map_err(|_| "failed to print help".into())
+            .map_err(|_| anyhow!("failed to print help"))
     } else if let ("init", Some(matches)) = matches.subcommand() {
         kbs2::command::init(&matches, &config_dir)
     } else if let ("unlock", Some(matches)) = matches.subcommand() {
@@ -295,7 +296,7 @@ fn run() -> Result<(), kbs2::error::Error> {
                 match status {
                     Some(true) => (),
                     Some(false) => process::exit(2),
-                    None => return Err(format!("no such command: {}", cmd).into()),
+                    None => return Err(anyhow!("no such command: {}", cmd)),
                 }
             }
             _ => unreachable!(),

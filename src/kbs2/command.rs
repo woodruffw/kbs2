@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Result};
 use atty::Stream;
 use clap::ArgMatches;
 use clipboard::{ClipboardContext, ClipboardProvider};
@@ -12,28 +13,29 @@ use std::path::Path;
 use std::process;
 
 use crate::kbs2::config;
-use crate::kbs2::error::Error;
 use crate::kbs2::generator::Generator;
 use crate::kbs2::input;
 use crate::kbs2::record::{self, FieldKind::*, RecordBody};
 use crate::kbs2::session;
 use crate::kbs2::util;
 
-pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<(), Error> {
+pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
     log::debug!("initializing a new config");
 
     if config_dir.join(config::CONFIG_BASENAME).exists() && !matches.is_present("force") {
-        return Err("refusing to overwrite your current config without --force".into());
+        return Err(anyhow!(
+            "refusing to overwrite your current config without --force"
+        ));
     }
 
     config::initialize(&config_dir, !matches.is_present("insecure-not-wrapped"))
 }
 
-pub fn unlock(_matches: &ArgMatches, config: &config::Config) -> Result<(), Error> {
+pub fn unlock(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("unlock requested");
 
     if !config.wrapped {
-        return Err("unlock requested but wrapped=false in config".into());
+        return Err(anyhow!("unlock requested but wrapped=false in config"));
     }
 
     // NOTE(ww): All of the unwrapping happens in unwrap_keyfile.
@@ -43,7 +45,7 @@ pub fn unlock(_matches: &ArgMatches, config: &config::Config) -> Result<(), Erro
     Ok(())
 }
 
-pub fn lock(_matches: &ArgMatches, config: &config::Config) -> Result<(), Error> {
+pub fn lock(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("lock requested");
 
     if !config.wrapped {
@@ -52,12 +54,12 @@ pub fn lock(_matches: &ArgMatches, config: &config::Config) -> Result<(), Error>
 
     match mman::shm_unlink(config::UNWRAPPED_KEY_SHM_NAME) {
         Ok(()) => Ok(()),
-        Err(nix::Error::Sys(Errno::ENOENT)) => Err("no unwrapped key to remove".into()),
+        Err(nix::Error::Sys(Errno::ENOENT)) => Err(anyhow!("no unwrapped key to remove")),
         Err(e) => Err(e.into()),
     }
 }
 
-pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
+pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     log::debug!("creating a new record");
 
     if let Some(pre_hook) = &session.config.commands.new.pre_hook {
@@ -67,7 +69,7 @@ pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<(), Error
 
     let label = matches.value_of("label").unwrap();
     if session.has_record(label) && !matches.is_present("force") {
-        return Err("refusing to overwrite a record without --force".into());
+        return Err(anyhow!("refusing to overwrite a record without --force"));
     }
 
     let terse = atty::isnt(Stream::Stdin) || matches.is_present("terse");
@@ -75,7 +77,7 @@ pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<(), Error
     let generator = if matches.is_present("generate") {
         let generator_name = matches.value_of("generator").unwrap();
 
-        Some(session.config.get_generator(generator_name).ok_or(format!(
+        Some(session.config.get_generator(generator_name).ok_or(anyhow!(
             "couldn't find a generator named {}",
             generator_name
         ))?)
@@ -104,7 +106,7 @@ fn new_login(
     terse: bool,
     session: &session::Session,
     generator: &Option<Box<&dyn Generator>>,
-) -> Result<(), Error> {
+) -> Result<()> {
     let fields = input::fields(
         &[Insensitive("Username"), Sensitive("Password")],
         terse,
@@ -120,7 +122,7 @@ fn new_environment(
     terse: bool,
     session: &session::Session,
     generator: &Option<Box<&dyn Generator>>,
-) -> Result<(), Error> {
+) -> Result<()> {
     let fields = input::fields(
         &[Insensitive("Variable"), Sensitive("Value")],
         terse,
@@ -136,14 +138,14 @@ fn new_unstructured(
     terse: bool,
     session: &session::Session,
     generator: &Option<Box<&dyn Generator>>,
-) -> Result<(), Error> {
+) -> Result<()> {
     let fields = input::fields(&[Insensitive("Contents")], terse, &generator)?;
     let record = record::Record::unstructured(label, &fields[0]);
 
     session.add_record(&record)
 }
 
-pub fn list(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
+pub fn list(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     log::debug!("listing records");
 
     let (details, filter_kind) = (matches.is_present("details"), matches.is_present("kind"));
@@ -179,7 +181,7 @@ pub fn list(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
     Ok(())
 }
 
-pub fn rm(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
+pub fn rm(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     log::debug!("removing a record");
 
     let label = matches.value_of("label").unwrap();
@@ -193,7 +195,7 @@ pub fn rm(matches: &ArgMatches, session: &session::Session) -> Result<(), Error>
     Ok(())
 }
 
-pub fn dump(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
+pub fn dump(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     log::debug!("dumping a record");
 
     let label = matches.value_of("label").unwrap();
@@ -218,7 +220,7 @@ pub fn dump(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
     Ok(())
 }
 
-pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
+pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     log::debug!("getting a login's password");
 
     if let Some(pre_hook) = &session.config.commands.pass.pre_hook {
@@ -231,7 +233,7 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
 
     let login = match record.body {
         RecordBody::Login(l) => l,
-        _ => return Err(format!("not a login record: {}", label).into()),
+        _ => return Err(anyhow!("not a login record: {}", label)),
     };
 
     let password = login.password;
@@ -254,17 +256,17 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
                     util::warn("primary clipboard requested but not yet supported");
                 }
 
-                let mut ctx: ClipboardContext =
-                    ClipboardProvider::new().map_err(|_| "unable to grab the clipboard")?;
+                let mut ctx: ClipboardContext = ClipboardProvider::new()
+                    .map_err(|_| anyhow!("unable to grab the clipboard"))?;
 
                 ctx.set_contents(password.to_owned())
-                    .map_err(|_| "unable to store to the clipboard")?;
+                    .map_err(|_| anyhow!("unable to store to the clipboard"))?;
 
                 std::thread::sleep(std::time::Duration::from_secs(clipboard_duration));
 
                 if clear_after {
                     ctx.set_contents("".to_owned())
-                        .map_err(|_| "unable to clear the clipboard")?;
+                        .map_err(|_| anyhow!("unable to clear the clipboard"))?;
 
                     if let Some(clear_hook) = &session.config.commands.pass.clear_hook {
                         log::debug!("clear-hook: {}", clear_hook);
@@ -272,7 +274,7 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
                     }
                 }
             }
-            Err(_) => return Err("clipboard fork failed".into()),
+            Err(_) => return Err(anyhow!("clipboard fork failed")),
             _ => {}
         }
     } else {
@@ -291,7 +293,7 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
     Ok(())
 }
 
-pub fn env(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
+pub fn env(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     log::debug!("getting a environment variable");
 
     let label = matches.value_of("label").unwrap();
@@ -299,7 +301,7 @@ pub fn env(matches: &ArgMatches, session: &session::Session) -> Result<(), Error
 
     let environment = match record.body {
         RecordBody::Environment(e) => e,
-        _ => return Err(format!("not an environment record: {}", label).into()),
+        _ => return Err(anyhow!("not an environment record: {}", label)),
     };
 
     if matches.is_present("value-only") {
@@ -315,7 +317,7 @@ pub fn env(matches: &ArgMatches, session: &session::Session) -> Result<(), Error
     Ok(())
 }
 
-pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
+pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     log::debug!("editing a record");
 
     let editor = match session
@@ -328,7 +330,7 @@ pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
         .or_else(|| env::var("EDITOR").ok())
     {
         Some(editor) => editor,
-        None => return Err("no editor configured to edit with".into()),
+        None => return Err(anyhow!("no editor configured to edit with")),
     };
 
     let (editor, editor_args) = util::parse_and_split_args(&editor)?;
@@ -347,7 +349,7 @@ pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
         .output()
         .map_or(false, |o| o.status.success())
     {
-        return Err("failed to run the editor".into());
+        return Err(anyhow!("failed to run the editor"));
     }
 
     // Rewind, pull the changed contents, deserialize back into a record.
@@ -371,13 +373,16 @@ pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<(), Erro
     Ok(())
 }
 
-pub fn generate(matches: &ArgMatches, session: &session::Session) -> Result<(), Error> {
+pub fn generate(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     let generator = {
         let generator_name = matches.value_of("generator").unwrap();
         match session.config.get_generator(generator_name) {
             Some(generator) => generator,
             None => {
-                return Err(format!("couldn't find a generator named {}", generator_name).into())
+                return Err(anyhow!(
+                    "couldn't find a generator named {}",
+                    generator_name
+                ))
             }
         }
     };

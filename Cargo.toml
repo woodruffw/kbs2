@@ -12,6 +12,7 @@ no-dev-version = true
 
 [dependencies]
 age = "0.4"
+anyhow = "1.0"
 atty = "0.2.14"
 dialoguer = "0.6.2"
 clap = "3.0.0-beta.1"

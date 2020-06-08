@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Result};
 use memmap::Mmap;
 use nix::errno::Errno;
 use nix::fcntl::OFlag;
@@ -13,7 +14,6 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 use crate::kbs2::config;
-use crate::kbs2::error::Error;
 use crate::kbs2::record::Record;
 use crate::kbs2::util;
 
@@ -31,14 +31,14 @@ impl Default for BackendKind {
 }
 
 pub trait Backend {
-    fn create_keypair(path: &Path) -> Result<String, Error>
+    fn create_keypair(path: &Path) -> Result<String>
     where
         Self: Sized;
-    fn create_wrapped_keypair(path: &Path) -> Result<String, Error>
+    fn create_wrapped_keypair(path: &Path) -> Result<String>
     where
         Self: Sized;
-    fn encrypt(&self, config: &config::Config, record: &Record) -> Result<String, Error>;
-    fn decrypt(&self, config: &config::Config, encrypted: &str) -> Result<Record, Error>;
+    fn encrypt(&self, config: &config::Config, record: &Record) -> Result<String>;
+    fn decrypt(&self, config: &config::Config, encrypted: &str) -> Result<Record>;
 }
 
 pub trait CLIBackend {
@@ -50,7 +50,7 @@ impl<T> Backend for T
 where
     T: CLIBackend,
 {
-    fn create_keypair(path: &Path) -> Result<String, Error> {
+    fn create_keypair(path: &Path) -> Result<String> {
         if path.exists() {
             std::fs::remove_file(path)?;
         }
@@ -71,7 +71,7 @@ where
         }
     }
 
-    fn create_wrapped_keypair(path: &Path) -> Result<String, Error> {
+    fn create_wrapped_keypair(path: &Path) -> Result<String> {
         if path.exists() {
             std::fs::remove_file(path)?;
         }
@@ -90,9 +90,10 @@ where
                 .trim_end()
                 .to_string(),
             None => {
-                return Err(
-                    format!("couldn't find a public key in {} output", T::age_keygen()).into(),
-                )
+                return Err(anyhow!(
+                    "couldn't find a public key in {} output",
+                    T::age_keygen()
+                ))
             }
         };
 
@@ -107,19 +108,19 @@ where
             let stdin = child
                 .stdin
                 .as_mut()
-                .ok_or_else(|| "couldn't get input for encrypting")?;
+                .ok_or_else(|| anyhow!("couldn't get input for encrypting"))?;
             stdin.write_all(private_key.as_bytes())?;
         }
 
         let status = child.wait()?;
         if !status.success() {
-            return Err("key wrapping failed; password mismatch?".into());
+            return Err(anyhow!("key wrapping failed; password mismatch?"));
         }
 
         Ok(public_key)
     }
 
-    fn encrypt(&self, config: &config::Config, record: &Record) -> Result<String, Error> {
+    fn encrypt(&self, config: &config::Config, record: &Record) -> Result<String> {
         let mut child = Command::new(T::age())
             .arg("-a")
             .arg("-r")
@@ -133,7 +134,7 @@ where
             let stdin = child
                 .stdin
                 .as_mut()
-                .ok_or_else(|| "couldn't get input for encrypting")?;
+                .ok_or_else(|| anyhow!("couldn't get input for encrypting"))?;
             stdin.write_all(serde_json::to_string(record)?.as_bytes())?;
         }
 
@@ -141,13 +142,15 @@ where
         log::debug!("output: {:?}", output);
 
         if !output.status.success() {
-            return Err("encryption failed; misformatted key or empty input?".into());
+            return Err(anyhow!(
+                "encryption failed; misformatted key or empty input?"
+            ));
         }
 
         Ok(String::from_utf8(output.stdout)?)
     }
 
-    fn decrypt(&self, config: &config::Config, encrypted: &str) -> Result<Record, Error> {
+    fn decrypt(&self, config: &config::Config, encrypted: &str) -> Result<Record> {
         let mut child = Command::new(T::age())
             .arg("-d")
             .arg("-i")
@@ -161,14 +164,14 @@ where
             let stdin = child
                 .stdin
                 .as_mut()
-                .ok_or_else(|| "couldn't get input for decrypting")?;
+                .ok_or_else(|| anyhow!("couldn't get input for decrypting"))?;
             stdin.write_all(encrypted.as_bytes())?;
         }
 
         let output = child.wait_with_output()?;
 
         if !output.status.success() {
-            return Err("decryption failed; bad key or corrupted record?".into());
+            return Err(anyhow!("decryption failed; bad key or corrupted record?"));
         }
 
         Ok(serde_json::from_str(std::str::from_utf8(&output.stdout)?)?)
@@ -178,9 +181,9 @@ where
 pub struct AgeCLI {}
 
 impl AgeCLI {
-    pub fn new(config: &config::Config) -> Result<AgeCLI, Error> {
+    pub fn new(config: &config::Config) -> Result<AgeCLI> {
         if config.wrapped {
-            Err("the RageCLI backend doesn't support wrapped keys".into())
+            Err(anyhow!("the RageCLI backend doesn't support wrapped keys"))
         } else {
             Ok(AgeCLI {})
         }
@@ -200,9 +203,9 @@ impl CLIBackend for AgeCLI {
 pub struct RageCLI {}
 
 impl RageCLI {
-    pub fn new(config: &config::Config) -> Result<RageCLI, Error> {
+    pub fn new(config: &config::Config) -> Result<RageCLI> {
         if config.wrapped {
-            Err("the RageCLI backend doesn't support wrapped keys".into())
+            Err(anyhow!("the RageCLI backend doesn't support wrapped keys"))
         } else {
             Ok(RageCLI {})
         }
@@ -225,11 +228,11 @@ pub struct RageLib {
 }
 
 impl RageLib {
-    pub fn new(config: &config::Config) -> Result<RageLib, Error> {
+    pub fn new(config: &config::Config) -> Result<RageLib> {
         let pubkey = config
             .public_key
             .parse::<age::keys::RecipientKey>()
-            .map_err(|e| format!("unable to parse public key (backend reports: {:?})", e))?;
+            .map_err(|e| anyhow!("unable to parse public key (backend reports: {:?})", e))?;
 
         let identities = if config.wrapped {
             log::debug!("config specifies a wrapped key");
@@ -277,7 +280,7 @@ impl RageLib {
         log::debug!("successfully parsed a private key!");
 
         if identities.len() != 1 {
-            return Err(format!(
+            return Err(anyhow!(
                 "expected exactly one private key in the keyfile, but got {}",
                 identities.len()
             )
@@ -289,7 +292,7 @@ impl RageLib {
 }
 
 impl Backend for RageLib {
-    fn create_keypair(path: &Path) -> Result<String, Error> {
+    fn create_keypair(path: &Path) -> Result<String> {
         let keypair = age::SecretKey::generate();
 
         std::fs::write(path, keypair.to_string().expose_secret())?;
@@ -297,7 +300,7 @@ impl Backend for RageLib {
         Ok(keypair.to_public().to_string())
     }
 
-    fn create_wrapped_keypair(path: &Path) -> Result<String, Error> {
+    fn create_wrapped_keypair(path: &Path) -> Result<String> {
         let password = util::get_password()?;
         let keypair = age::SecretKey::generate();
 
@@ -317,7 +320,7 @@ impl Backend for RageLib {
         Ok(keypair.to_public().to_string())
     }
 
-    fn encrypt(&self, _config: &config::Config, record: &Record) -> Result<String, Error> {
+    fn encrypt(&self, _config: &config::Config, record: &Record) -> Result<String> {
         let encryptor = age::Encryptor::with_recipients(vec![self.pubkey.clone()]);
         let mut encrypted = vec![];
         let mut writer = encryptor.wrap_output(&mut encrypted, age::Format::AsciiArmor)?;
@@ -327,9 +330,9 @@ impl Backend for RageLib {
         Ok(String::from_utf8(encrypted)?)
     }
 
-    fn decrypt(&self, _config: &config::Config, encrypted: &str) -> Result<Record, Error> {
+    fn decrypt(&self, _config: &config::Config, encrypted: &str) -> Result<Record> {
         let decryptor = match age::Decryptor::new(encrypted.as_bytes())
-            .map_err(|e| format!("unable to load private key (backend reports: {:?})", e))?
+            .map_err(|e| anyhow!("unable to load private key (backend reports: {:?})", e))?
         {
             age::Decryptor::Recipients(d) => d,
             // NOTE(ww): kbs2 doesn't support secret keys with passphrases.
@@ -340,10 +343,10 @@ impl Backend for RageLib {
 
         decryptor
             .decrypt(&self.identities)
-            .map_err(|e| format!("unable to decrypt (backend reports: {:?})", e))
+            .map_err(|e| anyhow!("unable to decrypt (backend reports: {:?})", e))
             .and_then(|mut r| {
                 r.read_to_string(&mut decrypted)
-                    .map_err(|_| "i/o error while decrypting".into())
+                    .map_err(|_| anyhow!("i/o error while decrypting"))
             })?;
 
         Ok(serde_json::from_str(&decrypted)?)

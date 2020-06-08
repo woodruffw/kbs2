@@ -1,4 +1,5 @@
 use age::Decryptor;
+use anyhow::{anyhow, Error, Result};
 use memmap::Mmap;
 use nix::errno::Errno;
 use nix::fcntl::OFlag;
@@ -18,7 +19,6 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use crate::kbs2::backend::{Backend, BackendKind, RageLib};
-use crate::kbs2::error::Error;
 use crate::kbs2::generator::Generator;
 use crate::kbs2::util;
 
@@ -75,7 +75,7 @@ impl Config {
     //    the hook is run.
     // 2. If reentrant-hooks is false (the default) *and* KBS2_HOOK is already present
     //    (indicating that we're already at least one layer deep), nothing is run.
-    pub fn call_hook(&self, cmd: &str, args: &[&str]) -> Result<(), Error> {
+    pub fn call_hook(&self, cmd: &str, args: &[&str]) -> Result<()> {
         if self.reentrant_hooks || env::var("KBS2_HOOK").is_err() {
             Command::new(cmd)
                 .args(args)
@@ -85,7 +85,7 @@ impl Config {
                 .stdout(Stdio::null())
                 .status()
                 .map(|_| ())
-                .map_err(|_| format!("hook failed: {}", cmd).into())
+                .map_err(|_| anyhow!("hook failed: {}", cmd))
         } else {
             util::warn("nested hook requested without reentrant-hooks; skipping");
             Ok(())
@@ -103,7 +103,7 @@ impl Config {
         None
     }
 
-    pub fn unwrap_keyfile(&self) -> Result<fs::File, Error> {
+    pub fn unwrap_keyfile(&self) -> Result<fs::File> {
         // Unwrapping our password-protected keyfile and returning it as a raw file descriptor
         // is a multi-step process.
 
@@ -118,7 +118,7 @@ impl Config {
         ) {
             Ok(unwrapped_fd) => unwrapped_fd,
             Err(nix::Error::Sys(Errno::EEXIST)) => {
-                return Err("unwrapped key already exists".into())
+                return Err(anyhow!("unwrapped key already exists"))
             }
             Err(e) => return Err(e.into()),
         };
@@ -140,13 +140,16 @@ impl Config {
             Ok(Decryptor::Passphrase(d)) => d,
             Ok(_) => {
                 mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
-                return Err("key unwrap failed; not a password-wrapped keyfile?".into());
+                return Err(anyhow!(
+                    "key unwrap failed; not a password-wrapped keyfile?"
+                ));
             }
             Err(e) => {
                 mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
-                return Err(
-                    format!("unable to load private key (backend reports: {:?})", e).into(),
-                );
+                return Err(anyhow!(
+                    "unable to load private key (backend reports: {:?})",
+                    e
+                ));
             }
         };
 
@@ -158,14 +161,14 @@ impl Config {
         // encrypted messages that needed this factor.
         decryptor
             .decrypt(&password, Some(18))
-            .map_err(|e| format!("unable to decrypt (backend reports: {:?})", e))
+            .map_err(|e| anyhow!("unable to decrypt (backend reports: {:?})", e))
             .and_then(|mut r| {
                 r.read_to_string(&mut unwrapped_key)
-                    .map_err(|_| "i/o error while decrypting".into())
+                    .map_err(|_| anyhow!("i/o error while decrypting"))
             })
             .or_else(|e| {
                 mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
-                Err(Error::from(e))
+                Err(e)
             })?;
         log::debug!("finished key unwrap!");
 
@@ -327,7 +330,7 @@ pub struct RmConfig {
     pub post_hook: Option<String>,
 }
 
-fn deserialize_with_tilde<'de, D>(deserializer: D) -> Result<String, D::Error>
+fn deserialize_with_tilde<'de, D>(deserializer: D) -> std::result::Result<String, D::Error>
 where
     D: de::Deserializer<'de>,
 {
@@ -335,7 +338,9 @@ where
     Ok(shellexpand::tilde(unexpanded).into_owned())
 }
 
-fn deserialize_optional_with_tilde<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+fn deserialize_optional_with_tilde<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<String>, D::Error>
 where
     D: de::Deserializer<'de>,
 {
@@ -347,17 +352,17 @@ where
     }
 }
 
-pub fn find_config_dir() -> Result<PathBuf, Error> {
+pub fn find_config_dir() -> Result<PathBuf> {
     let home = util::home_dir()?;
     Ok(home.join(".config").join(CONFIG_BASEDIR))
 }
 
-fn data_dir() -> Result<PathBuf, Error> {
+fn data_dir() -> Result<PathBuf> {
     let home = util::home_dir()?;
     Ok(home.join(".local/share").join(STORE_BASEDIR))
 }
 
-pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<(), Error> {
+pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<()> {
     // NOTE(ww): Default initialization uses the rage-lib backend unconditionally.
     let keyfile = config_dir.join(DEFAULT_KEY_BASENAME);
 
@@ -388,9 +393,9 @@ pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn load(config_dir: &Path) -> Result<Config, Error> {
+pub fn load(config_dir: &Path) -> Result<Config> {
     let config_path = config_dir.join(CONFIG_BASENAME);
     let contents = fs::read_to_string(config_path)?;
 
-    toml::from_str(&contents).map_err(|e| format!("config loading error: {}", e).into())
+    toml::from_str(&contents).map_err(|e| anyhow!("config loading error: {}", e))
 }
