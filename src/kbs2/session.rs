@@ -1,10 +1,11 @@
+use anyhow::{anyhow, Result};
+
 use std::fs;
 use std::io;
 use std::path::Path;
 
 use crate::kbs2::backend::{self, BackendKind};
 use crate::kbs2::config;
-use crate::kbs2::error::Error;
 use crate::kbs2::record;
 
 pub struct Session {
@@ -13,7 +14,7 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(config: config::Config) -> Result<Session, Error> {
+    pub fn new(config: config::Config) -> Result<Session> {
         log::debug!("backend: {:?}", config.age_backend);
 
         fs::create_dir_all(&config.store)?;
@@ -27,11 +28,11 @@ impl Session {
         Ok(Session { backend, config })
     }
 
-    pub fn record_labels(&self) -> Result<Vec<String>, Error> {
+    pub fn record_labels(&self) -> Result<Vec<String>> {
         let store = Path::new(&self.config.store);
 
         if !store.is_dir() {
-            return Err("secret store is not a directory".into());
+            return Err(anyhow!("secret store is not a directory"));
         }
 
         let mut labels = vec![];
@@ -59,15 +60,15 @@ impl Session {
         record_path.is_file()
     }
 
-    pub fn get_record(&self, label: &str) -> Result<record::Record, Error> {
+    pub fn get_record(&self, label: &str) -> Result<record::Record> {
         if !self.has_record(label) {
-            return Err(format!("no such record: {}", label).into());
+            return Err(anyhow!("no such record: {}", label));
         }
 
         let record_path = Path::new(&self.config.store).join(label);
         let record_contents = fs::read_to_string(&record_path).map_err(|e| match e.kind() {
-            io::ErrorKind::NotFound => format!("no such record: {}", label),
-            _ => e.to_string(),
+            io::ErrorKind::NotFound => anyhow!("no such record: {}", label),
+            _ => e.into(),
         })?;
 
         match self.backend.decrypt(&self.config, &record_contents) {
@@ -85,11 +86,11 @@ impl Session {
         Ok(())
     }
 
-    pub fn delete_record(&self, label: &str) -> Result<(), Error> {
+    pub fn delete_record(&self, label: &str) -> Result<()> {
         let record_path = Path::new(&self.config.store).join(label);
 
         std::fs::remove_file(&record_path).map_err(|e| match e.kind() {
-            io::ErrorKind::NotFound => format!("no such record: {}", label).into(),
+            io::ErrorKind::NotFound => anyhow!("no such record: {}", label),
             _ => e.into(),
         })
     }
