@@ -77,15 +77,21 @@ impl Config {
     //    (indicating that we're already at least one layer deep), nothing is run.
     pub fn call_hook(&self, cmd: &str, args: &[&str]) -> Result<()> {
         if self.reentrant_hooks || env::var("KBS2_HOOK").is_err() {
-            Command::new(cmd)
+            let success = Command::new(cmd)
                 .args(args)
                 .current_dir(Path::new(&self.store))
                 .env("KBS2_HOOK", "1")
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
                 .status()
-                .map(|_| ())
-                .map_err(|_| anyhow!("hook failed: {}", cmd))
+                .map(|s| s.success())
+                .map_err(|_| anyhow!("failed to run hook: {}", cmd))?;
+
+            if success {
+                Ok(())
+            } else {
+                Err(anyhow!("hook exited with an error code: {}", cmd))
+            }
         } else {
             util::warn("nested hook requested without reentrant-hooks; skipping");
             Ok(())
@@ -398,4 +404,117 @@ pub fn load(config_dir: &Path) -> Result<Config> {
     let contents = fs::read_to_string(config_path)?;
 
     toml::from_str(&contents).map_err(|e| anyhow!("config loading error: {}", e))
+}
+
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    fn dummy_config() -> Config {
+        Config {
+            age_backend: BackendKind::RageLib,
+            public_key: "not a real public key".into(),
+            keyfile: "not a real private key file".into(),
+            wrapped: false,
+            store: "/tmp".into(),
+            pre_hook: Some("true".into()),
+            post_hook: Some("false".into()),
+            reentrant_hooks: false,
+            generators: vec![GeneratorConfig::Internal(Default::default())],
+            commands: CommandConfigs {
+                rm: RmConfig {
+                    post_hook: Some("this-command-does-not-exist".into()),
+                },
+                ..Default::default()
+            },
+        }
+    }
+
+    #[test]
+    fn test_find_config_dir() {
+        let dir = find_config_dir().unwrap();
+        // NOTE: We can't check whether the main config dir exists since we create it if it
+        // doesn't; instead, we just check that it isn't something weird like a regular file.
+        assert!(!dir.is_file());
+
+        let parent = dir.parent().unwrap();
+
+        assert!(parent.exists());
+        assert!(parent.is_dir());
+    }
+
+    #[test]
+    fn test_initialize() {
+        // TODO: Figure out how to test initialization with a wrapped key.
+        // The current API requires graphical interaction.
+        // {
+        //     let dir = tempdir().unwrap();
+        //     assert!(initialize(dir.path(), true).is_ok());
+        // }
+
+        {
+            let dir = tempdir().unwrap();
+            assert!(initialize(dir.path(), false).is_ok());
+
+            let path = dir.path();
+            assert!(path.exists());
+            assert!(path.is_dir());
+
+            assert!(path.join(CONFIG_BASENAME).exists());
+            assert!(path.join(CONFIG_BASENAME).is_file());
+
+            assert!(path.join(DEFAULT_KEY_BASENAME).exists());
+            assert!(path.join(DEFAULT_KEY_BASENAME).is_file());
+        }
+    }
+
+    #[test]
+    fn test_load() {
+        {
+            let dir = tempdir().unwrap();
+            initialize(dir.path(), false).unwrap();
+
+            assert!(load(dir.path()).is_ok());
+        }
+    }
+
+    #[test]
+    fn test_call_hook() {
+        let config = dummy_config();
+
+        {
+            assert!(config
+                .call_hook(config.pre_hook.as_ref().unwrap(), &[])
+                .is_ok());
+        }
+
+        {
+            let err = config
+                .call_hook(config.commands.rm.post_hook.as_ref().unwrap(), &[])
+                .unwrap_err();
+
+            assert_eq!(
+                err.to_string(),
+                "failed to run hook: this-command-does-not-exist"
+            );
+        }
+
+        {
+            let err = config
+                .call_hook(config.post_hook.as_ref().unwrap(), &[])
+                .unwrap_err();
+
+            assert_eq!(err.to_string(), "hook exited with an error code: false");
+        }
+    }
+
+    #[test]
+    fn test_get_generator() {
+        let config = dummy_config();
+
+        assert!(config.get_generator("default").is_some());
+        assert!(config.get_generator("nonexistent-generator").is_none());
+    }
+
+    // TODO: Test Config::unwrap_keyfile.
 }
