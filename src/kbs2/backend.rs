@@ -268,8 +268,8 @@ impl RageLib {
             let unwrapped_key = unsafe { Mmap::map(&unwrapped_file)? };
             let nul_index = unwrapped_key
                 .iter()
-                .position(|&x| x == '\x00' as u8)
-                .unwrap_or(unwrapped_key.len());
+                .position(|&x| x == b'\x00')
+                .unwrap_or_else(|| unwrapped_key.len());
 
             let reader = BufReader::new(&unwrapped_key[..nul_index]);
             log::debug!("parsing unwrapped key");
@@ -283,8 +283,7 @@ impl RageLib {
             return Err(anyhow!(
                 "expected exactly one private key in the keyfile, but got {}",
                 identities.len()
-            )
-            .into());
+            ));
         }
 
         Ok(RageLib { pubkey, identities })

@@ -77,10 +77,12 @@ pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     let generator = if matches.is_present("generate") {
         let generator_name = matches.value_of("generator").unwrap();
 
-        Some(session.config.get_generator(generator_name).ok_or(anyhow!(
-            "couldn't find a generator named {}",
-            generator_name
-        ))?)
+        Some(
+            session
+                .config
+                .get_generator(generator_name)
+                .ok_or_else(|| anyhow!("couldn't find a generator named {}", generator_name))?,
+        )
     } else {
         None
     };
@@ -259,7 +261,7 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<()> {
                 let mut ctx: ClipboardContext = ClipboardProvider::new()
                     .map_err(|_| anyhow!("unable to grab the clipboard"))?;
 
-                ctx.set_contents(password.to_owned())
+                ctx.set_contents(password)
                     .map_err(|_| anyhow!("unable to store to the clipboard"))?;
 
                 std::thread::sleep(std::time::Duration::from_secs(clipboard_duration));
@@ -277,12 +279,10 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<()> {
             Err(_) => return Err(anyhow!("clipboard fork failed")),
             _ => {}
         }
+    } else if atty::isnt(Stream::Stdout) {
+        print!("{}", password);
     } else {
-        if atty::isnt(Stream::Stdout) {
-            print!("{}", password);
-        } else {
-            println!("{}", password);
-        }
+        println!("{}", password);
     }
 
     if let Some(post_hook) = &session.config.commands.pass.post_hook {
@@ -306,12 +306,10 @@ pub fn env(matches: &ArgMatches, session: &session::Session) -> Result<()> {
 
     if matches.is_present("value-only") {
         println!("{}", environment.value);
+    } else if matches.is_present("no-export") {
+        println!("{}={}", environment.variable, environment.value);
     } else {
-        if matches.is_present("no-export") {
-            println!("{}={}", environment.variable, environment.value);
-        } else {
-            println!("export {}={}", environment.variable, environment.value);
-        }
+        println!("export {}={}", environment.variable, environment.value);
     }
 
     Ok(())
@@ -387,5 +385,7 @@ pub fn generate(matches: &ArgMatches, session: &session::Session) -> Result<()> 
         }
     };
 
-    Ok(println!("{}", generator.secret()?))
+    println!("{}", generator.secret()?);
+
+    Ok(())
 }
