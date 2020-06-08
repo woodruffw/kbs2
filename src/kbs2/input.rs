@@ -1,8 +1,8 @@
+use anyhow::{anyhow, Result};
 use dialoguer::{Input, Password};
 
 use std::io::{self, Read};
 
-use crate::kbs2::error::Error;
 use crate::kbs2::generator::Generator;
 use crate::kbs2::record::FieldKind::{self, *};
 
@@ -12,7 +12,7 @@ pub static TERSE_IFS: &str = "\x01";
 fn terse_fields(
     names: &[FieldKind],
     generator: &Option<Box<&dyn Generator>>,
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<String>> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
 
@@ -28,12 +28,11 @@ fn terse_fields(
         .map(|s| s.to_string())
         .collect::<Vec<String>>();
     if fields.len() != names.len() {
-        return Err(format!(
+        return Err(anyhow!(
             "field count mismatch: expected {}, found {}",
             names.len(),
             fields.len()
-        )
-        .into());
+        ));
     }
 
     // Then, if we have a generator configured, we iterate over the
@@ -54,7 +53,7 @@ fn terse_fields(
 fn interactive_fields(
     names: &[FieldKind],
     generator: &Option<Box<&dyn Generator>>,
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<String>> {
     let mut fields = vec![];
 
     for name in names {
@@ -79,7 +78,7 @@ pub fn fields(
     names: &[FieldKind],
     terse: bool,
     generator: &Option<Box<&dyn Generator>>,
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<String>> {
     if terse {
         terse_fields(names, generator)
     } else {
