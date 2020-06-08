@@ -42,3 +42,66 @@ impl Generator for config::GeneratorInternalConfig {
         Ok(secret)
     }
 }
+
+mod tests {
+    use super::*;
+
+    fn dummy_command_generator(command: &str) -> Box<dyn Generator> {
+        Box::new(config::GeneratorCommandConfig {
+            name: "dummy-command".into(),
+            command: command.into(),
+        })
+    }
+
+    fn dummy_internal_generator(alphabet: &str) -> Box<dyn Generator> {
+        Box::new(config::GeneratorInternalConfig {
+            name: "dummy-internal".into(),
+            alphabet: alphabet.into(),
+            length: 5,
+        })
+    }
+
+    #[test]
+    fn test_name() {
+        {
+            let gen = dummy_command_generator("true");
+            assert_eq!(gen.name(), "dummy-command");
+        }
+
+        {
+            let gen = dummy_internal_generator("abc");
+            assert_eq!(gen.name(), "dummy-internal");
+        }
+    }
+
+    #[test]
+    fn test_secret() {
+        {
+            let gen = dummy_command_generator("echo fake-password");
+            assert_eq!(gen.secret().unwrap(), "fake-password");
+        }
+
+        {
+            let gen = dummy_internal_generator("abc");
+            assert_eq!(gen.secret().unwrap().len(), 5);
+        }
+
+        {
+            let gen = dummy_command_generator("false");
+            let err = gen.secret().unwrap_err();
+            assert_eq!(
+                err.to_string(),
+                "expected output from false, but none given"
+            );
+        }
+
+        {
+            let gen = dummy_internal_generator("ⓓⓔⓕⓘⓝⓘⓣⓔⓛⓨ ⓝⓞⓣ ⓐⓢⓒⓘⓘ");
+            let err = gen.secret().unwrap_err();
+            assert_eq!(
+                err.to_string(),
+                "generator alphabet contains non-ascii characters"
+            );
+        }
+    }
+}
