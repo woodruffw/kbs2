@@ -23,7 +23,9 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
     log::debug!("initializing a new config");
 
     if config_dir.join(config::CONFIG_BASENAME).exists() && !matches.is_present("force") {
-        return Err(anyhow!("refusing to overwrite your current config without --force"));
+        return Err(anyhow!(
+            "refusing to overwrite your current config without --force"
+        ));
     }
 
     config::initialize(&config_dir, !matches.is_present("insecure-not-wrapped"))
@@ -254,8 +256,8 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<()> {
                     util::warn("primary clipboard requested but not yet supported");
                 }
 
-                let mut ctx: ClipboardContext =
-                    ClipboardProvider::new().map_err(|_| anyhow!("unable to grab the clipboard"))?;
+                let mut ctx: ClipboardContext = ClipboardProvider::new()
+                    .map_err(|_| anyhow!("unable to grab the clipboard"))?;
 
                 ctx.set_contents(password.to_owned())
                     .map_err(|_| anyhow!("unable to store to the clipboard"))?;
@@ -377,7 +379,10 @@ pub fn generate(matches: &ArgMatches, session: &session::Session) -> Result<()> 
         match session.config.get_generator(generator_name) {
             Some(generator) => generator,
             None => {
-                return Err(anyhow!("couldn't find a generator named {}", generator_name))
+                return Err(anyhow!(
+                    "couldn't find a generator named {}",
+                    generator_name
+                ))
             }
         }
     };
