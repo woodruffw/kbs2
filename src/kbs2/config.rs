@@ -1,5 +1,5 @@
 use age::Decryptor;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Error, Result};
 use memmap::Mmap;
 use nix::errno::Errno;
 use nix::fcntl::OFlag;
@@ -19,7 +19,6 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use crate::kbs2::backend::{Backend, BackendKind, RageLib};
-use crate::kbs2::error::Error;
 use crate::kbs2::generator::Generator;
 use crate::kbs2::util;
 

@@ -1,7 +1,6 @@
 pub mod backend;
 pub mod command;
 pub mod config;
-pub mod error;
 pub mod generator;
 pub mod input;
 pub mod record;
