@@ -72,6 +72,7 @@ pub fn home_dir() -> Result<PathBuf> {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

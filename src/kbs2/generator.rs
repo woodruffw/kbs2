@@ -43,6 +43,7 @@ impl Generator for config::GeneratorInternalConfig {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

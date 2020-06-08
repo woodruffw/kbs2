@@ -406,6 +406,7 @@ pub fn load(config_dir: &Path) -> Result<Config> {
     toml::from_str(&contents).map_err(|e| anyhow!("config loading error: {}", e))
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     use tempfile::tempdir;
