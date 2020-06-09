@@ -7,7 +7,6 @@ use nix::sys::mman;
 use nix::sys::stat::Mode;
 use nix::unistd;
 use serde::{de, Deserialize, Serialize};
-use toml;
 
 use std::convert::TryInto;
 use std::env;
@@ -98,9 +97,9 @@ impl Config {
         }
     }
 
-    pub fn get_generator(&self, name: &str) -> Option<Box<&dyn Generator>> {
+    pub fn get_generator(&self, name: &str) -> Option<&dyn Generator> {
         for generator_config in self.generators.iter() {
-            let generator = generator_config.as_box();
+            let generator = generator_config.as_dyn();
             if generator.name() == name {
                 return Some(generator);
             }
@@ -226,10 +225,10 @@ pub enum GeneratorConfig {
 }
 
 impl GeneratorConfig {
-    fn as_box(&self) -> Box<&dyn Generator> {
+    fn as_dyn(&self) -> &dyn Generator {
         match self {
-            GeneratorConfig::Command(g) => Box::new(g),
-            GeneratorConfig::Internal(g) => Box::new(g),
+            GeneratorConfig::Command(g) => g as &dyn Generator,
+            GeneratorConfig::Internal(g) => g as &dyn Generator,
         }
     }
 }

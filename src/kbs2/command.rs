@@ -5,7 +5,6 @@ use clipboard::{ClipboardContext, ClipboardProvider};
 use nix::errno::Errno;
 use nix::sys::mman;
 use nix::unistd::{fork, ForkResult};
-use tempfile;
 
 use std::env;
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -89,9 +88,9 @@ pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<()> {
 
     // TODO: new_* below is a little silly. This should be de-duped.
     match matches.value_of("kind").unwrap() {
-        "login" => new_login(label, terse, &session, &generator)?,
-        "environment" => new_environment(label, terse, &session, &generator)?,
-        "unstructured" => new_unstructured(label, terse, &session, &generator)?,
+        "login" => new_login(label, terse, &session, generator)?,
+        "environment" => new_environment(label, terse, &session, generator)?,
+        "unstructured" => new_unstructured(label, terse, &session, generator)?,
         _ => unreachable!(),
     }
 
@@ -107,12 +106,12 @@ fn new_login(
     label: &str,
     terse: bool,
     session: &session::Session,
-    generator: &Option<Box<&dyn Generator>>,
+    generator: Option<&dyn Generator>,
 ) -> Result<()> {
     let fields = input::fields(
         &[Insensitive("Username"), Sensitive("Password")],
         terse,
-        &generator,
+        generator,
     )?;
     let record = record::Record::login(label, &fields[0], &fields[1]);
 
@@ -123,12 +122,12 @@ fn new_environment(
     label: &str,
     terse: bool,
     session: &session::Session,
-    generator: &Option<Box<&dyn Generator>>,
+    generator: Option<&dyn Generator>,
 ) -> Result<()> {
     let fields = input::fields(
         &[Insensitive("Variable"), Sensitive("Value")],
         terse,
-        &generator,
+        generator,
     )?;
     let record = record::Record::environment(label, &fields[0], &fields[1]);
 
@@ -139,9 +138,9 @@ fn new_unstructured(
     label: &str,
     terse: bool,
     session: &session::Session,
-    generator: &Option<Box<&dyn Generator>>,
+    generator: Option<&dyn Generator>,
 ) -> Result<()> {
-    let fields = input::fields(&[Insensitive("Contents")], terse, &generator)?;
+    let fields = input::fields(&[Insensitive("Contents")], terse, generator)?;
     let record = record::Record::unstructured(label, &fields[0]);
 
     session.add_record(&record)
