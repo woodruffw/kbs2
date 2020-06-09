@@ -37,11 +37,13 @@ pub trait Backend {
     fn create_wrapped_keypair(path: &Path) -> Result<String>
     where
         Self: Sized;
-    fn encrypt(&self, config: &config::Config, record: &Record) -> Result<String>;
-    fn decrypt(&self, config: &config::Config, encrypted: &str) -> Result<Record>;
+    fn encrypt(&self, record: &Record) -> Result<String>;
+    fn decrypt(&self, encrypted: &str) -> Result<Record>;
 }
 
 pub trait CLIBackend {
+    fn public_key(&self) -> &str;
+    fn keyfile(&self) -> &str;
     fn age() -> &'static str;
     fn age_keygen() -> &'static str;
 }
@@ -120,11 +122,11 @@ where
         Ok(public_key)
     }
 
-    fn encrypt(&self, config: &config::Config, record: &Record) -> Result<String> {
+    fn encrypt(&self, record: &Record) -> Result<String> {
         let mut child = Command::new(T::age())
             .arg("-a")
             .arg("-r")
-            .arg(&config.public_key)
+            .arg(&self.public_key())
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -150,11 +152,11 @@ where
         Ok(String::from_utf8(output.stdout)?)
     }
 
-    fn decrypt(&self, config: &config::Config, encrypted: &str) -> Result<Record> {
+    fn decrypt(&self, encrypted: &str) -> Result<Record> {
         let mut child = Command::new(T::age())
             .arg("-d")
             .arg("-i")
-            .arg(&config.keyfile)
+            .arg(&self.keyfile())
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -178,19 +180,33 @@ where
     }
 }
 
-pub struct AgeCLI {}
+pub struct AgeCLI {
+    public_key: String,
+    keyfile: String,
+}
 
 impl AgeCLI {
     pub fn new(config: &config::Config) -> Result<AgeCLI> {
         if config.wrapped {
             Err(anyhow!("the RageCLI backend doesn't support wrapped keys"))
         } else {
-            Ok(AgeCLI {})
+            Ok(AgeCLI {
+                public_key: config.public_key.clone(),
+                keyfile: config.keyfile.clone(),
+            })
         }
     }
 }
 
 impl CLIBackend for AgeCLI {
+    fn public_key(&self) -> &str {
+        self.public_key.as_ref()
+    }
+
+    fn keyfile(&self) -> &str {
+        self.keyfile.as_ref()
+    }
+
     fn age() -> &'static str {
         "age"
     }
@@ -200,19 +216,33 @@ impl CLIBackend for AgeCLI {
     }
 }
 
-pub struct RageCLI {}
+pub struct RageCLI {
+    public_key: String,
+    keyfile: String,
+}
 
 impl RageCLI {
     pub fn new(config: &config::Config) -> Result<RageCLI> {
         if config.wrapped {
             Err(anyhow!("the RageCLI backend doesn't support wrapped keys"))
         } else {
-            Ok(RageCLI {})
+            Ok(RageCLI {
+                public_key: config.public_key.clone(),
+                keyfile: config.keyfile.clone(),
+            })
         }
     }
 }
 
 impl CLIBackend for RageCLI {
+    fn public_key(&self) -> &str {
+        self.public_key.as_ref()
+    }
+
+    fn keyfile(&self) -> &str {
+        self.keyfile.as_ref()
+    }
+
     fn age() -> &'static str {
         "rage"
     }
@@ -319,7 +349,7 @@ impl Backend for RageLib {
         Ok(keypair.to_public().to_string())
     }
 
-    fn encrypt(&self, _config: &config::Config, record: &Record) -> Result<String> {
+    fn encrypt(&self, record: &Record) -> Result<String> {
         let encryptor = age::Encryptor::with_recipients(vec![self.pubkey.clone()]);
         let mut encrypted = vec![];
         let mut writer = encryptor.wrap_output(&mut encrypted, age::Format::AsciiArmor)?;
@@ -329,12 +359,13 @@ impl Backend for RageLib {
         Ok(String::from_utf8(encrypted)?)
     }
 
-    fn decrypt(&self, _config: &config::Config, encrypted: &str) -> Result<Record> {
+    fn decrypt(&self, encrypted: &str) -> Result<Record> {
         let decryptor = match age::Decryptor::new(encrypted.as_bytes())
             .map_err(|e| anyhow!("unable to load private key (backend reports: {:?})", e))?
         {
             age::Decryptor::Recipients(d) => d,
-            // NOTE(ww): kbs2 doesn't support secret keys with passphrases.
+            // NOTE(ww): we should be fully unwrapped (if we were wrapped to begin with)
+            // in this context, so all other kinds of keys should be unreachable here.
             _ => unreachable!(),
         };
 
@@ -350,4 +381,74 @@ impl Backend for RageLib {
 
         Ok(serde_json::from_str(&decrypted)?)
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ragelib_backend() -> Box<dyn Backend> {
+        let key = age::SecretKey::generate();
+
+        Box::new(RageLib {
+            pubkey: key.to_public(),
+            identities: vec![key.into()],
+        })
+    }
+
+    fn ragelib_backend_bad_keypair() -> Box<dyn Backend> {
+        let key1 = age::SecretKey::generate();
+        let key2 = age::SecretKey::generate();
+
+        Box::new(RageLib {
+            pubkey: key1.to_public(),
+            identities: vec![key2.into()],
+        })
+    }
+
+    #[test]
+    fn test_ragelib_create_keypair() {
+        let keyfile = tempfile::NamedTempFile::new().unwrap();
+
+        assert!(RageLib::create_keypair(keyfile.path()).is_ok());
+    }
+
+    #[test]
+    fn test_ragelib_encrypt() {
+        {
+            let backend = ragelib_backend();
+            let record = Record::login("foo", "username", "password");
+            assert!(backend.encrypt(&record).is_ok());
+        }
+
+        // TODO: Test RageLib::encrypt failure modes.
+    }
+
+    #[test]
+    fn test_ragelib_decrypt() {
+        {
+            let backend = ragelib_backend();
+            let record = Record::login("foo", "username", "password");
+
+            let encrypted = backend.encrypt(&record).unwrap();
+            let decrypted = backend.decrypt(&encrypted).unwrap();
+
+            assert_eq!(record, decrypted);
+        }
+
+        {
+            let backend = ragelib_backend_bad_keypair();
+            let record = Record::login("foo", "username", "password");
+
+            let encrypted = backend.encrypt(&record).unwrap();
+            let err = backend.decrypt(&encrypted).unwrap_err();
+
+            assert_eq!(
+                err.to_string(),
+                "unable to decrypt (backend reports: NoMatchingKeys)"
+            );
+        }
+    }
+
+    // TODO: Conditionally enable tests for AgeCLI and RageCLI.
 }

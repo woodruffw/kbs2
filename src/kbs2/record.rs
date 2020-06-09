@@ -11,7 +11,7 @@ pub enum FieldKind {
     Sensitive(&'static str),
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct Record {
     pub timestamp: u64,
     pub label: String,
