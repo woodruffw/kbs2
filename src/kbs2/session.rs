@@ -211,13 +211,19 @@ mod tests {
             let record2 = record::Record::login("a", "b", "c");
             session.add_record(&record2).unwrap();
 
-            assert_eq!(session.record_labels().unwrap(), vec!["foo", "a"]);
+            // NOTE: record_labels() returns labels in a platform dependent order,
+            // which is why we don't compared against a fixed-order vec here or below.
+            assert_eq!(session.record_labels().unwrap().len(), 2);
+            assert!(session.record_labels().unwrap().contains(&"foo".into()));
+            assert!(session.record_labels().unwrap().contains(&"a".into()));
 
             // Overwrite foo; still only two records.
             let record3 = record::Record::login("foo", "quux", "zap");
             session.add_record(&record3).unwrap();
 
-            assert_eq!(session.record_labels().unwrap(), vec!["foo", "a"]);
+            assert_eq!(session.record_labels().unwrap().len(), 2);
+            assert!(session.record_labels().unwrap().contains(&"foo".into()));
+            assert!(session.record_labels().unwrap().contains(&"a".into()));
         }
     }
 
