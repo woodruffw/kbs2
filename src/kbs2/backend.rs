@@ -253,8 +253,8 @@ impl CLIBackend for RageCLI {
 }
 
 pub struct RageLib {
-    pubkey: age::keys::RecipientKey,
-    identities: Vec<age::keys::Identity>,
+    pub pubkey: age::keys::RecipientKey,
+    pub identities: Vec<age::keys::Identity>,
 }
 
 impl RageLib {
