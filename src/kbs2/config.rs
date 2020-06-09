@@ -7,7 +7,6 @@ use nix::sys::mman;
 use nix::sys::stat::Mode;
 use nix::unistd;
 use serde::{de, Deserialize, Serialize};
-use toml;
 
 use std::convert::TryInto;
 use std::env;

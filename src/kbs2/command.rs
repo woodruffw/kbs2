@@ -5,7 +5,6 @@ use clipboard::{ClipboardContext, ClipboardProvider};
 use nix::errno::Errno;
 use nix::sys::mman;
 use nix::unistd::{fork, ForkResult};
-use tempfile;
 
 use std::env;
 use std::io::{Read, Seek, SeekFrom, Write};
