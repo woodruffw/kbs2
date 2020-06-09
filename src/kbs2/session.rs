@@ -71,7 +71,7 @@ impl Session {
             _ => e.into(),
         })?;
 
-        match self.backend.decrypt(&self.config, &record_contents) {
+        match self.backend.decrypt(&record_contents) {
             Ok(record) => Ok(record),
             Err(e) => Err(e),
         }
@@ -80,7 +80,7 @@ impl Session {
     pub fn add_record(&self, record: &record::Record) -> anyhow::Result<()> {
         let record_path = Path::new(&self.config.store).join(&record.label);
 
-        let record_contents = self.backend.encrypt(&self.config, record)?;
+        let record_contents = self.backend.encrypt(record)?;
         std::fs::write(&record_path, &record_contents)?;
 
         Ok(())
