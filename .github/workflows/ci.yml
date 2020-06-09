@@ -14,8 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Lint
+      - name: Format
         run: cargo fmt && git diff --exit-code
+      - name: Lint
+        run: |
+          rustup component add clippy
+          cargo clippy
   test:
     strategy:
       matrix:
