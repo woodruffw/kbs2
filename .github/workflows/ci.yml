@@ -19,7 +19,7 @@ jobs:
       - name: Lint
         run: |
           rustup component add clippy
-          cargo clippy
+          cargo clippy -- -D warnings
   test:
     strategy:
       matrix:
