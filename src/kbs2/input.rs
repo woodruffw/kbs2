@@ -9,10 +9,7 @@ use crate::kbs2::record::FieldKind::{self, *};
 // TODO(ww): Make this configurable.
 pub static TERSE_IFS: &str = "\x01";
 
-fn terse_fields(
-    names: &[FieldKind],
-    generator: &Option<Box<&dyn Generator>>,
-) -> Result<Vec<String>> {
+fn terse_fields(names: &[FieldKind], generator: Option<&dyn Generator>) -> Result<Vec<String>> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
 
@@ -52,7 +49,7 @@ fn terse_fields(
 
 fn interactive_fields(
     names: &[FieldKind],
-    generator: &Option<Box<&dyn Generator>>,
+    generator: Option<&dyn Generator>,
 ) -> Result<Vec<String>> {
     let mut fields = vec![];
 
@@ -77,7 +74,7 @@ fn interactive_fields(
 pub fn fields(
     names: &[FieldKind],
     terse: bool,
-    generator: &Option<Box<&dyn Generator>>,
+    generator: Option<&dyn Generator>,
 ) -> Result<Vec<String>> {
     if terse {
         terse_fields(names, generator)
