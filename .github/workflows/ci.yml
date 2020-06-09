@@ -18,6 +18,7 @@ jobs:
         run: cargo fmt && git diff --exit-code
       - name: Lint
         run: |
+          rustup update
           rustup component add clippy
           cargo clippy -- -D warnings
   test:
