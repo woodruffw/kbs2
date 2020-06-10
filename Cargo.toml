@@ -9,6 +9,7 @@ edition = "2018"
 
 [package.metadata.release]
 no-dev-version = true
+disable-publish = true # handled by GitHub Actions
 
 [dependencies]
 age = "0.4"
