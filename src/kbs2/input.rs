@@ -6,7 +6,6 @@ use std::io::{self, Read};
 use crate::kbs2::generator::Generator;
 use crate::kbs2::record::FieldKind::{self, *};
 
-// TODO(ww): Make this configurable.
 pub static TERSE_IFS: &str = "\x01";
 
 fn terse_fields(names: &[FieldKind], generator: Option<&dyn Generator>) -> Result<Vec<String>> {
