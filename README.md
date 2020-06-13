@@ -673,6 +673,15 @@ $ kbs2 frobulate --xyz
 will cause `kbs2` to run `kbs2-frobulate --xyz`. Custom commands are allowed to read from and
 write to the config file under the `[commands.<name>]` hierarchy.
 
+When run via `kbs2`, custom commands receive the following environment variables:
+
+* `KBS2_CONFIG_DIR`: The path to the configuration directory that `kbs2` itself was loaded with.
+Subcommands can use this path to read the current configuration file or any other content stored
+in the configuration directory.
+* `KBS2_STORE`: The path to the secret store.
+* `KBS2_SUBCOMMAND`: Always set to `1`. This can be used to determine whether a subcommand was run
+via `kbs2` (e.g. `kbs2 foo`) versus directly (e.g. `kbs2-foo`).
+
 The [kbs2-ext-cmds](https://github.com/woodruffw/kbs2-ext-cmds) repository contains several useful
 external commands.
 
