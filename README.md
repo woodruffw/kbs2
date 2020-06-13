@@ -822,7 +822,7 @@ particularly slow. To avoid this, use a release build:
 
 ```bash
 $ cargo build --release
-$ ./target/debug/kbs2 --help
+$ ./target/release/kbs2 --help
 ```
 
 ### Logging
