@@ -3,13 +3,20 @@ name = "kbs2"
 description = "A secret manager backed by age"
 license = "MIT"
 homepage = "https://github.com/woodruffw/kbs2"
+repository = "https://github.com/woodruffw/kbs2"
 version = "0.0.24"
 authors = ["William Woodruff <william@yossarian.net>"]
 edition = "2018"
+readme = "README.md"
+keywords = ["cli", "password-manager", "crypto"]
+categories = ["command-line-utilities", "cryptography"]
 
 [package.metadata.release]
 no-dev-version = true
 disable-publish = true # handled by GitHub Actions
+
+[badges]
+maintenance = { status = "actively-developed" }
 
 [dependencies]
 age = "0.4"

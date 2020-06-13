@@ -18,6 +18,7 @@ use crate::kbs2::record::{self, FieldKind::*, RecordBody};
 use crate::kbs2::session;
 use crate::kbs2::util;
 
+/// Implements the `kbs2 init` command.
 pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
     log::debug!("initializing a new config");
 
@@ -30,6 +31,7 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
     config::initialize(&config_dir, !matches.is_present("insecure-not-wrapped"))
 }
 
+/// Implements the `kbs2 unlock` command.
 pub fn unlock(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("unlock requested");
 
@@ -44,6 +46,7 @@ pub fn unlock(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
     Ok(())
 }
 
+/// Implements the `kbs2 lock` command.
 pub fn lock(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("lock requested");
 
@@ -58,6 +61,7 @@ pub fn lock(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
     }
 }
 
+/// Implements the `kbs2 new` command.
 pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     log::debug!("creating a new record");
 
@@ -146,6 +150,7 @@ fn new_unstructured(
     session.add_record(&record)
 }
 
+/// Implements the `kbs2 list` command.
 pub fn list(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     log::debug!("listing records");
 
@@ -182,6 +187,7 @@ pub fn list(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     Ok(())
 }
 
+/// Implements the `kbs2 rm` command.
 pub fn rm(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     log::debug!("removing a record");
 
@@ -196,6 +202,7 @@ pub fn rm(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     Ok(())
 }
 
+/// Implements the `kbs2 dump` command.
 pub fn dump(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     log::debug!("dumping a record");
 
@@ -221,6 +228,7 @@ pub fn dump(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     Ok(())
 }
 
+/// Implements the `kbs2 pass` command.
 pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     log::debug!("getting a login's password");
 
@@ -292,6 +300,7 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     Ok(())
 }
 
+/// Implements the `kbs2 env` command.
 pub fn env(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     log::debug!("getting a environment variable");
 
@@ -314,6 +323,7 @@ pub fn env(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     Ok(())
 }
 
+/// Implements the `kbs2 edit` command.
 pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     log::debug!("editing a record");
 
@@ -370,6 +380,7 @@ pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     Ok(())
 }
 
+/// Implements the `kbs2 generate` command.
 pub fn generate(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     let generator = {
         let generator_name = matches.value_of("generator").unwrap();

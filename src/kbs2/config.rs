@@ -21,59 +21,87 @@ use crate::kbs2::backend::{Backend, BackendKind, RageLib};
 use crate::kbs2::generator::Generator;
 use crate::kbs2::util;
 
-// The default base config directory name, placed relative to the user's config
-// directory by default.
+/// The default base config directory name, placed relative to the user's config
+/// directory by default.
 pub static CONFIG_BASEDIR: &str = "kbs2";
 
-// The default basename for the main config file, relative to the configuration
-// directory.
+/// The default basename for the main config file, relative to the configuration
+/// directory.
 pub static CONFIG_BASENAME: &str = "kbs2.conf";
 
-// The default generate age key is placed in this file, relative to
-// the configuration directory.
+/// The default generate age key is placed in this file, relative to
+/// the configuration directory.
 pub static DEFAULT_KEY_BASENAME: &str = "key";
 
-// The name for the POSIX shared memory object in which the unwrapped key is stored.
+/// The name for the POSIX shared memory object in which the unwrapped key is stored.
 pub static UNWRAPPED_KEY_SHM_NAME: &str = "/__kbs2_unwrapped_key";
 
-// The default base directory name for the secret store, placed relative to
-// the user's data directory by default.
+/// The default base directory name for the secret store, placed relative to
+/// the user's data directory by default.
 pub static STORE_BASEDIR: &str = "kbs2";
 
+/// The main kbs2 configuration structure.
+/// The fields of this structure correspond directly to the fields
+/// loaded from the configuration file.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
+    /// The kind of age backend used for cryptographic operations.
     #[serde(rename = "age-backend")]
     pub age_backend: BackendKind,
+
+    /// The public component of the keypair.
     #[serde(rename = "public-key")]
     pub public_key: String,
+
+    /// The path to a file containing the private component of the keypair,
+    /// which may be wrapped with a passphrase.
     #[serde(deserialize_with = "deserialize_with_tilde")]
     pub keyfile: String,
+
+    /// Whether or not the private component of the keypair is wrapped with
+    /// a passphrase.
     pub wrapped: bool,
+
+    /// The path to the directory where encrypted records are stored.
     #[serde(deserialize_with = "deserialize_with_tilde")]
     pub store: String,
+
+    /// An optional command to run before each `kbs2` subcommand.
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]
     #[serde(rename = "pre-hook")]
     #[serde(default)]
     pub pre_hook: Option<String>,
+
+    /// An optional command to run after each `kbs2` subcommand, on success.
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]
     #[serde(rename = "post-hook")]
     #[serde(default)]
     pub post_hook: Option<String>,
+
+    /// Whether or not any hooks are called when a hook itself invokes `kbs2`.
     #[serde(default)]
     #[serde(rename = "reentrant-hooks")]
     pub reentrant_hooks: bool,
+
+    /// Any secret generators configured by the user.
     #[serde(default)]
     pub generators: Vec<GeneratorConfig>,
+
+    /// Per-command configuration.
     #[serde(default)]
     pub commands: CommandConfigs,
 }
 
 impl Config {
-    // Hooks have the following behavior:
-    // 1. If reentrant-hooks is true *or* KBS2_HOOK is *not* present in the environment,
-    //    the hook is run.
-    // 2. If reentrant-hooks is false (the default) *and* KBS2_HOOK is already present
-    //    (indicating that we're already at least one layer deep), nothing is run.
+    /// Calls a command as a hook, meaning:
+    /// * The command is run with the `kbs2` store as its working directory
+    /// * The command is run with `KBS2_HOOK=1` in its environment
+    ///
+    /// Hooks have the following behavior:
+    /// 1. If `reentrant-hooks` is `true` *or* `KBS2_HOOK` is *not* present in the environment,
+    ///    the hook is run.
+    /// 2. If `reentrant-hooks` is `false` (the default) *and* `KBS2_HOOK` is already present
+    ///    (indicating that we're already in a hook), nothing is run.
     pub fn call_hook(&self, cmd: &str, args: &[&str]) -> Result<()> {
         if self.reentrant_hooks || env::var("KBS2_HOOK").is_err() {
             let success = Command::new(cmd)
@@ -97,6 +125,8 @@ impl Config {
         }
     }
 
+    /// Given the `name` of a configured generator, return that generator
+    /// if it exists.
     pub fn get_generator(&self, name: &str) -> Option<&dyn Generator> {
         for generator_config in self.generators.iter() {
             let generator = generator_config.as_dyn();
@@ -108,6 +138,11 @@ impl Config {
         None
     }
 
+    /// Unwraps the configured private key file into its underlying private
+    /// key, returning a `fs::File` that owns an open reference to that key.
+    ///
+    /// NOTE: This function assumes that the key file is wrapped. Calling
+    /// it with a non-wrapped key file will cause an error.
     pub fn unwrap_keyfile(&self) -> Result<fs::File> {
         // Unwrapping our password-protected keyfile and returning it as a raw file descriptor
         // is a multi-step process.
@@ -217,6 +252,7 @@ impl Config {
     }
 }
 
+/// The different types of generators known to `kbs2`.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum GeneratorConfig {
@@ -233,16 +269,26 @@ impl GeneratorConfig {
     }
 }
 
+/// The configuration settings for a "command" generator.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GeneratorCommandConfig {
+    /// The name of the generator.
     pub name: String,
+
+    /// The command to run to generate a secret.
     pub command: String,
 }
 
+/// The configuration settings for an "internal" generator.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GeneratorInternalConfig {
+    /// The name of the generator.
     pub name: String,
+
+    /// The alphabet to sample from when generating a secret.
     pub alphabet: String,
+
+    /// The number of characters to sample from the alphabet.
     pub length: u32,
 }
 
@@ -258,15 +304,24 @@ impl Default for GeneratorInternalConfig {
     }
 }
 
+/// The per-command configuration settings known to `kbs2`.
 #[derive(Default, Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct CommandConfigs {
+    /// Settings for `kbs2 new`.
     pub new: NewConfig,
+
+    /// Settings for `kbs2 pass`.
     pub pass: PassConfig,
+
+    /// Settings for `kbs2 edit`.
     pub edit: EditConfig,
+
+    /// Settings for `kbs2 rm`.
     pub rm: RmConfig,
 }
 
+/// Configuration settings for `kbs2 new`.
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct NewConfig {
@@ -279,6 +334,7 @@ pub struct NewConfig {
     pub post_hook: Option<String>,
 }
 
+/// Configuration settings for `kbs2 pass`.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct PassConfig {
@@ -318,6 +374,7 @@ impl Default for PassConfig {
     }
 }
 
+/// Configuration settings for `kbs2 edit`.
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct EditConfig {
@@ -327,6 +384,7 @@ pub struct EditConfig {
     pub post_hook: Option<String>,
 }
 
+/// Configuration settings for `kbs2 rm`.
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct RmConfig {
@@ -335,6 +393,7 @@ pub struct RmConfig {
     pub post_hook: Option<String>,
 }
 
+#[doc(hidden)]
 fn deserialize_with_tilde<'de, D>(deserializer: D) -> std::result::Result<String, D::Error>
 where
     D: de::Deserializer<'de>,
@@ -343,6 +402,7 @@ where
     Ok(shellexpand::tilde(unexpanded).into_owned())
 }
 
+#[doc(hidden)]
 fn deserialize_optional_with_tilde<'de, D>(
     deserializer: D,
 ) -> std::result::Result<Option<String>, D::Error>
@@ -357,16 +417,31 @@ where
     }
 }
 
+/// Returns a suitable configuration directory path for `kbs2`.
+///
+/// NOTE: This function always chooses `$HOME/.config/kbs2`, across all platforms.
 pub fn find_config_dir() -> Result<PathBuf> {
+    // TODO(ww): This should respect XDG on Linux.
     let home = util::home_dir()?;
     Ok(home.join(".config").join(CONFIG_BASEDIR))
 }
 
-fn data_dir() -> Result<PathBuf> {
+/// Returns a suitable record store directory path for `kbs2`.
+///
+/// NOTE: This function always chooses `$HOME/.local/share/kbs2`, across all platforms.
+fn store_dir() -> Result<PathBuf> {
+    // TODO(ww): This should respect XDG on Linux.
     let home = util::home_dir()?;
     Ok(home.join(".local/share").join(STORE_BASEDIR))
 }
 
+/// Given a path to a `kbs2` configuration directory, initializes a configuration
+/// file and keypair within it.
+///
+/// # Arguments
+///
+/// * `config_dir` - The configuration directory to initialize within
+/// * `wrapped` - Whether or not to generate a passphrase-wrapped keypair
 pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<()> {
     // NOTE(ww): Default initialization uses the rage-lib backend unconditionally.
     let keyfile = config_dir.join(DEFAULT_KEY_BASENAME);
@@ -385,7 +460,7 @@ pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<()> {
         public_key: public_key,
         keyfile: keyfile.to_str().unwrap().into(),
         wrapped: wrapped,
-        store: data_dir()?.to_str().unwrap().into(),
+        store: store_dir()?.to_str().unwrap().into(),
         pre_hook: None,
         post_hook: None,
         reentrant_hooks: false,
@@ -398,6 +473,8 @@ pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<()> {
     Ok(())
 }
 
+/// Given a path to a `kbs2` configuration directory, loads the configuration
+/// file within and returns the resulting `Config`.
 pub fn load(config_dir: &Path) -> Result<Config> {
     let config_path = config_dir.join(CONFIG_BASENAME);
     let contents = fs::read_to_string(config_path)?;

@@ -25,6 +25,7 @@ Quick links:
   * [`kbs2 pass`](#kbs2-pass)
   * [`kbs2 env`](#kbs2-env)
   * [`kbs2 edit`](#kbs2-edit)
+  * [`kbs2 generate`](#kbs2-generate)
 * [Configuration](#configuration)
   * [Generators](#generators)
 * [Customization](#customization)
@@ -453,6 +454,39 @@ Open the `email` record for editing with a custom `$EDITOR`:
 
 ```bash
 $ EDITOR=vim kbs2 edit email
+```
+
+### `kbs2 generate`
+
+#### Usage
+
+```
+generate secret values using a generator
+
+USAGE:
+    kbs2 generate [generator]
+
+ARGS:
+    <generator>    the generator to use [default: default]
+
+FLAGS:
+    -h, --help    Prints help information
+```
+
+#### Examples
+
+Generate a secret using the default generator:
+
+```bash
+$ kbs2 generate
+rrayxfky-81x=h6i
+```
+
+Generate a secret using a generator named `pwgen`:
+
+```bash
+$ kbs2 generate pwgen
+iit4wie6faeL4aiyupheec5Xochosero
 ```
 
 ## Configuration
