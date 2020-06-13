@@ -46,7 +46,6 @@ pub fn run_with_output(command: &str, args: &[&str]) -> Result<String> {
     Ok(output)
 }
 
-
 /// Securely retrieve a password from the user.
 ///
 /// NOTE: This function currently uses pinentry internally, which
@@ -78,7 +77,6 @@ pub fn current_timestamp() -> u64 {
 pub fn warn(msg: &str) {
     eprintln!("Warn: {}", msg);
 }
-
 
 /// Retrieve the current user's home directory.
 pub fn home_dir() -> Result<PathBuf> {
