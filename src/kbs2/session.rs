@@ -8,12 +8,17 @@ use crate::kbs2::backend::{self, BackendKind};
 use crate::kbs2::config;
 use crate::kbs2::record;
 
+/// Encapsulates the context needed by `kbs2` to interact with records.
 pub struct Session {
+    /// The age backend used to encrypt and decrypt records.
     pub backend: Box<dyn backend::Backend>,
+
+    /// The configuration that `kbs2` was invoked with.
     pub config: config::Config,
 }
 
 impl Session {
+    /// Creates a new session, given a `Config`.
     pub fn new(config: config::Config) -> Result<Session> {
         log::debug!("backend: {:?}", config.age_backend);
 
@@ -28,6 +33,7 @@ impl Session {
         Ok(Session { backend, config })
     }
 
+    /// Returns the label of every record available in the store.
     pub fn record_labels(&self) -> Result<Vec<String>> {
         let store = Path::new(&self.config.store);
 
@@ -54,12 +60,14 @@ impl Session {
         Ok(labels)
     }
 
+    /// Returns whether or not the store contains a given record.
     pub fn has_record(&self, label: &str) -> bool {
         let record_path = Path::new(&self.config.store).join(label);
 
         record_path.is_file()
     }
 
+    /// Retrieves a record from the store by its label.
     pub fn get_record(&self, label: &str) -> Result<record::Record> {
         if !self.has_record(label) {
             return Err(anyhow!("no such record: {}", label));
@@ -77,6 +85,7 @@ impl Session {
         }
     }
 
+    /// Adds the given record to the store.
     pub fn add_record(&self, record: &record::Record) -> anyhow::Result<()> {
         let record_path = Path::new(&self.config.store).join(&record.label);
 
@@ -86,6 +95,7 @@ impl Session {
         Ok(())
     }
 
+    /// Deletes a record from the store by label.
     pub fn delete_record(&self, label: &str) -> Result<()> {
         let record_path = Path::new(&self.config.store).join(label);
 

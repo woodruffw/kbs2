@@ -6,6 +6,8 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+/// Given an input string formatted according to shell quoting rules,
+/// split it into its command and argument parts and return each.
 pub fn parse_and_split_args(argv: &str) -> Result<(String, Vec<String>)> {
     let args = match shell_words::split(argv) {
         Ok(args) => args,
@@ -20,6 +22,10 @@ pub fn parse_and_split_args(argv: &str) -> Result<(String, Vec<String>)> {
     Ok((command, args))
 }
 
+/// Given a command and its arguments, run the command and capture the resulting
+/// standard output.
+///
+/// NOTE: The command is run with no standard input or standard error.
 pub fn run_with_output(command: &str, args: &[&str]) -> Result<String> {
     let output = Command::new(command)
         .args(args)
@@ -40,6 +46,12 @@ pub fn run_with_output(command: &str, args: &[&str]) -> Result<String> {
     Ok(output)
 }
 
+
+/// Securely retrieve a password from the user.
+///
+/// NOTE: This function currently uses pinentry internally, which
+/// will delegate to the appropriate pinentry binary on the user's
+/// system.
 pub fn get_password() -> Result<SecretString> {
     if let Some(mut input) = PassphraseInput::with_default_binary() {
         input
@@ -52,6 +64,7 @@ pub fn get_password() -> Result<SecretString> {
     }
 }
 
+/// Return the current timestamp as seconds since the UNIX epoch.
 pub fn current_timestamp() -> u64 {
     // NOTE(ww): This unwrap should be safe, since every time should be
     // greater than or equal to the epoch.
@@ -61,10 +74,13 @@ pub fn current_timestamp() -> u64 {
         .as_secs()
 }
 
+/// Print the given message on `stderr` with a warning prefix.
 pub fn warn(msg: &str) {
     eprintln!("Warn: {}", msg);
 }
 
+
+/// Retrieve the current user's home directory.
 pub fn home_dir() -> Result<PathBuf> {
     match home::home_dir() {
         Some(dir) => Ok(dir),
