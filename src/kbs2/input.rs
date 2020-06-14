@@ -6,8 +6,14 @@ use std::io::{self, Read};
 use crate::kbs2::generator::Generator;
 use crate::kbs2::record::FieldKind::{self, *};
 
+/// The input separator used when input is gathered in "terse" mode.
 pub static TERSE_IFS: &str = "\x01";
 
+/// Given an array of field names and a potential generator, grabs the values for
+/// those fields in a terse manner (each separated by `TERSE_IFS`).
+///
+/// Fields that are marked as sensitive are subsequently overwritten by the
+/// generator, if one is provided.
 fn terse_fields(names: &[FieldKind], generator: Option<&dyn Generator>) -> Result<Vec<String>> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
@@ -46,6 +52,11 @@ fn terse_fields(names: &[FieldKind], generator: Option<&dyn Generator>) -> Resul
     Ok(fields)
 }
 
+/// Given an array of field names and a potential generator, grabs the values for those
+/// fields by prompting the user for each.
+///
+/// If a field is marked as sensitive **and** a generator is provided, the generator
+/// is used to provide that field and the user is **not** prompted.
 fn interactive_fields(
     names: &[FieldKind],
     generator: Option<&dyn Generator>,
@@ -70,6 +81,14 @@ fn interactive_fields(
     Ok(fields)
 }
 
+/// Grabs the values for a set of field names from user input.
+///
+/// # Arguments
+///
+/// * `names` - the set of field names to grab
+/// * `terse` - whether or not to get fields tersely, i.e. by splitting on
+///   `TERSE_IFS` instead of prompting for each
+/// * `generator` - the generator, if any, to use for sensitive fields
 pub fn fields(
     names: &[FieldKind],
     terse: bool,

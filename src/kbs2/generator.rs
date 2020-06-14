@@ -4,8 +4,12 @@ use rand::Rng;
 use crate::kbs2::config;
 use crate::kbs2::util;
 
+/// Represents the operations that all generators are capable of.
 pub trait Generator {
+    /// Returns the name of the generator, e.g. `"default"`.
     fn name(&self) -> &str;
+
+    /// Returns a secret produced by the generator.
     fn secret(&self) -> Result<String>;
 }
 
