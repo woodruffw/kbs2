@@ -17,6 +17,7 @@ use crate::kbs2::config;
 use crate::kbs2::record::Record;
 use crate::kbs2::util;
 
+/// The kind of age backend to use for cryptographic operations.
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 pub enum BackendKind {
     AgeCLI,
@@ -30,21 +31,46 @@ impl Default for BackendKind {
     }
 }
 
+/// Represents the operations that all age backends are capable of.
 pub trait Backend {
+    /// Creates an age keypair, saving the private component to the given path.
+    ///
+    /// NOTE: The private component is written in an ASCII-armored format.
     fn create_keypair(path: &Path) -> Result<String>
     where
         Self: Sized;
+
+    /// Creates a wrapped age keypair, saving the encrypted private component to the
+    /// given path.
+    ///
+    /// NOTE: Like `create_keypair`, this writes an ASCII-armored private component.
+    /// It also prompts the user to enter a password for encrypting the generated
+    /// private key.
     fn create_wrapped_keypair(path: &Path) -> Result<String>
     where
         Self: Sized;
+
+    /// Encrypts the given record, returning it as an ASCII-armored string.
     fn encrypt(&self, record: &Record) -> Result<String>;
+
+    /// Decrypts the given ASCII-armored string, returning it as a Record.
     fn decrypt(&self, encrypted: &str) -> Result<Record>;
 }
 
+/// Represents the operations that an age CLI backend is capable of.
 pub trait CLIBackend {
+    /// Returns the public component of the generated keypair.
     fn public_key(&self) -> &str;
+
+    /// Returns a path to a file containing the private component of the generated keypair.
     fn keyfile(&self) -> &str;
+
+    /// Returns the name of the age binary, e.g. `age` for the reference implementation
+    /// or `rage` for the Rust implementation.
     fn age() -> &'static str;
+
+    /// Returns the name of the age-keygen binary, e.g. `age-keygen` for the reference
+    /// implementation or `rage-keygen` for the Rust implementation.
     fn age_keygen() -> &'static str;
 }
 
@@ -180,6 +206,7 @@ where
     }
 }
 
+/// Encapsulates the `age` reference implementation CLI.
 pub struct AgeCLI {
     public_key: String,
     keyfile: String,
@@ -216,6 +243,7 @@ impl CLIBackend for AgeCLI {
     }
 }
 
+/// Encapsulates the `rage` Rust CLI.
 pub struct RageCLI {
     public_key: String,
     keyfile: String,
@@ -252,6 +280,7 @@ impl CLIBackend for RageCLI {
     }
 }
 
+/// Encapsulates the age crate (i.e., the `rage` CLI's backing library).
 pub struct RageLib {
     pub pubkey: age::keys::RecipientKey,
     pub identities: Vec<age::keys::Identity>,

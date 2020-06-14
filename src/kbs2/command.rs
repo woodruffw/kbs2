@@ -106,6 +106,7 @@ pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     Ok(())
 }
 
+#[doc(hidden)]
 fn new_login(
     label: &str,
     terse: bool,
@@ -122,6 +123,7 @@ fn new_login(
     session.add_record(&record)
 }
 
+#[doc(hidden)]
 fn new_environment(
     label: &str,
     terse: bool,
@@ -138,6 +140,7 @@ fn new_environment(
     session.add_record(&record)
 }
 
+#[doc(hidden)]
 fn new_unstructured(
     label: &str,
     terse: bool,
