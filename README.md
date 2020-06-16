@@ -64,8 +64,8 @@ Create a new (login) record:
 
 ```bash
 $ kbs2 new amazon
-Username? jonf-bonzo
-Password? (hidden)
+Username: jonf-bonzo
+Password: [hidden]
 ```
 
 List available records:
