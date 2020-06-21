@@ -5,31 +5,15 @@ use nix::fcntl::OFlag;
 use nix::sys::mman;
 use nix::sys::stat::Mode;
 use secrecy::ExposeSecret;
-use serde::{Deserialize, Serialize};
 
 use std::fs::File;
 use std::io::{BufReader, Read, Write};
 use std::os::unix::io::FromRawFd;
 use std::path::Path;
-use std::process::{Command, Stdio};
 
 use crate::kbs2::config;
 use crate::kbs2::record::Record;
 use crate::kbs2::util;
-
-/// The kind of age backend to use for cryptographic operations.
-#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
-pub enum BackendKind {
-    AgeCLI,
-    RageCLI,
-    RageLib,
-}
-
-impl Default for BackendKind {
-    fn default() -> Self {
-        BackendKind::RageLib
-    }
-}
 
 /// Represents the operations that all age backends are capable of.
 pub trait Backend {
@@ -55,229 +39,6 @@ pub trait Backend {
 
     /// Decrypts the given ASCII-armored string, returning it as a Record.
     fn decrypt(&self, encrypted: &str) -> Result<Record>;
-}
-
-/// Represents the operations that an age CLI backend is capable of.
-pub trait CLIBackend {
-    /// Returns the public component of the generated keypair.
-    fn public_key(&self) -> &str;
-
-    /// Returns a path to a file containing the private component of the generated keypair.
-    fn keyfile(&self) -> &str;
-
-    /// Returns the name of the age binary, e.g. `age` for the reference implementation
-    /// or `rage` for the Rust implementation.
-    fn age() -> &'static str;
-
-    /// Returns the name of the age-keygen binary, e.g. `age-keygen` for the reference
-    /// implementation or `rage-keygen` for the Rust implementation.
-    fn age_keygen() -> &'static str;
-}
-
-impl<T> Backend for T
-where
-    T: CLIBackend,
-{
-    fn create_keypair(path: &Path) -> Result<String> {
-        if path.exists() {
-            std::fs::remove_file(path)?;
-        }
-
-        match Command::new(T::age_keygen()).arg("-o").arg(path).output() {
-            Err(e) => Err(e.into()),
-            Ok(output) => {
-                log::debug!("output: {:?}", output);
-                let public_key = {
-                    let stderr = String::from_utf8(output.stderr)?;
-                    stderr
-                        .trim_start_matches("Public key: ")
-                        .trim_end()
-                        .to_string()
-                };
-                Ok(public_key)
-            }
-        }
-    }
-
-    fn create_wrapped_keypair(path: &Path) -> Result<String> {
-        if path.exists() {
-            std::fs::remove_file(path)?;
-        }
-
-        let private_key = match Command::new(T::age_keygen()).output() {
-            Err(e) => return Err(e.into()),
-            Ok(output) => String::from_utf8(output.stdout)?,
-        };
-
-        let public_key = match private_key
-            .lines()
-            .find(|l| l.starts_with("# public key: "))
-        {
-            Some(line) => line
-                .trim_start_matches("# public_key: ")
-                .trim_end()
-                .to_string(),
-            None => {
-                return Err(anyhow!(
-                    "couldn't find a public key in {} output",
-                    T::age_keygen()
-                ))
-            }
-        };
-
-        // Wrap the generated private key. Our age CLI backend will handle prompting the user
-        // for a master password.
-        let mut child = Command::new(T::age())
-            .args(&["-a", "-p", "-o"])
-            .arg(path)
-            .spawn()?;
-
-        {
-            let stdin = child
-                .stdin
-                .as_mut()
-                .ok_or_else(|| anyhow!("couldn't get input for encrypting"))?;
-            stdin.write_all(private_key.as_bytes())?;
-        }
-
-        let status = child.wait()?;
-        if !status.success() {
-            return Err(anyhow!("key wrapping failed; password mismatch?"));
-        }
-
-        Ok(public_key)
-    }
-
-    fn encrypt(&self, record: &Record) -> Result<String> {
-        let mut child = Command::new(T::age())
-            .arg("-a")
-            .arg("-r")
-            .arg(&self.public_key())
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
-
-        {
-            let stdin = child
-                .stdin
-                .as_mut()
-                .ok_or_else(|| anyhow!("couldn't get input for encrypting"))?;
-            stdin.write_all(serde_json::to_string(record)?.as_bytes())?;
-        }
-
-        let output = child.wait_with_output()?;
-        log::debug!("output: {:?}", output);
-
-        if !output.status.success() {
-            return Err(anyhow!(
-                "encryption failed; misformatted key or empty input?"
-            ));
-        }
-
-        Ok(String::from_utf8(output.stdout)?)
-    }
-
-    fn decrypt(&self, encrypted: &str) -> Result<Record> {
-        let mut child = Command::new(T::age())
-            .arg("-d")
-            .arg("-i")
-            .arg(&self.keyfile())
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
-
-        {
-            let stdin = child
-                .stdin
-                .as_mut()
-                .ok_or_else(|| anyhow!("couldn't get input for decrypting"))?;
-            stdin.write_all(encrypted.as_bytes())?;
-        }
-
-        let output = child.wait_with_output()?;
-
-        if !output.status.success() {
-            return Err(anyhow!("decryption failed; bad key or corrupted record?"));
-        }
-
-        Ok(serde_json::from_str(std::str::from_utf8(&output.stdout)?)?)
-    }
-}
-
-/// Encapsulates the `age` reference implementation CLI.
-pub struct AgeCLI {
-    public_key: String,
-    keyfile: String,
-}
-
-impl AgeCLI {
-    pub fn new(config: &config::Config) -> Result<AgeCLI> {
-        if config.wrapped {
-            Err(anyhow!("the RageCLI backend doesn't support wrapped keys"))
-        } else {
-            Ok(AgeCLI {
-                public_key: config.public_key.clone(),
-                keyfile: config.keyfile.clone(),
-            })
-        }
-    }
-}
-
-impl CLIBackend for AgeCLI {
-    fn public_key(&self) -> &str {
-        self.public_key.as_ref()
-    }
-
-    fn keyfile(&self) -> &str {
-        self.keyfile.as_ref()
-    }
-
-    fn age() -> &'static str {
-        "age"
-    }
-
-    fn age_keygen() -> &'static str {
-        "age-keygen"
-    }
-}
-
-/// Encapsulates the `rage` Rust CLI.
-pub struct RageCLI {
-    public_key: String,
-    keyfile: String,
-}
-
-impl RageCLI {
-    pub fn new(config: &config::Config) -> Result<RageCLI> {
-        if config.wrapped {
-            Err(anyhow!("the RageCLI backend doesn't support wrapped keys"))
-        } else {
-            Ok(RageCLI {
-                public_key: config.public_key.clone(),
-                keyfile: config.keyfile.clone(),
-            })
-        }
-    }
-}
-
-impl CLIBackend for RageCLI {
-    fn public_key(&self) -> &str {
-        self.public_key.as_ref()
-    }
-
-    fn keyfile(&self) -> &str {
-        self.keyfile.as_ref()
-    }
-
-    fn age() -> &'static str {
-        "rage"
-    }
-
-    fn age_keygen() -> &'static str {
-        "rage-keygen"
-    }
 }
 
 /// Encapsulates the age crate (i.e., the `rage` CLI's backing library).
@@ -478,6 +239,4 @@ mod tests {
             );
         }
     }
-
-    // TODO: Conditionally enable tests for AgeCLI and RageCLI.
 }
