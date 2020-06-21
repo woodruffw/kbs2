@@ -4,7 +4,7 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
-use crate::kbs2::backend::{self, BackendKind};
+use crate::kbs2::backend;
 use crate::kbs2::config;
 use crate::kbs2::record;
 
@@ -20,15 +20,9 @@ pub struct Session {
 impl Session {
     /// Creates a new session, given a `Config`.
     pub fn new(config: config::Config) -> Result<Session> {
-        log::debug!("backend: {:?}", config.age_backend);
-
         fs::create_dir_all(&config.store)?;
 
-        let backend: Box<dyn backend::Backend> = match config.age_backend {
-            BackendKind::RageLib => Box::new(backend::RageLib::new(&config)?),
-            BackendKind::RageCLI => Box::new(backend::RageCLI::new(&config)?),
-            BackendKind::AgeCLI => Box::new(backend::AgeCLI::new(&config)?),
-        };
+        let backend: Box<dyn backend::Backend> = Box::new(backend::RageLib::new(&config)?);
 
         Ok(Session { backend, config })
     }
@@ -126,7 +120,6 @@ mod tests {
 
         let config = {
             config::Config {
-                age_backend: BackendKind::RageLib,
                 // NOTE: We create the backend above manually, so the public_key and keyfile
                 // here are dummy values that shouldn't need to be interacted with.
                 public_key: "not a real public key".into(),

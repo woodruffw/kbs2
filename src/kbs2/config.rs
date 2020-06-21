@@ -17,7 +17,7 @@ use std::os::unix::io::FromRawFd;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use crate::kbs2::backend::{Backend, BackendKind, RageLib};
+use crate::kbs2::backend::{Backend, RageLib};
 use crate::kbs2::generator::Generator;
 use crate::kbs2::util;
 
@@ -45,10 +45,6 @@ pub static STORE_BASEDIR: &str = "kbs2";
 /// loaded from the configuration file.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
-    /// The kind of age backend used for cryptographic operations.
-    #[serde(rename = "age-backend")]
-    pub age_backend: BackendKind,
-
     /// The public component of the keypair.
     #[serde(rename = "public-key")]
     pub public_key: String,
@@ -456,7 +452,6 @@ pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<()> {
 
     #[allow(clippy::redundant_field_names)]
     let serialized = toml::to_string(&Config {
-        age_backend: BackendKind::RageLib,
         public_key: public_key,
         keyfile: keyfile.to_str().unwrap().into(),
         wrapped: wrapped,
@@ -489,7 +484,6 @@ mod tests {
 
     fn dummy_config() -> Config {
         Config {
-            age_backend: BackendKind::RageLib,
             public_key: "not a real public key".into(),
             keyfile: "not a real private key file".into(),
             wrapped: false,
