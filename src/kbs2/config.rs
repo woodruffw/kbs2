@@ -439,7 +439,6 @@ fn store_dir() -> Result<PathBuf> {
 /// * `config_dir` - The configuration directory to initialize within
 /// * `wrapped` - Whether or not to generate a passphrase-wrapped keypair
 pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<()> {
-    // NOTE(ww): Default initialization uses the rage-lib backend unconditionally.
     let keyfile = config_dir.join(DEFAULT_KEY_BASENAME);
 
     let public_key = if wrapped {
