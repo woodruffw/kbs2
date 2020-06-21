@@ -41,23 +41,6 @@ pub trait Backend {
     fn decrypt(&self, encrypted: &str) -> Result<Record>;
 }
 
-/// Represents the operations that an age CLI backend is capable of.
-pub trait CLIBackend {
-    /// Returns the public component of the generated keypair.
-    fn public_key(&self) -> &str;
-
-    /// Returns a path to a file containing the private component of the generated keypair.
-    fn keyfile(&self) -> &str;
-
-    /// Returns the name of the age binary, e.g. `age` for the reference implementation
-    /// or `rage` for the Rust implementation.
-    fn age() -> &'static str;
-
-    /// Returns the name of the age-keygen binary, e.g. `age-keygen` for the reference
-    /// implementation or `rage-keygen` for the Rust implementation.
-    fn age_keygen() -> &'static str;
-}
-
 /// Encapsulates the age crate (i.e., the `rage` CLI's backing library).
 pub struct RageLib {
     pub pubkey: age::keys::RecipientKey,
@@ -256,6 +239,4 @@ mod tests {
             );
         }
     }
-
-    // TODO: Conditionally enable tests for AgeCLI and RageCLI.
 }
