@@ -4,6 +4,9 @@
 
 set -eo pipefail
 
+[[ -n "${KBS2_SUBCOMMAND}" ]] \
+  || { >&2 echo "Fatal: Not being run as a subcommand?"; exit 1; }
+
 HELP="\
 kbs2 audit-pass
 Check whether a password has been exposed in a data break
