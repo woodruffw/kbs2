@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# kbs2-snip: quickly select and run a code snippet stored in kbs2 using a fuzzy matcher
+# By default, selecta is used as the fuzzy matcher.
+
+require "open3"
+require "json"
+require "tomlrb"
+
+trap(:INT) { exit! }
+
+config = begin
+  config_file = File.join ENV["KBS2_CONFIG_DIR"], "kbs2.conf"
+  Tomlrb.load_file config_file
+end
+
+matcher = config.dig("commands", "snip", "matcher") || "selecta"
+
+unstructureds = `kbs2 list -k unstructured`.split
+snippets = unstructureds.filter_map do |label|
+  record = JSON.parse `kbs2 dump -j #{label}`
+  contents = record["body"]["fields"]["contents"]
+
+  ["#{label} - #{contents[8..]}", contents[8..]] if contents.start_with? "snippet:"
+end.to_h
+
+output, = Open3.capture2 matcher, stdin_data: snippets.keys.join("\n")
+selection = output.chomp
+code = snippets[selection]
+
+return unless code
+exec code

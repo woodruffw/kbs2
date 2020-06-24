@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# kbs2-qr: Generate and display a QR code containing the password for a login record
+
+set -eo pipefail
+
+function installed() {
+  cmd=$(command -v "${1}")
+
+  [[ -n  "${cmd}" ]] && [[ -f "${cmd}" ]]
+  return ${?}
+}
+
+installed qrencode || { >&2 echo "Missing dependency: qrencode."; exit 1; }
+
+if [[ $(uname -s) == "Darwin" ]]; then
+  display="open -a Preview.app -f"
+else
+  installed feh || { >&2 echo "Missing dependency: feh."; exit 1; }
+  display="feh -"
+fi
+
+[[ -n "${1}" ]] || { echo "Usage: kbs2 qr <login>"; exit; }
+
+kbs2 pass "${1}" | qrencode -s 12 -o - | ${display}
