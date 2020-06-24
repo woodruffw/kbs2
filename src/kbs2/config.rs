@@ -559,6 +559,14 @@ mod tests {
 
             assert!(load(dir.path()).is_ok());
         }
+
+        {
+            let dir = tempdir().unwrap();
+            initialize(dir.path(), false).unwrap();
+
+            let config = load(dir.path()).unwrap();
+            assert_eq!(dir.path().to_str().unwrap(), config.config_dir);
+        }
     }
 
     #[test]
