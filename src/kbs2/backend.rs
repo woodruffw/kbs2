@@ -58,15 +58,12 @@ impl RageLib {
             log::debug!("config specifies a wrapped key");
 
             // NOTE(ww): It's be nice if we could call open or one of the direct
-            // I/O helpers here, but UNWRAPPED_KEY_SHM_NAME isn't a real filename.
+            // I/O helpers here, but shm_name isn't a real filename.
             // NOTE(ww): This should always be safe, as we either directly
             // return a fresh fd from shm_open or indirectly return a fresh one
             // via unwrap_keyfile.
-            let unwrapped_file = match mman::shm_open(
-                config::UNWRAPPED_KEY_SHM_NAME,
-                OFlag::O_RDONLY,
-                Mode::empty(),
-            ) {
+            let shm_name = config.unwrapped_key_shm_name()?;
+            let unwrapped_file = match mman::shm_open(&shm_name, OFlag::O_RDONLY, Mode::empty()) {
                 Ok(unwrapped_fd) => unsafe { File::from_raw_fd(unwrapped_fd) },
                 Err(nix::Error::Sys(Errno::ENOENT)) => {
                     log::debug!("unwrapped key not available, requesting unwrap");

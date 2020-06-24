@@ -54,7 +54,8 @@ pub fn lock(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
         util::warn("config says that key isn't wrapped, trying anyways...");
     }
 
-    match mman::shm_unlink(config::UNWRAPPED_KEY_SHM_NAME) {
+    let shm_name = config.unwrapped_key_shm_name()?;
+    match mman::shm_unlink(&shm_name) {
         Ok(()) => Ok(()),
         Err(nix::Error::Sys(Errno::ENOENT)) => Err(anyhow!("no unwrapped key to remove")),
         Err(e) => Err(e.into()),
