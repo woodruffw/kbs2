@@ -22,7 +22,8 @@ fn app<'a>() -> App<'a> {
                 .short('c')
                 .long("config-dir")
                 .value_name("FILE")
-                .takes_value(true),
+                .takes_value(true)
+                .env("KBS2_CONFIG_DIR"),
         )
         .arg(
             Arg::with_name("completions")
