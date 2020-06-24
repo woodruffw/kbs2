@@ -143,6 +143,8 @@ impl Config {
         None
     }
 
+    /// Returns a suitable identifier for a shared memory object that
+    /// can (or already does) store the unwrapped key.
     pub fn unwrapped_key_shm_name(&self) -> Result<PathBuf> {
         let canonicalized_keyfile = fs::canonicalize(&self.keyfile)?;
 
