@@ -810,9 +810,9 @@ Without any persistence, wrapped key usage would be tedious: the user would have
 their master password on each `kbs2` action, defeating the point of having a secret manager.
 
 To avoid this, `kbs2` establishes persistence of the unwrapped key with a POSIX shared memory
-object (specifically, an object named `/__kbs2_unwrapped_key`). This is done after first use
-*or* explicitly with `kbs2 unlock`. The unwrapped key can be de-persisted either by rebooting
-the machine *or* by running `kbs2 lock`.
+object (specifically, an object named `/__kbs2_unwrapped_key-{SHA256-of-your-keyfile-path}`). This
+is done after first use *or* explicitly with `kbs2 unlock`. The unwrapped key can be de-persisted
+either by rebooting the machine *or* by running `kbs2 lock`.
 
 Unlike like `ssh-agent` and `gpg-agent`, `kbs2`'s shared memory object is *not* tied to a user's
 session. This means that logging out and logging back in does *not* require the user to re-enter
