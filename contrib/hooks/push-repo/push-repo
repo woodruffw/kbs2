@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# push-repo: a kbs2 post-hook to sync the underlying git repo to the remote after any changes
+
+set -eo pipefail
+
+>&2 echo "[+] post-hook: ${0}"
+
+[[ -n "${KBS2_HOOK}" ]] \
+  || { >&2 echo "Fatal: Not being run as a hook?"; exit 1; }
+
+git add -A . 2>/dev/null
+git commit --no-gpg-sign -m "$(date)" 2>/dev/null
+git pull --rebase 2>/dev/null
+git push origin master 2>/dev/null
