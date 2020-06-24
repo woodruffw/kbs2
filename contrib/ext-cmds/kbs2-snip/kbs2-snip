@@ -8,6 +8,8 @@ require "open3"
 require "json"
 require "tomlrb"
 
+abort "Fatal: Not being run as a subcommand?" unless ENV.key? "KBS2_SUBCOMMAND"
+
 trap(:INT) { exit! }
 
 config = begin

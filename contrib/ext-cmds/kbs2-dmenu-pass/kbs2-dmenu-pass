@@ -4,6 +4,9 @@
 
 set -eo pipefail
 
+[[ -n "${KBS2_SUBCOMMAND}" ]] \
+  || { >&2 echo "Fatal: Not being run as a subcommand?"; exit 1; }
+
 labels=$(kbs2 list -k login)
 label=$(dmenu -p kbs2 <<< "${labels}")
 
