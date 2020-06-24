@@ -7,12 +7,14 @@ use nix::sys::mman;
 use nix::sys::stat::Mode;
 use nix::unistd;
 use serde::{de, Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use std::convert::TryInto;
 use std::env;
 use std::fs;
 use std::io::{Read, Write};
 use std::ops::DerefMut;
+use std::os::unix::ffi::OsStrExt;
 use std::os::unix::io::FromRawFd;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -33,8 +35,8 @@ pub static CONFIG_BASENAME: &str = "kbs2.conf";
 /// the configuration directory.
 pub static DEFAULT_KEY_BASENAME: &str = "key";
 
-/// The name for the POSIX shared memory object in which the unwrapped key is stored.
-pub static UNWRAPPED_KEY_SHM_NAME: &str = "/__kbs2_unwrapped_key";
+/// The basename for the POSIX shared memory object in which the unwrapped key is stored.
+pub static UNWRAPPED_KEY_SHM_BASENAME: &str = "/__kbs2_unwrapped_key";
 
 /// The default base directory name for the secret store, placed relative to
 /// the user's data directory by default.
@@ -141,6 +143,19 @@ impl Config {
         None
     }
 
+    /// Returns a suitable identifier for a shared memory object that
+    /// can (or already does) store the unwrapped key.
+    pub fn unwrapped_key_shm_name(&self) -> Result<PathBuf> {
+        let canonicalized_keyfile = fs::canonicalize(&self.keyfile)?;
+
+        Ok(format!(
+            "{}-{:x}",
+            UNWRAPPED_KEY_SHM_BASENAME,
+            Sha256::digest(canonicalized_keyfile.as_os_str().as_bytes())
+        )
+        .into())
+    }
+
     /// Unwraps the configured private key file into its underlying private
     /// key, returning a `fs::File` that owns an open reference to that key.
     ///
@@ -150,12 +165,16 @@ impl Config {
         // Unwrapping our password-protected keyfile and returning it as a raw file descriptor
         // is a multi-step process.
 
+        let shm_name = self.unwrapped_key_shm_name()?;
+
+        log::debug!("shm name: {:?}", shm_name);
+
         // First, create the shared memory object that we'll eventually use
         // to stash the unwrapped key. We do this early to allow it to fail ahead
         // of the password prompt and decryption steps.
         log::debug!("creating shared memory object");
         let unwrapped_fd = match mman::shm_open(
-            UNWRAPPED_KEY_SHM_NAME,
+            &shm_name,
             OFlag::O_RDWR | OFlag::O_CREAT | OFlag::O_EXCL,
             Mode::S_IRUSR | Mode::S_IWUSR,
         ) {
@@ -168,13 +187,13 @@ impl Config {
 
         // Prompt the user for their "master" password (i.e., the one that decrypts their privkey).
         let password = util::get_password().or_else(|e| {
-            mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+            mman::shm_unlink(&shm_name)?;
             Err(e)
         })?;
 
         // Read the wrapped key from disk.
         let wrapped_key = std::fs::read(&self.keyfile).or_else(|e| {
-            mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+            mman::shm_unlink(&shm_name)?;
             Err(Error::from(e))
         })?;
 
@@ -182,13 +201,13 @@ impl Config {
         let decryptor = match Decryptor::new(wrapped_key.as_slice()) {
             Ok(Decryptor::Passphrase(d)) => d,
             Ok(_) => {
-                mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+                mman::shm_unlink(&shm_name)?;
                 return Err(anyhow!(
                     "key unwrap failed; not a password-wrapped keyfile?"
                 ));
             }
             Err(e) => {
-                mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+                mman::shm_unlink(&shm_name)?;
                 return Err(anyhow!(
                     "unable to load private key (backend reports: {:?})",
                     e
@@ -210,7 +229,7 @@ impl Config {
                     .map_err(|_| anyhow!("i/o error while decrypting"))
             })
             .or_else(|e| {
-                mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+                mman::shm_unlink(&shm_name)?;
                 Err(e)
             })?;
         log::debug!("finished key unwrap!");
@@ -224,7 +243,7 @@ impl Config {
             unwrapped_key.as_bytes().len().try_into().unwrap(),
         )
         .or_else(|e| {
-            mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+            mman::shm_unlink(&shm_name)?;
             Err(Error::from(e))
         })?;
 
@@ -239,14 +258,14 @@ impl Config {
         log::debug!("writing the unwrapped key");
         {
             let mut mmap = unsafe { Mmap::map(&file)? }.make_mut().or_else(|e| {
-                mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+                mman::shm_unlink(&shm_name)?;
                 Err(Error::from(e))
             })?;
 
             mmap.deref_mut()
                 .write_all(unwrapped_key.as_bytes())
                 .or_else(|e| {
-                    mman::shm_unlink(UNWRAPPED_KEY_SHM_NAME)?;
+                    mman::shm_unlink(&shm_name)?;
                     Err(Error::from(e))
                 })?;
         }
