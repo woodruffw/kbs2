@@ -21,7 +21,7 @@ fn app<'a>() -> App<'a> {
                 .about("use the specified config directory")
                 .short('c')
                 .long("config-dir")
-                .value_name("FILE")
+                .value_name("DIR")
                 .takes_value(true)
                 .env("KBS2_CONFIG_DIR"),
         )
