@@ -35,7 +35,7 @@ pub static CONFIG_BASENAME: &str = "kbs2.conf";
 /// the configuration directory.
 pub static DEFAULT_KEY_BASENAME: &str = "key";
 
-/// The name for the POSIX shared memory object in which the unwrapped key is stored.
+/// The basename for the POSIX shared memory object in which the unwrapped key is stored.
 pub static UNWRAPPED_KEY_SHM_BASENAME: &str = "/__kbs2_unwrapped_key";
 
 /// The default base directory name for the secret store, placed relative to
