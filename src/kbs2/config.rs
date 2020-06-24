@@ -45,6 +45,12 @@ pub static STORE_BASEDIR: &str = "kbs2";
 /// loaded from the configuration file.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
+    /// The path to the directory that this configuration was loaded from.
+    ///
+    /// **NOTE**: This field is never loaded from the configuration file itself.
+    #[serde(skip)]
+    pub config_dir: String,
+
     /// The public component of the keypair.
     #[serde(rename = "public-key")]
     pub public_key: String,
@@ -104,6 +110,7 @@ impl Config {
                 .args(args)
                 .current_dir(Path::new(&self.store))
                 .env("KBS2_HOOK", "1")
+                .env("KBS2_CONFIG_DIR", &self.config_dir)
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
                 .status()
@@ -451,6 +458,8 @@ pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<()> {
 
     #[allow(clippy::redundant_field_names)]
     let serialized = toml::to_string(&Config {
+        // NOTE(ww): Not actually serialized; just here to make the compiler happy.
+        config_dir: config_dir.to_str().unwrap().into(),
         public_key: public_key,
         keyfile: keyfile.to_str().unwrap().into(),
         wrapped: wrapped,
@@ -473,7 +482,10 @@ pub fn load(config_dir: &Path) -> Result<Config> {
     let config_path = config_dir.join(CONFIG_BASENAME);
     let contents = fs::read_to_string(config_path)?;
 
-    toml::from_str(&contents).map_err(|e| anyhow!("config loading error: {}", e))
+    Ok(Config {
+        config_dir: config_dir.to_str().unwrap().into(),
+        ..toml::from_str(&contents).map_err(|e| anyhow!("config loading error: {}", e))?
+    })
 }
 
 #[cfg(test)]
@@ -483,6 +495,7 @@ mod tests {
 
     fn dummy_config() -> Config {
         Config {
+            config_dir: "/not/a/real/dir".into(),
             public_key: "not a real public key".into(),
             keyfile: "not a real private key file".into(),
             wrapped: false,
@@ -545,6 +558,14 @@ mod tests {
             initialize(dir.path(), false).unwrap();
 
             assert!(load(dir.path()).is_ok());
+        }
+
+        {
+            let dir = tempdir().unwrap();
+            initialize(dir.path(), false).unwrap();
+
+            let config = load(dir.path()).unwrap();
+            assert_eq!(dir.path().to_str().unwrap(), config.config_dir);
         }
     }
 

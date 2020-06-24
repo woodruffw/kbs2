@@ -120,6 +120,7 @@ mod tests {
 
         let config = {
             config::Config {
+                config_dir: "/not/a/real/dir".into(),
                 // NOTE: We create the backend above manually, so the public_key and keyfile
                 // here are dummy values that shouldn't need to be interacted with.
                 public_key: "not a real public key".into(),
