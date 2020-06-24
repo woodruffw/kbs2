@@ -707,8 +707,7 @@ in the configuration directory.
 * `KBS2_SUBCOMMAND`: Always set to `1`. This can be used to determine whether a subcommand was run
 via `kbs2` (e.g. `kbs2 foo`) versus directly (e.g. `kbs2-foo`).
 
-The [kbs2-ext-cmds](https://github.com/woodruffw/kbs2-ext-cmds) repository contains several useful
-external commands.
+The [contrib/ext-cmds](contrib/ext-cmds/) directory contains several useful external commands.
 
 ### Hooks
 

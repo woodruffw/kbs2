@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+# kbs2-audit-pass: Test the given (or all) login records against Have I Been Pwned?
+
+set -eo pipefail
+
+HELP="\
+kbs2 audit-pass
+Check whether a password has been exposed in a data break
+
+USAGE:
+  kbs2 audit-pass [FLAGS] [LABEL ...]
+
+ARGS:
+  [LABEL ...]   The labels of the login records to audit
+
+FLAGS:
+  -h, --help    Print this help message
+  -a, --all     Audit all login records, not just the specified ones
+"
+
+if [[ "${1}" == "-h" || "${1}" == "--help" ]]; then
+  echo "${HELP}"
+  exit
+elif [[ "${1}" == "-a" || "${1}" == "--all" ]]; then
+  readarray -t labels < <(kbs2 list -k login)
+else
+  labels=("${@}")
+fi
+
+if [[ "${#labels[@]}" -eq 0 ]]; then
+  >&2 echo "Fatal: No labels specified or no login records in store"
+  exit 1
+fi
+
+for label in "${labels[@]}"; do
+  >&2 echo "[+] Auditing ${label}..."
+  digest=$(shasum -a 1 < <(kbs2 pass "${label}" | tr -d '\n') | awk '{ print $1 }')
+  digest="${digest^^}"
+  prefix="${digest:0:5}"
+
+  readarray -t matches < \
+    <( \
+      curl \
+        -s \
+        -A "kbs2-audit-pass (https://github.com/woodruffw/kbs2)" \
+        -H "Add-Padding: true" \
+        "https://api.pwnedpasswords.com/range/${prefix}" \
+      | tr -d '\r' # CRLF was a mistake
+     )
+
+  for match in "${matches[@]}"; do
+    suffix=$(awk -F: '{ print $1 }' <<< "${match}")
+    count=$(awk -F: '{ print $2 }' <<< "${match}")
+
+    if [[ "${prefix}${suffix}" == "${digest}" ]]; then
+      >&2 echo "[!] ${label} has ${count} hits on HIBP!"
+    fi
+  done
+
+  sleep 2
+done
