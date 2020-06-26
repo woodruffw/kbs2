@@ -36,7 +36,7 @@ pub static CONFIG_BASENAME: &str = "kbs2.conf";
 pub static DEFAULT_KEY_BASENAME: &str = "key";
 
 /// The basename for the POSIX shared memory object in which the unwrapped key is stored.
-pub static UNWRAPPED_KEY_SHM_BASENAME: &str = "/__kbs2_unwrapped_key";
+pub static UNWRAPPED_KEY_SHM_BASENAME: &str = "/_kbs2_uk";
 
 /// The default base directory name for the secret store, placed relative to
 /// the user's data directory by default.
@@ -148,11 +148,18 @@ impl Config {
     pub fn unwrapped_key_shm_name(&self) -> Result<PathBuf> {
         let canonicalized_keyfile = fs::canonicalize(&self.keyfile)?;
 
+        // NOTE(ww): Why do we truncate the shared memory object's name to 31 characters
+        // (i.e., bytes)? Because that's all macOS supports! See PSHMNAMELEN in sys/posix.h.
+        // Hashing the keyfile's path isn't done here for security anyways; it's just to
+        // prevent the same shared memory object from being accessed by separate config
+        // files (and kbs2 consequently barfing when the key doesn't work with one of the
+        // stores).
         Ok(format!(
-            "{}-{:x}",
+            "{}_{:x}",
             UNWRAPPED_KEY_SHM_BASENAME,
             Sha256::digest(canonicalized_keyfile.as_os_str().as_bytes())
         )
+        .truncate(31)
         .into())
     }
 

@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Result};
 use pinentry::PassphraseInput;
-use rpassword;
 use secrecy::SecretString;
 
 use std::path::PathBuf;
