@@ -154,13 +154,14 @@ impl Config {
         // prevent the same shared memory object from being accessed by separate config
         // files (and kbs2 consequently barfing when the key doesn't work with one of the
         // stores).
-        Ok(format!(
+        let mut shm_name = format!(
             "{}_{:x}",
             UNWRAPPED_KEY_SHM_BASENAME,
             Sha256::digest(canonicalized_keyfile.as_os_str().as_bytes())
-        )
-        .truncate(31)
-        .into())
+        );
+        shm_name.truncate(31);
+
+        Ok(shm_name.into())
     }
 
     /// Unwraps the configured private key file into its underlying private
