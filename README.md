@@ -812,7 +812,7 @@ Without any persistence, wrapped key usage would be tedious: the user would have
 their master password on each `kbs2` action, defeating the point of having a secret manager.
 
 To avoid this, `kbs2` establishes persistence of the unwrapped key with a POSIX shared memory
-object (specifically, an object named `/__kbs2_uk_{truncated-SHA256-of-your-keyfile-path}`). This
+object (specifically, an object named `/_kbs2_uk_{truncated-SHA256-of-your-keyfile-path}`). This
 is done after first use *or* explicitly with `kbs2 unlock`. The unwrapped key can be de-persisted
 either by rebooting the machine *or* by running `kbs2 lock`.
 
