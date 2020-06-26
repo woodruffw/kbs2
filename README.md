@@ -3,7 +3,8 @@ kbs2
 
 [![Build Status](https://img.shields.io/github/workflow/status/woodruffw/kbs2/CI/master)](https://github.com/woodruffw/kbs2/actions?query=workflow%3ACI)
 
-**Warning! `kbs2` is alpha-quality software! Using `kbs2` means accepting that your secrets may be lost or compromised at any time!**
+**Warning! `kbs2` is beta-quality software! Using `kbs2` means accepting that your secrets may be
+lost or compromised at any time!**
 
 `kbs2` is a command line utility for managing *secrets*.
 
@@ -810,7 +811,7 @@ Without any persistence, wrapped key usage would be tedious: the user would have
 their master password on each `kbs2` action, defeating the point of having a secret manager.
 
 To avoid this, `kbs2` establishes persistence of the unwrapped key with a POSIX shared memory
-object (specifically, an object named `/__kbs2_unwrapped_key-{SHA256-of-your-keyfile-path}`). This
+object (specifically, an object named `/__kbs2_uk_{truncated-SHA256-of-your-keyfile-path}`). This
 is done after first use *or* explicitly with `kbs2 unlock`. The unwrapped key can be de-persisted
 either by rebooting the machine *or* by running `kbs2 lock`.
 
