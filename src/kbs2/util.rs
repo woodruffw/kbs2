@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use pinentry::PassphraseInput;
+use rpassword;
 use secrecy::SecretString;
 
 use std::path::PathBuf;
@@ -59,7 +60,11 @@ pub fn get_password() -> Result<SecretString> {
             .interact()
             .map_err(|e| anyhow!("pinentry failed: {}", e.to_string()))
     } else {
-        Err(anyhow!("Couldn't get pinentry program for password prompt"))
+        log::debug!("no pinentry binary, falling back on rpassword");
+
+        rpassword::read_password_from_tty(Some("Password: "))
+            .map(SecretString::new)
+            .map_err(|e| anyhow!("password prompt failed: {}", e.to_string()))
     }
 }
 
