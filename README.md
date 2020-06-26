@@ -2,6 +2,7 @@ kbs2
 ====
 
 [![Build Status](https://img.shields.io/github/workflow/status/woodruffw/kbs2/CI/master)](https://github.com/woodruffw/kbs2/actions?query=workflow%3ACI)
+[![Crates.io](https://img.shields.io/crates/v/kbs2)](https://crates.io/crates/kbs2)
 
 **Warning! `kbs2` is beta-quality software! Using `kbs2` means accepting that your secrets may be
 lost or compromised at any time!**
