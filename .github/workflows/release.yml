@@ -65,7 +65,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ jobs.release.outputs.upload_url }}
+          upload_url: ${{ needs.release.outputs.upload_url }}
           asset_path: ./target/debian/kbs2_${{ steps.release_hack.outputs.release }}_amd64.deb
           asset_name: kbs2_${{ steps.release_hack.outputs.release }}_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
