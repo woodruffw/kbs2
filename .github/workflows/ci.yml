@@ -39,3 +39,22 @@ jobs:
 
     - name: Test
       run: cargo test
+
+
+  package-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: deps
+      run: |
+        sudo apt install -y libxcb-shape0-dev libxcb-xfixes0-dev
+        cargo install cargo-deb
+
+      - name: package
+      run: cargo deb
+
+      - name: test-install
+      run: |
+        sudo apt install ./target/debian/*.deb
+        sudo apt-get install -f
