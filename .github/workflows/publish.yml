@@ -34,15 +34,14 @@ jobs:
       - name: package
         run: cargo deb
 
-      # NOTE(ww): Our GitHub releases are tagged with a 'v' prefix, e.g. v0.1.0.
-      # `cargo deb` writes its paths without that prefix, so we need to strip it
-      # out with the hack below.
-      - name: get release without v prefix
-        id: release_hack
+      - name: find deb
+        id: find_deb
         run: |
-          release="${GITHUB_REF#refs/tags/}"
-          release="${release:1}"
-          echo "::set-output name=release::${release}"
+          deb_file=$(find ./target/debian/ -maxdepth 1 -type f -name '*.deb')
+          echo "::set-output name=deb_file::${deb_file}"
+
+          deb_name=$(basename "${deb_file}")
+          echo "::set-output name=deb_name::${deb_name}"
 
       - name: attach to release
         uses: actions/upload-release-asset@v1
@@ -50,6 +49,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./target/debian/kbs2_${{ steps.release_hack.outputs.release }}_amd64.deb
-          asset_name: kbs2_${{ steps.release_hack.outputs.release }}_amd64.deb
+          asset_path: ${{ steps.find_deb.outputs.deb_file }}
+          asset_name: ${{ steps.find_deb.outputs.deb_name }}
           asset_content_type: application/vnd.debian.binary-package
