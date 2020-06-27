@@ -52,7 +52,8 @@ jobs:
         run: cargo deb
 
       # NOTE(ww): Our GitHub releases are tagged with a 'v' prefix, e.g. v0.1.0.
-      # `cargo deb` writes its paths without that prefix, so we need to
+      # `cargo deb` writes its paths without that prefix, so we need to strip it
+      # out with the hack below.
       - name: get release without v prefix
         id: release_hack
         run: |
