@@ -6,29 +6,66 @@ on:
 name: release
 
 jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: ${{ contains(github.ref, 'pre') || contains(github.ref, 'rc') }}
+
   crate:
-    name: upload release to crates.io
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: deps
-      run: |
-        sudo apt install -y xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev
+      - name: deps
+        run: |
+          sudo apt install -y libxcb-shape0-dev libxcb-xfixes0-dev
 
-    - name: login
-      run: echo ${{ secrets.CRATES_IO_TOKEN }} | cargo login
+      - name: login
+        run: echo ${{ secrets.CRATES_IO_TOKEN }} | cargo login
 
-    - name: create release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: ${{ contains(github.ref, 'pre') || contains(github.ref, 'rc') }}
+      - name: publish
+        run: cargo publish
 
-    - name: publish
-      run: cargo publish
+  package-deb:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: deps
+        run: |
+          sudo apt install -y libxcb-shape0-dev libxcb-xfixes0-dev
+          cargo install cargo-deb
+
+      - name: package
+        run: cargo deb
+
+      # NOTE(ww): Our GitHub releases are tagged with a 'v' prefix, e.g. v0.1.0.
+      # `cargo deb` writes its paths without that prefix, so we need to strip it
+      # out with the hack below.
+      - name: get release without v prefix
+        id: release_hack
+        run: |
+          release="${GITHUB_REF:1}"
+          echo "::set-output name=release:${release}"
+
+      - name: attach to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ jobs.release.outputs.upload_url }}
+          asset_path: ./target/debian/kbs2_${{ steps.release_hack.outputs.release }}_amd64.deb
+          asset_name: kbs2_${{ steps.release_hack.outputs.release }}_amd64.deb
+          asset_content_type: application/vnd.debian.binary-package

@@ -40,7 +40,7 @@ Quick links:
 If you're a Linux user, you'll need some X11 libraries. For Debian-based distributions:
 
 ```bash
-$ sudo apt install -y xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev
+$ sudo apt install -y libxcb-shape0-dev libxcb-xfixes0-dev
 ```
 
 `kbs2` itself is most easily installed via `cargo`:
