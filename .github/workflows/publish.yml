@@ -40,7 +40,8 @@ jobs:
       - name: get release without v prefix
         id: release_hack
         run: |
-          release="${GITHUB_REF:1}"
+          release="${GITHUB_REF#refs/tags/}"
+          release="${release:1}"
           echo "::set-output name=release::${release}"
 
       - name: attach to release
