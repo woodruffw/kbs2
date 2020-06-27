@@ -22,7 +22,6 @@ jobs:
         run: cargo publish
 
   package-deb:
-    needs: release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
