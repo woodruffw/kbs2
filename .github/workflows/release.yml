@@ -6,29 +6,31 @@ on:
 name: release
 
 jobs:
-  crate:
-    name: upload release to crates.io
+  release:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+      - name: create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: ${{ contains(github.ref, 'pre') || contains(github.ref, 'rc') }}
 
-    - name: deps
-      run: |
-        sudo apt install -y libxcb-shape0-dev libxcb-xfixes0-dev
+  crate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
 
-    - name: login
-      run: echo ${{ secrets.CRATES_IO_TOKEN }} | cargo login
+      - name: deps
+        run: |
+          sudo apt install -y libxcb-shape0-dev libxcb-xfixes0-dev
 
-    - name: create release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: ${{ contains(github.ref, 'pre') || contains(github.ref, 'rc') }}
+      - name: login
+        run: echo ${{ secrets.CRATES_IO_TOKEN }} | cargo login
 
-    - name: publish
-      run: cargo publish
+      - name: publish
+        run: cargo publish

@@ -58,3 +58,4 @@ jobs:
         run: |
           sudo apt install ./target/debian/*.deb
           sudo apt-get install -f
+          kbs2 --help
