@@ -7,6 +7,8 @@ to find and execute a snippet of code stored as an unstructured record.
 
 ## Setup
 
+`kbs2-snip` requires Ruby and the [tomlrb](https://github.com/fbernier/tomlrb) gem.
+
 By default, `kbs2-snip` requires `selecta`.
 
 See the configuration options below for alternatives.
