@@ -15,6 +15,9 @@ categories = ["command-line-utilities", "cryptography"]
 no-dev-version = true
 disable-publish = true # handled by GitHub Actions
 
+[package.metadata.deb]
+depends = "$auto, libxcb-shape0-dev, libxcb-xfixes0-dev"
+
 [badges]
 maintenance = { status = "actively-developed" }
 
