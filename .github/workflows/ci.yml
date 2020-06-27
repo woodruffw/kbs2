@@ -47,14 +47,14 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: deps
-      run: |
-        sudo apt install -y libxcb-shape0-dev libxcb-xfixes0-dev
-        cargo install cargo-deb
+        run: |
+          sudo apt install -y libxcb-shape0-dev libxcb-xfixes0-dev
+          cargo install cargo-deb
 
       - name: package
-      run: cargo deb
+        run: cargo deb
 
       - name: test-install
-      run: |
-        sudo apt install ./target/debian/*.deb
-        sudo apt-get install -f
+        run: |
+          sudo apt install ./target/debian/*.deb
+          sudo apt-get install -f
