@@ -730,7 +730,8 @@ All hooks, whether pre- or post-, have the following behavior:
 * Hooks **do** inherit `stderr` from the parent process, and *may* use it to print anything
 they please
 * Hooks **always** run from the `store` directory
-* Hooks are run with `KBS2_HOOK=1` in their environment
+* Hooks are run with `KBS2_HOOK=1` in their environment and with `KBS2_CONFIG_DIR` set to the
+configuration directory that the original `kbs2` command was loaded with
 * An error exit from a hook (or failure to execute) causes the entire `kbs2` command to fail
 
 Hooks *may* introduce additional behavior, so long as it does not conflict with the above.
