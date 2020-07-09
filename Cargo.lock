@@ -78,7 +78,7 @@ dependencies = [
  "radix64",
  "rand",
  "scrypt",
- "secrecy",
+ "secrecy 0.6.0",
  "sha2 0.8.2",
  "subtle 2.2.3",
  "x25519-dalek",
@@ -633,7 +633,7 @@ dependencies = [
  "pinentry",
  "rand",
  "rpassword",
- "secrecy",
+ "secrecy 0.7.0",
  "serde",
  "serde_json",
  "sha2 0.9.1",
@@ -791,7 +791,7 @@ checksum = "36bf2b9e565399e61073d044c01f57e4890f59b0762b3649c5f94e83439141cf"
 dependencies = [
  "log",
  "nom",
- "secrecy",
+ "secrecy 0.6.0",
  "which",
  "zeroize",
 ]
@@ -1002,6 +1002,15 @@ name = "secrecy"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9182278ed645df3477a9c27bfee0621c621aa16f6972635f7f795dae3d81070f"
+dependencies = [
+ "zeroize",
+]
+
+[[package]]
+name = "secrecy"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0673d6a6449f5e7d12a1caf424fd9363e2af3a4953023ed455e3c4beef4597c0"
 dependencies = [
  "zeroize",
 ]
