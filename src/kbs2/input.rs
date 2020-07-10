@@ -3,6 +3,7 @@ use dialoguer::{Input, Password};
 
 use std::io::{self, Read};
 
+use crate::kbs2::config::Config;
 use crate::kbs2::generator::Generator;
 use crate::kbs2::record::FieldKind::{self, *};
 
@@ -59,6 +60,7 @@ fn terse_fields(names: &[FieldKind], generator: Option<&dyn Generator>) -> Resul
 /// is used to provide that field and the user is **not** prompted.
 fn interactive_fields(
     names: &[FieldKind],
+    config: &Config,
     generator: Option<&dyn Generator>,
 ) -> Result<Vec<String>> {
     let mut fields = vec![];
@@ -69,7 +71,22 @@ fn interactive_fields(
                 if let Some(generator) = generator {
                     generator.secret()?
                 } else {
-                    Password::new().with_prompt(*name).interact()?
+                    let field = Password::new()
+                        .with_prompt(*name)
+                        .allow_empty_password(config.commands.new.generate_on_empty)
+                        .interact()?;
+
+                    if field.is_empty() && config.commands.new.generate_on_empty {
+                        log::debug!("generate-on-empty with an empty field, generating a secret");
+
+                        let generator = config.get_generator("default").ok_or_else(|| {
+                            anyhow!("generate-on-empty configured but no default generator")
+                        })?;
+
+                        generator.secret()?
+                    } else {
+                        field
+                    }
                 }
             }
             Insensitive(name) => Input::<String>::new().with_prompt(*name).interact()?,
@@ -88,15 +105,17 @@ fn interactive_fields(
 /// * `names` - the set of field names to grab
 /// * `terse` - whether or not to get fields tersely, i.e. by splitting on
 ///   `TERSE_IFS` instead of prompting for each
+/// * `config` - the active `Config`
 /// * `generator` - the generator, if any, to use for sensitive fields
 pub fn fields(
     names: &[FieldKind],
     terse: bool,
+    config: &Config,
     generator: Option<&dyn Generator>,
 ) -> Result<Vec<String>> {
     if terse {
         terse_fields(names, generator)
     } else {
-        interactive_fields(names, generator)
+        interactive_fields(names, config, generator)
     }
 }

@@ -117,6 +117,7 @@ fn new_login(
     let fields = input::fields(
         &[Insensitive("Username"), Sensitive("Password")],
         terse,
+        &session.config,
         generator,
     )?;
     let record = record::Record::login(label, &fields[0], &fields[1]);
@@ -134,6 +135,7 @@ fn new_environment(
     let fields = input::fields(
         &[Insensitive("Variable"), Sensitive("Value")],
         terse,
+        &session.config,
         generator,
     )?;
     let record = record::Record::environment(label, &fields[0], &fields[1]);
@@ -148,7 +150,12 @@ fn new_unstructured(
     session: &session::Session,
     generator: Option<&dyn Generator>,
 ) -> Result<()> {
-    let fields = input::fields(&[Insensitive("Contents")], terse, generator)?;
+    let fields = input::fields(
+        &[Insensitive("Contents")],
+        terse,
+        &session.config,
+        generator,
+    )?;
     let record = record::Record::unstructured(label, &fields[0]);
 
     session.add_record(&record)
