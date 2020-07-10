@@ -5,7 +5,7 @@
 select a login and `kbs2 pass` to copy the selected login's password
 to the clipboard.
 
-`kbs2-choose-pass` only works macOS
+`kbs2-choose-pass` only works on macOS.
 
 ## Setup
 
@@ -18,6 +18,11 @@ $ brew install choose-gui
 
 ## Usage
 
+From the command line:
+
 ```bash
 kbs2 choose-pass
 ```
+
+Alternatively, if you have a Touch Bar, you can use `kbs2-choose-pass` as a "Quick Action".
+An installable workflow is provided in this directory.
