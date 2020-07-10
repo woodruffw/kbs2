@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# kbs2-choose-pass: List all kbs2 logins in choose, feed the selected one into the clipboard.
+
+set -eo pipefail
+
+[[ -n "${KBS2_SUBCOMMAND}" ]] \
+  || { >&2 echo "Fatal: Not being run as a subcommand?"; exit 1; }
+
+labels=$(kbs2 list -k login)
+label=$(choose <<< "${labels}")
+
+kbs2 pass -c "${label}"
