@@ -567,6 +567,36 @@ runs `kbs2`. By default, hooks are run only for the initial `kbs2` invocation.
 
 Read the [Reentrancy section](#reentrancy) of the [Hooks](#hooks) documentation for more details.
 
+### `commands.new.generate-on-empty` (default: `false`)
+
+The `commands.new.generate-on-empty` setting determines whether or not uses the `default` generator
+when the user supplies an empty input for a sensitive field (e.g., a password).
+
+By default, supplying an empty field causes `kbs2` to re-prompt for that field. For example:
+
+```bash
+$ kbs2 new top-secret-login
+Username: foobar
+Password: [empty]
+Password:
+```
+
+with `generate-on-empty = true`:
+
+```bash
+$ kbs2 new top-secret-login
+Username: foobar
+Password: [empty]
+
+$ kbs2 dump top-secret-login
+Label: top-secret-login
+  Kind: login
+  Username: foobar
+  Password: 17tlza7b_4}f(m6)
+```
+
+This can be used as a lazy default for when the user forgets to pass `--generate` to `kbs2 new`.
+
 ### `commands.new.pre-hook` (default: `None`)
 
 The `commands.new.pre-hook` setting is like the global `pre-hook` setting, except that it runs

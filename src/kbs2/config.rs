@@ -355,6 +355,8 @@ pub struct CommandConfigs {
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct NewConfig {
+    #[serde(rename = "generate-on-empty")]
+    pub generate_on_empty: bool,
     // TODO(ww): This deserialize_with is ugly. There's probably a better way to do this.
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]
     #[serde(rename = "pre-hook")]
