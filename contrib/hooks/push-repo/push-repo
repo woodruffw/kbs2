@@ -11,5 +11,5 @@ set -eo pipefail
 
 git add -A . 2>/dev/null
 git commit --no-gpg-sign -m "$(date)" 2>/dev/null
-git pull --rebase 2>/dev/null
+git pull --rebase --no-gpg-sign 2>/dev/null
 git push origin master 2>/dev/null
