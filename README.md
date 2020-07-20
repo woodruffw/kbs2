@@ -37,6 +37,27 @@ Quick links:
 
 ## Installation
 
+### Packages
+
+If you're running a Debian or Ubuntu distribution on AMD64, you can use the `.deb` packages
+attached to the [latest release](https://github.com/woodruffw/kbs2/releases/latest). **This is the
+recommended way to install `kbs2` if you are not developing it.**
+
+By way of example:
+
+```bash
+# replace X.X.X with your version
+$ wget https://github.com/woodruffw/kbs2/releases/download/vX.X.X/kbs2_X.X.X_amd64.deb
+$ sudo dpkg -i kbs2_X.X.X_amd64.deb
+# don't forget to request kbs2's dependencies
+$ sudo apt-get -f install
+```
+
+Other distributions will be supported sooner or later. Help us by looking at the
+[open packaging issues!](https://github.com/woodruffw/kbs2/labels/C%3Apackaging).
+
+### Cargo
+
 If you're a Linux user, you'll need some X11 libraries. For Debian-based distributions:
 
 ```bash
