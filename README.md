@@ -54,7 +54,7 @@ $ sudo apt-get -f install
 ```
 
 Other distributions will be supported sooner or later. Help us by looking at the
-[open packaging issues!](https://github.com/woodruffw/kbs2/labels/C%3Apackaging).
+[open packaging issues](https://github.com/woodruffw/kbs2/labels/C%3Apackaging)!
 
 ### Cargo
 
