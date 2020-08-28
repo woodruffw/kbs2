@@ -260,9 +260,13 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     if matches.is_present("clipboard") {
         match fork() {
             Ok(ForkResult::Child) => {
-                if cfg!(target_os = "linux") {
+                // NOTE(ww): More dumbness: cfg! gets expanded into a boolean literal,
+                // so it can't be used to conditionally compile code that only exists on
+                // one platform.
+                #[cfg(target_os = "linux")]
+                {
                     match session.config.commands.pass.x11_clipboard {
-                        // NOTE(ww): Why, might you ask, is clip_primary its own method?
+                        // NOTE(ww): Why, might you ask, is clip_primary its own function?
                         // It's because the clipboard crate has a bad abstraction:
                         // ClipboardContext is the top-level type, but it's aliased to
                         // X11Clipboard<Clipboard>. That means we can't produce it on a match.
@@ -272,7 +276,10 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<()> {
                         config::X11Clipboard::Primary => clip_primary(password, &session)?,
                         config::X11Clipboard::Clipboard => clip(password, &session)?,
                     };
-                } else {
+                }
+
+                #[cfg(target_os = "macos")]
+                {
                     clip(password, &session)?;
                 }
             }
