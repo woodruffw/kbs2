@@ -665,8 +665,6 @@ Setting this to `false` overrides any duration configured in `commands.pass.clip
 
 ### `commands.pass.x11-clipboard` (default: `"Clipboard"`)
 
-*This setting has no functionality yet; see [#3](https://github.com/woodruffw/kbs2/issues/3)*.
-
 The `commands.pass.x11-clipboard` setting determines which clipboard is used on X11.
 
 Valid options are `"Clipboard"` and `"Primary"`.

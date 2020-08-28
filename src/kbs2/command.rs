@@ -258,40 +258,29 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<()> {
 
     let password = login.password;
     if matches.is_present("clipboard") {
-        let clipboard_duration = session.config.commands.pass.clipboard_duration;
-        let clear_after = session.config.commands.pass.clear_after;
-
-        // NOTE(ww): We fork here for two reasons: one X11 specific, and one general.
-        //
-        // 1. X11's clipboard's are tied to processes, meaning that they disappear when the
-        //    creating process terminates. There are ways around that, but the clipboard
-        //    crate doesn't implement them in the interest of simplicity. Therefore, we
-        //    fork to ensure that a process outlives our "main" kbs2 process for pasting purposes.
-        // 2. Forking gives us a way to clear the password from the clipboard after
-        //    a particular duration, without resorting to an external daemon or other service.
         match fork() {
             Ok(ForkResult::Child) => {
-                // TODO(ww): Support x11_clipboard config option.
-                if session.config.commands.pass.x11_clipboard == config::X11Clipboard::Primary {
-                    util::warn("primary clipboard requested but not yet supported");
+                // NOTE(ww): More dumbness: cfg! gets expanded into a boolean literal,
+                // so it can't be used to conditionally compile code that only exists on
+                // one platform.
+                #[cfg(target_os = "linux")]
+                {
+                    match session.config.commands.pass.x11_clipboard {
+                        // NOTE(ww): Why, might you ask, is clip_primary its own function?
+                        // It's because the clipboard crate has a bad abstraction:
+                        // ClipboardContext is the top-level type, but it's aliased to
+                        // X11Clipboard<Clipboard>. That means we can't produce it on a match.
+                        // The other option would be to create a ClipboardProvider trait object,
+                        // but it doesn't implement Sized. So we have to do things the dumb
+                        // way here. Alternatively, I could just be missing something obvious.
+                        config::X11Clipboard::Primary => clip_primary(password, &session)?,
+                        config::X11Clipboard::Clipboard => clip(password, &session)?,
+                    };
                 }
 
-                let mut ctx: ClipboardContext = ClipboardProvider::new()
-                    .map_err(|_| anyhow!("unable to grab the clipboard"))?;
-
-                ctx.set_contents(password)
-                    .map_err(|_| anyhow!("unable to store to the clipboard"))?;
-
-                std::thread::sleep(std::time::Duration::from_secs(clipboard_duration));
-
-                if clear_after {
-                    ctx.set_contents("".to_owned())
-                        .map_err(|_| anyhow!("unable to clear the clipboard"))?;
-
-                    if let Some(clear_hook) = &session.config.commands.pass.clear_hook {
-                        log::debug!("clear-hook: {}", clear_hook);
-                        session.config.call_hook(clear_hook, &[])?;
-                    }
+                #[cfg(target_os = "macos")]
+                {
+                    clip(password, &session)?;
                 }
             }
             Err(_) => return Err(anyhow!("clipboard fork failed")),
@@ -306,6 +295,59 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<()> {
     if let Some(post_hook) = &session.config.commands.pass.post_hook {
         log::debug!("post-hook: {}", post_hook);
         session.config.call_hook(post_hook, &[])?;
+    }
+
+    Ok(())
+}
+
+#[doc(hidden)]
+fn clip(password: String, session: &session::Session) -> Result<()> {
+    let clipboard_duration = session.config.commands.pass.clipboard_duration;
+    let clear_after = session.config.commands.pass.clear_after;
+
+    let mut ctx: ClipboardContext =
+        ClipboardProvider::new().map_err(|_| anyhow!("unable to grab the clipboard"))?;
+    ctx.set_contents(password)
+        .map_err(|_| anyhow!("unable to store to the clipboard"))?;
+
+    std::thread::sleep(std::time::Duration::from_secs(clipboard_duration));
+
+    if clear_after {
+        ctx.set_contents("".to_owned())
+            .map_err(|_| anyhow!("unable to clear the clipboard"))?;
+
+        if let Some(clear_hook) = &session.config.commands.pass.clear_hook {
+            log::debug!("clear-hook: {}", clear_hook);
+            session.config.call_hook(clear_hook, &[])?;
+        }
+    }
+
+    Ok(())
+}
+
+#[doc(hidden)]
+#[cfg(target_os = "linux")]
+fn clip_primary(password: String, session: &session::Session) -> Result<()> {
+    use clipboard::x11_clipboard::{Primary, X11ClipboardContext};
+
+    let clipboard_duration = session.config.commands.pass.clipboard_duration;
+    let clear_after = session.config.commands.pass.clear_after;
+
+    let mut ctx: X11ClipboardContext<Primary> =
+        ClipboardProvider::new().map_err(|_| anyhow!("unable to grab the clipboard"))?;
+    ctx.set_contents(password)
+        .map_err(|_| anyhow!("unable to store to the clipboard"))?;
+
+    std::thread::sleep(std::time::Duration::from_secs(clipboard_duration));
+
+    if clear_after {
+        ctx.set_contents("".to_owned())
+            .map_err(|_| anyhow!("unable to clear the clipboard"))?;
+
+        if let Some(clear_hook) = &session.config.commands.pass.clear_hook {
+            log::debug!("clear-hook: {}", clear_hook);
+            session.config.call_hook(clear_hook, &[])?;
+        }
     }
 
     Ok(())
