@@ -244,7 +244,7 @@ fn run() -> Result<()> {
     //
     // * `kbs2 lock` exists to remove the shared memory object created by `kbs2 unlock`. Taking
     //   a session would mean that it would attempt to pointlessly unlock the key before re-locking.
-    if let None = matches.subcommand() {
+    if matches.subcommand().is_none() {
         app.clone()
             .write_long_help(&mut io::stdout())
             .map_err(|_| anyhow!("failed to print help"))
