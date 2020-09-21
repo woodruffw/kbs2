@@ -330,9 +330,9 @@ dependencies = [
 
 [[package]]
 name = "clap_generate"
-version = "3.0.0-beta.1"
+version = "3.0.0-beta.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "188d8b137fa922515d549cf17ece165ddbc71bf21e723e81d84406958dcdef67"
+checksum = "adf420f8b687b628d2915ccfd43a660c437a170432e3fbcb66944e8717a0d68f"
 dependencies = [
  "clap",
 ]
