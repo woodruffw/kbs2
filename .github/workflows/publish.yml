@@ -36,8 +36,8 @@ jobs:
       - name: tarball
         run: |
           cd ./target/release
-          tar czvf kbs2-linux-${{ github.ref }}.tar.gz ./kbs2 ../../LICENSE ../../README.md ../../contrib/
-          shasum -a 256 kbs2-linux-${{ github.ref }}.tar.gz > kbs2-linux-${{ github.ref }}.sha256
+          tar czvf kbs2-linux-${{ github.event.release.tag_name }}.tar.gz ./kbs2 ../../LICENSE ../../README.md ../../contrib/
+          shasum -a 256 kbs2-linux-${{ github.event.release.tag_name }}.tar.gz > kbs2-linux-${{ github.event.release.tag_name }}.sha256
 
       - name: attach tarball to release
         uses: actions/upload-release-asset@v1
@@ -45,8 +45,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./target/release/kbs2-linux-${{ github.ref }}.tar.gz
-          asset_name: kbs2-linux-${{ github.ref }}.tar.gz
+          asset_path: ./target/release/kbs2-linux-${{ github.event.release.tag_name }}.tar.gz
+          asset_name: kbs2-linux-${{ github.event.release.tag_name }}.tar.gz
           asset_content_type: application/gzip
 
       - name: attach checksum to release
@@ -55,8 +55,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./target/release/kbs2-linux-${{ github.ref }}.sha256
-          asset_name: kbs2-linux-${{ github.ref }}.sha256
+          asset_path: ./target/release/kbs2-linux-${{ github.event.release.tag_name }}.sha256
+          asset_name: kbs2-linux-${{ github.event.release.tag_name }}.sha256
           asset_content_type: text/plain
 
   package-deb:
