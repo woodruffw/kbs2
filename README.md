@@ -53,6 +53,14 @@ $ sudo dpkg -i kbs2_X.X.X_amd64.deb
 $ sudo apt-get -f install
 ```
 
+### Arch Linux
+
+`kbs2` can be installed from available [AUR packages](https://aur.archlinux.org/packages/?O=0&SeB=b&K=kbs2&outdated=&SB=n&SO=a&PP=50&do_Search=Go) using an [AUR helper](https://wiki.archlinux.org/index.php/AUR_helpers). For example,
+
+```bash
+yay -S kbs2
+```
+
 Other distributions will be supported sooner or later. Help us by looking at the
 [open packaging issues](https://github.com/woodruffw/kbs2/labels/C%3Apackaging)!
 
