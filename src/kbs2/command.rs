@@ -258,33 +258,37 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<()> {
 
     let password = login.password;
     if matches.is_present("clipboard") {
-        match fork() {
-            Ok(ForkResult::Child) => {
-                // NOTE(ww): More dumbness: cfg! gets expanded into a boolean literal,
-                // so it can't be used to conditionally compile code that only exists on
-                // one platform.
-                #[cfg(target_os = "linux")]
-                {
-                    match session.config.commands.pass.x11_clipboard {
-                        // NOTE(ww): Why, might you ask, is clip_primary its own function?
-                        // It's because the clipboard crate has a bad abstraction:
-                        // ClipboardContext is the top-level type, but it's aliased to
-                        // X11Clipboard<Clipboard>. That means we can't produce it on a match.
-                        // The other option would be to create a ClipboardProvider trait object,
-                        // but it doesn't implement Sized. So we have to do things the dumb
-                        // way here. Alternatively, I could just be missing something obvious.
-                        config::X11Clipboard::Primary => clip_primary(password, &session)?,
-                        config::X11Clipboard::Clipboard => clip(password, &session)?,
-                    };
-                }
+        // NOTE(ww): fork() is unsafe in multithreaded programs where the child calls
+        // non async-signal-safe functions. kbs2 is single threaded, so this usage is fine.
+        unsafe {
+            match fork() {
+                Ok(ForkResult::Child) => {
+                    // NOTE(ww): More dumbness: cfg! gets expanded into a boolean literal,
+                    // so it can't be used to conditionally compile code that only exists on
+                    // one platform.
+                    #[cfg(target_os = "linux")]
+                    {
+                        match session.config.commands.pass.x11_clipboard {
+                            // NOTE(ww): Why, might you ask, is clip_primary its own function?
+                            // It's because the clipboard crate has a bad abstraction:
+                            // ClipboardContext is the top-level type, but it's aliased to
+                            // X11Clipboard<Clipboard>. That means we can't produce it on a match.
+                            // The other option would be to create a ClipboardProvider trait object,
+                            // but it doesn't implement Sized. So we have to do things the dumb
+                            // way here. Alternatively, I could just be missing something obvious.
+                            config::X11Clipboard::Primary => clip_primary(password, &session)?,
+                            config::X11Clipboard::Clipboard => clip(password, &session)?,
+                        };
+                    }
 
-                #[cfg(target_os = "macos")]
-                {
-                    clip(password, &session)?;
+                    #[cfg(target_os = "macos")]
+                    {
+                        clip(password, &session)?;
+                    }
                 }
+                Err(_) => return Err(anyhow!("clipboard fork failed")),
+                _ => {}
             }
-            Err(_) => return Err(anyhow!("clipboard fork failed")),
-            _ => {}
         }
     } else if atty::isnt(Stream::Stdout) {
         print!("{}", password);
