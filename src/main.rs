@@ -312,14 +312,7 @@ fn run() -> Result<()> {
     }
 }
 
-fn main() {
+fn main() -> Result<()> {
     env_logger::init();
-
-    process::exit(match run() {
-        Ok(()) => 0,
-        Err(e) => {
-            eprintln!("Fatal: {}", e);
-            1
-        }
-    });
+    run()
 }
