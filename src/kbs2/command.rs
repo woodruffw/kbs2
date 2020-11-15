@@ -2,9 +2,8 @@ use anyhow::{anyhow, Result};
 use atty::Stream;
 use clap::ArgMatches;
 use clipboard::{ClipboardContext, ClipboardProvider};
-use nix::errno::Errno;
-use nix::sys::mman;
 use nix::unistd::{fork, ForkResult};
+use secrecy::ExposeSecret;
 
 use std::env;
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -29,37 +28,6 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
     }
 
     config::initialize(&config_dir, !matches.is_present("insecure-not-wrapped"))
-}
-
-/// Implements the `kbs2 unlock` command.
-pub fn unlock(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
-    log::debug!("unlock requested");
-
-    if !config.wrapped {
-        return Err(anyhow!("unlock requested but wrapped=false in config"));
-    }
-
-    // NOTE(ww): All of the unwrapping happens in unwrap_keyfile.
-    // The unwrapped data is persistent in shared memory once we return successfully.
-    config.unwrap_keyfile()?;
-
-    Ok(())
-}
-
-/// Implements the `kbs2 lock` command.
-pub fn lock(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
-    log::debug!("lock requested");
-
-    if !config.wrapped {
-        util::warn("config says that key isn't wrapped, trying anyways...");
-    }
-
-    let shm_name = config.unwrapped_key_shm_name()?;
-    match mman::shm_unlink(&shm_name) {
-        Ok(()) => Ok(()),
-        Err(nix::Error::Sys(Errno::ENOENT)) => Err(anyhow!("no unwrapped key to remove")),
-        Err(e) => Err(e.into()),
-    }
 }
 
 /// Implements the `kbs2 new` command.
@@ -455,4 +423,13 @@ pub fn generate(matches: &ArgMatches, session: &session::Session) -> Result<()> 
     println!("{}", generator.secret()?);
 
     Ok(())
+}
+
+pub fn store_master(config: &config::Config) -> Result<()> {
+    let keyring = util::open_keyring(&config.keyfile);
+    let password = util::get_password()?;
+
+    keyring
+        .set_password(password.expose_secret())
+        .map_err(Into::into)
 }

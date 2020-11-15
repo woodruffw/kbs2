@@ -1,10 +1,13 @@
 use anyhow::{anyhow, Result};
+use keyring::Keyring;
 use pinentry::PassphraseInput;
 use secrecy::SecretString;
 
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+const KBS2_KEYRING_SERVICE_NAME: &str = "kbs2";
 
 /// Given an input string formatted according to shell quoting rules,
 /// split it into its command and argument parts and return each.
@@ -88,6 +91,10 @@ pub fn home_dir() -> Result<PathBuf> {
         Some(dir) => Ok(dir),
         None => Err(anyhow!("couldn't find the user's home directory")),
     }
+}
+
+pub fn open_keyring(username: &str) -> Keyring {
+    Keyring::new(KBS2_KEYRING_SERVICE_NAME, &username)
 }
 
 #[cfg(test)]

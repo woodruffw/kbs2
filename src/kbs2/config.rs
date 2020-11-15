@@ -1,21 +1,9 @@
-use age::Decryptor;
-use anyhow::{anyhow, Error, Result};
-use memmap::Mmap;
-use nix::errno::Errno;
-use nix::fcntl::OFlag;
-use nix::sys::mman;
-use nix::sys::stat::Mode;
-use nix::unistd;
+use anyhow::{anyhow, Result};
+use secrecy::ExposeSecret;
 use serde::{de, Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 
-use std::convert::TryInto;
 use std::env;
 use std::fs;
-use std::io::{Read, Write};
-use std::ops::DerefMut;
-use std::os::unix::ffi::OsStrExt;
-use std::os::unix::io::FromRawFd;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -34,9 +22,6 @@ pub static CONFIG_BASENAME: &str = "kbs2.conf";
 /// The default generate age key is placed in this file, relative to
 /// the configuration directory.
 pub static DEFAULT_KEY_BASENAME: &str = "key";
-
-/// The basename for the POSIX shared memory object in which the unwrapped key is stored.
-pub static UNWRAPPED_KEY_SHM_BASENAME: &str = "/_kbs2_uk";
 
 /// The default base directory name for the secret store, placed relative to
 /// the user's data directory by default.
@@ -141,143 +126,6 @@ impl Config {
         }
 
         None
-    }
-
-    /// Returns a suitable identifier for a shared memory object that
-    /// can (or already does) store the unwrapped key.
-    pub fn unwrapped_key_shm_name(&self) -> Result<PathBuf> {
-        let canonicalized_keyfile = fs::canonicalize(&self.keyfile)?;
-
-        // NOTE(ww): Why do we truncate the shared memory object's name to 31 characters
-        // (i.e., bytes)? Because that's all macOS supports! See PSHMNAMELEN in sys/posix.h.
-        // Hashing the keyfile's path isn't done here for security anyways; it's just to
-        // prevent the same shared memory object from being accessed by separate config
-        // files (and kbs2 consequently barfing when the key doesn't work with one of the
-        // stores).
-        let mut shm_name = format!(
-            "{}_{:x}",
-            UNWRAPPED_KEY_SHM_BASENAME,
-            Sha256::digest(canonicalized_keyfile.as_os_str().as_bytes())
-        );
-        shm_name.truncate(31);
-
-        Ok(shm_name.into())
-    }
-
-    /// Unwraps the configured private key file into its underlying private
-    /// key, returning a `fs::File` that owns an open reference to that key.
-    ///
-    /// NOTE: This function assumes that the key file is wrapped. Calling
-    /// it with a non-wrapped key file will cause an error.
-    pub fn unwrap_keyfile(&self) -> Result<fs::File> {
-        // Unwrapping our password-protected keyfile and returning it as a raw file descriptor
-        // is a multi-step process.
-        let shm_name = self.unwrapped_key_shm_name()?;
-
-        log::debug!("shm name: {:?}", shm_name);
-
-        // First, create the shared memory object that we'll eventually use
-        // to stash the unwrapped key. We do this early to allow it to fail ahead
-        // of the password prompt and decryption steps.
-        log::debug!("creating shared memory object");
-        let unwrapped_fd = match mman::shm_open(
-            &shm_name,
-            OFlag::O_RDWR | OFlag::O_CREAT | OFlag::O_EXCL,
-            Mode::S_IRUSR | Mode::S_IWUSR,
-        ) {
-            Ok(unwrapped_fd) => unwrapped_fd,
-            Err(nix::Error::Sys(Errno::EEXIST)) => {
-                return Err(anyhow!("unwrapped key already exists"))
-            }
-            Err(e) => return Err(e.into()),
-        };
-
-        // Prompt the user for their "master" password (i.e., the one that decrypts their privkey).
-        let password = util::get_password().or_else(|e| {
-            mman::shm_unlink(&shm_name)?;
-            Err(e)
-        })?;
-
-        // Read the wrapped key from disk.
-        let wrapped_key = std::fs::read(&self.keyfile).or_else(|e| {
-            mman::shm_unlink(&shm_name)?;
-            Err(Error::from(e))
-        })?;
-
-        // Create a new decryptor for the wrapped key.
-        let decryptor = match Decryptor::new(wrapped_key.as_slice()) {
-            Ok(Decryptor::Passphrase(d)) => d,
-            Ok(_) => {
-                mman::shm_unlink(&shm_name)?;
-                return Err(anyhow!(
-                    "key unwrap failed; not a password-wrapped keyfile?"
-                ));
-            }
-            Err(e) => {
-                mman::shm_unlink(&shm_name)?;
-                return Err(anyhow!(
-                    "unable to load private key (backend reports: {:?})",
-                    e
-                ));
-            }
-        };
-
-        // ...and decrypt (i.e., unwrap) using the master password supplied above.
-        log::debug!("beginning key unwrap...");
-        let mut unwrapped_key = String::new();
-
-        // NOTE(ww): A work factor of 18 is an educated guess here; rage generated some
-        // encrypted messages that needed this factor.
-        decryptor
-            .decrypt(&password, Some(18))
-            .map_err(|e| anyhow!("unable to decrypt (backend reports: {:?})", e))
-            .and_then(|mut r| {
-                r.read_to_string(&mut unwrapped_key)
-                    .map_err(|_| anyhow!("i/o error while decrypting"))
-            })
-            .or_else(|e| {
-                mman::shm_unlink(&shm_name)?;
-                Err(e)
-            })?;
-        log::debug!("finished key unwrap!");
-
-        // Use ftruncate to tell the shared memory region how much space we'd like.
-        // NOTE(ww): as_bytes returns usize, but ftruncate takes an i64.
-        // We're already in big trouble if this conversion fails, so just unwrap.
-        log::debug!("truncating shm obj");
-        unistd::ftruncate(
-            unwrapped_fd,
-            unwrapped_key.as_bytes().len().try_into().unwrap(),
-        )
-        .or_else(|e| {
-            mman::shm_unlink(&shm_name)?;
-            Err(Error::from(e))
-        })?;
-
-        // NOTE(ww): This is safe, assuming nix::shm_open doesn't lie about
-        // success when returning a file descriptor.
-        let file = unsafe { fs::File::from_raw_fd(unwrapped_fd) };
-
-        // Toss unwrapped_key into our shared memory.
-        // Ideally we'd just call write(2) here, but that only works on Linux.
-        // See the NOTE under RageLib::new() for more ranting about
-        // macOS concessions.
-        log::debug!("writing the unwrapped key");
-        {
-            let mut mmap = unsafe { Mmap::map(&file)? }.make_mut().or_else(|e| {
-                mman::shm_unlink(&shm_name)?;
-                Err(Error::from(e))
-            })?;
-
-            mmap.deref_mut()
-                .write_all(unwrapped_key.as_bytes())
-                .or_else(|e| {
-                    mman::shm_unlink(&shm_name)?;
-                    Err(Error::from(e))
-                })?;
-        }
-
-        Ok(file)
     }
 }
 
@@ -477,7 +325,16 @@ pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<()> {
     let keyfile = config_dir.join(DEFAULT_KEY_BASENAME);
 
     let public_key = if wrapped {
-        RageLib::create_wrapped_keypair(&keyfile)?
+        let password = {
+            let password = util::get_password()?;
+
+            let keyfile = keyfile.to_string_lossy();
+            let keyring = util::open_keyring(&keyfile);
+            keyring.set_password(password.expose_secret())?;
+
+            password
+        };
+        RageLib::create_wrapped_keypair(password, &keyfile)?
     } else {
         RageLib::create_keypair(&keyfile)?
     };

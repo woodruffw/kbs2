@@ -48,8 +48,6 @@ fn app<'a>() -> App<'a> {
                         .long("insecure-not-wrapped"),
                 ),
         )
-        .subcommand(App::new("unlock").about("unwrap the private key for use"))
-        .subcommand(App::new("lock").about("remove the unwrapped key, if any, from shared memory"))
         .subcommand(
             App::new("new")
                 .about("create a new record")
@@ -201,6 +199,9 @@ fn app<'a>() -> App<'a> {
                         .default_value("default"),
                 ),
         )
+        .subcommand(
+            App::new("store-master").about("store a kbs2 master password in the system keyring"),
+        )
 }
 
 fn run() -> Result<()> {
@@ -231,34 +232,28 @@ fn run() -> Result<()> {
     log::debug!("config dir: {:?}", config_dir);
     std::fs::create_dir_all(&config_dir)?;
 
-    // Subcommand dispatch happens here. All subcommands take a `Session`, with four exceptions:
+    // Subcommand dispatch happens here. All subcommands take a `Session`, with three exceptions:
     //
     // * The empty subcommand (i.e., just `kbs2`) does nothing besides printing help.
     //
     // * `kbs2 init` doesn't have access to a preexisting config, and so needs to be separated
     //   from the config-loading behavior of all other subcommands.
     //
-    // * `kbs2 unlock` exists so that all commands that make use of a session don't have to
-    //   prompt for the master password themselves. That means that it can't take a session of
-    //   its own.
-    //
-    // * `kbs2 lock` exists to remove the shared memory object created by `kbs2 unlock`. Taking
-    //   a session would mean that it would attempt to pointlessly unlock the key before re-locking.
+    // * `kbs2 store-master` *does* have access to a preexisting config, but can't load a session
+    //   yet (because it doesn't have a master password stored for session loading).
     if matches.subcommand().is_none() {
         app.clone()
             .write_long_help(&mut io::stdout())
             .map_err(|_| anyhow!("failed to print help"))
     } else if let Some(("init", matches)) = matches.subcommand() {
         kbs2::command::init(&matches, &config_dir)
-    } else if let Some(("unlock", matches)) = matches.subcommand() {
-        let config = kbs2::config::load(&config_dir)?;
-        kbs2::command::unlock(&matches, &config)
-    } else if let Some(("lock", matches)) = matches.subcommand() {
-        let config = kbs2::config::load(&config_dir)?;
-        kbs2::command::lock(&matches, &config)
     } else {
         let config = kbs2::config::load(&config_dir)?;
         log::debug!("loaded config: {:?}", config);
+
+        if let Some(("store-master", _)) = matches.subcommand() {
+            return kbs2::command::store_master(&config);
+        }
 
         let session = kbs2::session::Session::new(config)?;
 
