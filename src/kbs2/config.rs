@@ -172,7 +172,6 @@ impl Config {
     pub fn unwrap_keyfile(&self) -> Result<fs::File> {
         // Unwrapping our password-protected keyfile and returning it as a raw file descriptor
         // is a multi-step process.
-
         let shm_name = self.unwrapped_key_shm_name()?;
 
         log::debug!("shm name: {:?}", shm_name);
