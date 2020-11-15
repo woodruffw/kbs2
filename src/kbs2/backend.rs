@@ -1,5 +1,5 @@
 use age::Decryptor;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use secrecy::{ExposeSecret, SecretString};
 
 use std::io::{Read, Write};
@@ -54,7 +54,10 @@ impl RageLib {
             // Get the user's master password from an OS-supplied keyring.
             let password = {
                 let keyring = util::open_keyring(&config.keyfile);
-                keyring.get_password().map(SecretString::new)?
+                keyring
+                    .get_password()
+                    .map(SecretString::new)
+                    .with_context(|| format!("missing master password for {}", config.keyfile))?
             };
 
             // Create a new decryptor for the wrapped key.
