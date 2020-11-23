@@ -2,8 +2,6 @@ use anyhow::{anyhow, Result};
 use atty::Stream;
 use clap::ArgMatches;
 use clipboard::{ClipboardContext, ClipboardProvider};
-use nix::errno::Errno;
-use nix::sys::mman;
 use nix::unistd::{fork, ForkResult};
 
 use std::env;
@@ -11,6 +9,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 use std::process;
 
+use crate::kbs2::agent;
 use crate::kbs2::config;
 use crate::kbs2::generator::Generator;
 use crate::kbs2::input;
@@ -31,35 +30,23 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
     config::initialize(&config_dir, !matches.is_present("insecure-not-wrapped"))
 }
 
-/// Implements the `kbs2 unlock` command.
-pub fn unlock(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
-    log::debug!("unlock requested");
-
-    if !config.wrapped {
-        return Err(anyhow!("unlock requested but wrapped=false in config"));
+/// Implements the `kbs2 agent` command (and subcommands).
+pub fn agent(matches: &ArgMatches, session: &session::Session) -> Result<()> {
+    // No subcommand: run the agent itself
+    match matches.subcommand() {
+        None => agent::run(&session),
+        Some(("lock", matches)) => agent_lock(&matches, &session),
+        Some(("unlock", matches)) => agent_unlock(&matches, &session),
+        _ => unreachable!(),
     }
-
-    // NOTE(ww): All of the unwrapping happens in unwrap_keyfile.
-    // The unwrapped data is persistent in shared memory once we return successfully.
-    config.unwrap_keyfile()?;
-
-    Ok(())
 }
 
-/// Implements the `kbs2 lock` command.
-pub fn lock(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
-    log::debug!("lock requested");
+fn agent_lock(matches: &ArgMatches, session: &session::Session) -> Result<()> {
+    Err(anyhow!("unimpl"))
+}
 
-    if !config.wrapped {
-        util::warn("config says that key isn't wrapped, trying anyways...");
-    }
-
-    let shm_name = config.unwrapped_key_shm_name()?;
-    match mman::shm_unlink(&shm_name) {
-        Ok(()) => Ok(()),
-        Err(nix::Error::Sys(Errno::ENOENT)) => Err(anyhow!("no unwrapped key to remove")),
-        Err(e) => Err(e.into()),
-    }
+fn agent_unlock(matches: &ArgMatches, session: &session::Session) -> Result<()> {
+    Err(anyhow!("unimpl"))
 }
 
 /// Implements the `kbs2 new` command.

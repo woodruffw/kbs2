@@ -4,14 +4,14 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
-use crate::kbs2::backend;
+use crate::kbs2::backend::{Backend, RageLib};
 use crate::kbs2::config;
 use crate::kbs2::record;
 
 /// Encapsulates the context needed by `kbs2` to interact with records.
 pub struct Session {
-    /// The age backend used to encrypt and decrypt records.
-    pub backend: Box<dyn backend::Backend>,
+    /// The `RageLib` backend used to encrypt and decrypt records.
+    pub backend: RageLib,
 
     /// The configuration that `kbs2` was invoked with.
     pub config: config::Config,
@@ -22,9 +22,10 @@ impl Session {
     pub fn new(config: config::Config) -> Result<Session> {
         fs::create_dir_all(&config.store)?;
 
-        let backend: Box<dyn backend::Backend> = Box::new(backend::RageLib::new(&config)?);
-
-        Ok(Session { backend, config })
+        Ok(Session {
+            backend: RageLib::new(&config)?,
+            config: config,
+        })
     }
 
     /// Returns the label of every record available in the store.

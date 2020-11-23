@@ -1,3 +1,6 @@
+/// Structures and routines for the `kbs2` authentication agent.
+pub mod agent;
+
 /// Structures and routines for interacting with age backends.
 pub mod backend;
 

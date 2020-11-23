@@ -34,6 +34,30 @@ fn app<'a>() -> App<'a> {
                 .possible_values(&["bash", "zsh", "fish"]),
         )
         .subcommand(
+            App::new("agent")
+                .about("run the kbs2 authentication agent")
+                .arg(
+                    Arg::new("no-unwrap-default")
+                        .about("don't unwrap the default key")
+                        .short('U')
+                        .long("no-unwrap-default"),
+                )
+                .subcommand(
+                    App::new("lock")
+                        .about("remove all unwrapped keys from the running agent")
+                        .arg(
+                            Arg::new("kill")
+                                .about("kill the agent after locking")
+                                .short('q')
+                                .long("quit"),
+                        ),
+                )
+                .subcommand(
+                    App::new("unlock")
+                        .about("unwrap the current config's key in the running agent"),
+                ),
+        )
+        .subcommand(
             App::new("init")
                 .about("initialize kbs2 with a new config and keypair")
                 .arg(
@@ -48,8 +72,6 @@ fn app<'a>() -> App<'a> {
                         .long("insecure-not-wrapped"),
                 ),
         )
-        .subcommand(App::new("unlock").about("unwrap the private key for use"))
-        .subcommand(App::new("lock").about("remove the unwrapped key, if any, from shared memory"))
         .subcommand(
             App::new("new")
                 .about("create a new record")
@@ -231,31 +253,18 @@ fn run() -> Result<()> {
     log::debug!("config dir: {:?}", config_dir);
     std::fs::create_dir_all(&config_dir)?;
 
-    // Subcommand dispatch happens here. All subcommands take a `Session`, with four exceptions:
+    // Subcommand dispatch happens here. All subcommands take a `Session`, with two exceptions:
     //
-    // * The empty subcommand (i.e., just `kbs2`) does nothing besides printing help.
+    // * No subcommand (i.e., just `kbs2`) does nothing besides printing help.
     //
     // * `kbs2 init` doesn't have access to a preexisting config, and so needs to be separated
     //   from the config-loading behavior of all other subcommands.
-    //
-    // * `kbs2 unlock` exists so that all commands that make use of a session don't have to
-    //   prompt for the master password themselves. That means that it can't take a session of
-    //   its own.
-    //
-    // * `kbs2 lock` exists to remove the shared memory object created by `kbs2 unlock`. Taking
-    //   a session would mean that it would attempt to pointlessly unlock the key before re-locking.
     if matches.subcommand().is_none() {
         app.clone()
             .write_long_help(&mut io::stdout())
             .map_err(|_| anyhow!("failed to print help"))
     } else if let Some(("init", matches)) = matches.subcommand() {
         kbs2::command::init(&matches, &config_dir)
-    } else if let Some(("unlock", matches)) = matches.subcommand() {
-        let config = kbs2::config::load(&config_dir)?;
-        kbs2::command::unlock(&matches, &config)
-    } else if let Some(("lock", matches)) = matches.subcommand() {
-        let config = kbs2::config::load(&config_dir)?;
-        kbs2::command::lock(&matches, &config)
     } else {
         let config = kbs2::config::load(&config_dir)?;
         log::debug!("loaded config: {:?}", config);
@@ -268,6 +277,7 @@ fn run() -> Result<()> {
         }
 
         match matches.subcommand() {
+            Some(("agent", matches)) => kbs2::command::agent(&matches, &session)?,
             Some(("new", matches)) => kbs2::command::new(&matches, &session)?,
             Some(("list", matches)) => kbs2::command::list(&matches, &session)?,
             Some(("rm", matches)) => kbs2::command::rm(&matches, &session)?,
