@@ -31,21 +31,21 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
 }
 
 /// Implements the `kbs2 agent` command (and subcommands).
-pub fn agent(matches: &ArgMatches, session: &session::Session) -> Result<()> {
+pub fn agent(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     // No subcommand: run the agent itself
     match matches.subcommand() {
-        None => agent::run(&session),
-        Some(("lock", matches)) => agent_lock(&matches, &session),
-        Some(("unlock", matches)) => agent_unlock(&matches, &session),
+        None => agent::run(),
+        Some(("lock", matches)) => agent_lock(&matches, &config),
+        Some(("unlock", matches)) => agent_unlock(&matches, &config),
         _ => unreachable!(),
     }
 }
 
-fn agent_lock(matches: &ArgMatches, session: &session::Session) -> Result<()> {
+fn agent_lock(_matches: &ArgMatches, _config: &config::Config) -> Result<()> {
     Err(anyhow!("unimpl"))
 }
 
-fn agent_unlock(matches: &ArgMatches, session: &session::Session) -> Result<()> {
+fn agent_unlock(_matches: &ArgMatches, _config: &config::Config) -> Result<()> {
     Err(anyhow!("unimpl"))
 }
 

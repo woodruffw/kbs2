@@ -1,16 +1,10 @@
 use anyhow::{anyhow, Result};
-use memmap::Mmap;
-use nix::errno::Errno;
-use nix::fcntl::OFlag;
-use nix::sys::mman;
-use nix::sys::stat::Mode;
 use secrecy::ExposeSecret;
 
-use std::fs::File;
-use std::io::{BufReader, Read, Write};
-use std::os::unix::io::FromRawFd;
+use std::io::{Read, Write};
 use std::path::Path;
 
+use crate::kbs2::agent;
 use crate::kbs2::config;
 use crate::kbs2::record::Record;
 use crate::kbs2::util;
@@ -57,40 +51,11 @@ impl RageLib {
         let identities = if config.wrapped {
             log::debug!("config specifies a wrapped key");
 
-            // NOTE(ww): It's be nice if we could call open or one of the direct
-            // I/O helpers here, but shm_name isn't a real filename.
-            // NOTE(ww): This should always be safe, as we either directly
-            // return a fresh fd from shm_open or indirectly return a fresh one
-            // via unwrap_keyfile.
-            let shm_name = config.unwrapped_key_shm_name()?;
-            let unwrapped_file = match mman::shm_open(&shm_name, OFlag::O_RDONLY, Mode::empty()) {
-                Ok(unwrapped_fd) => unsafe { File::from_raw_fd(unwrapped_fd) },
-                Err(nix::Error::Sys(Errno::ENOENT)) => {
-                    log::debug!("unwrapped key not available, requesting unwrap");
-                    config.unwrap_keyfile()?
-                }
-                Err(e) => return Err(e.into()),
-            };
+            let mut client = agent::Client::new()?;
+            let unwrapped_key = client.get_key(&config.keyfile)?;
 
-            // NOTE(ww): And now some more (macOS specific?) stupidity:
-            // our unwrapped_key is in a shared memory object, which is page-aligned
-            // (i.e., probably aligned on 4K bytes). Accessing it directly
-            // via Deref<Target=[u8]> causes the entire page to get parsed as the
-            // key since ASCII NUL is valid UTF-8 and subsequently blow up.
-            // Rust's File::metadata() calls fstat64 internally which POSIX
-            // *says* is supposed to return an accurate size for the shared memory
-            // object, but macOS still returns the aligned size.
-            // We give up on doing it the right way and just find the index of the
-            // first NUL (defaulting to len() for sensible platforms, like Linux).
-            let unwrapped_key = unsafe { Mmap::map(&unwrapped_file)? };
-            let nul_index = unwrapped_key
-                .iter()
-                .position(|&x| x == b'\x00')
-                .unwrap_or_else(|| unwrapped_key.len());
-
-            let reader = BufReader::new(&unwrapped_key[..nul_index]);
             log::debug!("parsing unwrapped key");
-            age::keys::Identity::from_buffer(reader)?
+            age::keys::Identity::from_buffer(unwrapped_key.as_bytes())?
         } else {
             age::keys::Identity::from_file(config.keyfile.clone())?
         };

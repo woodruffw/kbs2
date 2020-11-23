@@ -253,12 +253,15 @@ fn run() -> Result<()> {
     log::debug!("config dir: {:?}", config_dir);
     std::fs::create_dir_all(&config_dir)?;
 
-    // Subcommand dispatch happens here. All subcommands take a `Session`, with two exceptions:
+    // Subcommand dispatch happens here. All subcommands take a `Session`, with three exceptions:
     //
     // * No subcommand (i.e., just `kbs2`) does nothing besides printing help.
     //
     // * `kbs2 init` doesn't have access to a preexisting config, and so needs to be separated
     //   from the config-loading behavior of all other subcommands.
+    //
+    // * `kbs2 agent` (and subcommands) don't run with a session, but *do* have access to a
+    //   preexisting and loaded `Config`.
     if matches.subcommand().is_none() {
         app.clone()
             .write_long_help(&mut io::stdout())
@@ -269,6 +272,10 @@ fn run() -> Result<()> {
         let config = kbs2::config::load(&config_dir)?;
         log::debug!("loaded config: {:?}", config);
 
+        if let Some(("agent", matches)) = matches.subcommand() {
+            return kbs2::command::agent(&matches, &config);
+        }
+
         let session = kbs2::session::Session::new(config)?;
 
         if let Some(pre_hook) = &session.config.pre_hook {
@@ -277,7 +284,6 @@ fn run() -> Result<()> {
         }
 
         match matches.subcommand() {
-            Some(("agent", matches)) => kbs2::command::agent(&matches, &session)?,
             Some(("new", matches)) => kbs2::command::new(&matches, &session)?,
             Some(("list", matches)) => kbs2::command::list(&matches, &session)?,
             Some(("rm", matches)) => kbs2::command::rm(&matches, &session)?,
