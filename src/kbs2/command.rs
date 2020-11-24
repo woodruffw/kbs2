@@ -32,8 +32,11 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
 
 /// Implements the `kbs2 agent` command (and subcommands).
 pub fn agent(matches: &ArgMatches, config: &config::Config) -> Result<()> {
+    log::debug!("agent subcommand dispatch");
+
     // No subcommand: run the agent itself
     match matches.subcommand() {
+        // TODO(ww): Daemonize the agent.
         None => agent::run(),
         Some(("flush", matches)) => agent_flush(&matches),
         Some(("unwrap", matches)) => agent_unwrap(&matches, &config),
@@ -43,6 +46,8 @@ pub fn agent(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
 /// Implements the `kbs2 agent flush` subcommand.
 fn agent_flush(matches: &ArgMatches) -> Result<()> {
+    log::debug!("asking the agent to flush all keys");
+
     let client = agent::Client::new()?;
     client.flush_keys()?;
 
@@ -55,8 +60,14 @@ fn agent_flush(matches: &ArgMatches) -> Result<()> {
 
 /// Implements the `kbs2 agent unwrap` subcommand.
 fn agent_unwrap(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
-    let client = agent::Client::new()?;
+    log::debug!("asking the agent to unwrap a key");
 
+    // Bare keys are loaded directly from their `keyfile`.
+    if !config.wrapped {
+        return Err(anyhow!("config specifies a bare key; nothing to do"))
+    }
+
+    let client = agent::Client::new()?;
     if client.query_key(&config.keyfile)? {
         println!("kbs2 agent already has this key; ignoring.");
         return Ok(())
