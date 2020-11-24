@@ -14,6 +14,7 @@ use std::path::PathBuf;
 #[serde(tag = "type", content = "body")]
 enum Request {
     UnwrapKey(String, String),
+    QueryUnwrappedKey(String),
     GetUnwrappedKey(String),
     FlushKeys,
     Quit,
@@ -21,9 +22,18 @@ enum Request {
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "type", content = "body")]
+enum FailureKind {
+    Io(String),
+    Malformed(String),
+    Unwrap(String),
+    Query,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[serde(tag = "type", content = "body")]
 enum Response {
     Success(String),
-    Failure(String),
+    Failure(FailureKind),
 }
 
 trait Message {
@@ -130,7 +140,7 @@ impl Agent {
             let line = match line {
                 Ok(line) => line,
                 Err(e) => {
-                    let resp = Response::Failure(format!("client i/o error: {:?}", e));
+                    let resp = Response::Failure(FailureKind::Io(e.to_string()));
                     log::error!("{:?}", resp);
                     // This can fail, but we don't care.
                     let _ = resp.write(&mut writer);
@@ -141,7 +151,7 @@ impl Agent {
             let req = match serde_json::from_str(&line) {
                 Ok(req) => req,
                 Err(e) => {
-                    let resp = Response::Failure(format!("malformed client request: {:?}", e));
+                    let resp = Response::Failure(FailureKind::Malformed(e.to_string()));
                     log::error!("{:?}", resp);
                     // This can fail, but we don't care.
                     let _ = resp.write(&mut writer);
@@ -168,9 +178,16 @@ impl Agent {
                             }
                             Err(e) => {
                                 log::error!("keyfile unwrap failed: {:?}", e);
-                                Response::Failure(format!("keyfile unwrap failed: {:?}", e))
+                                Response::Failure(FailureKind::Unwrap(e.to_string()))
                             }
                         }
+                    }
+                }
+                Request::QueryUnwrappedKey(keyfile) => {
+                    if self.unwrapped_keys.contains_key(&keyfile) {
+                        Response::Success("OK".into())
+                    } else {
+                        Response::Failure(FailureKind::Query)
                     }
                 }
                 Request::GetUnwrappedKey(keyfile) => {
@@ -179,7 +196,7 @@ impl Agent {
                         Response::Success(unwrapped_key.expose_secret().into())
                     } else {
                         log::error!("unknown keyfile requested: {}", &keyfile);
-                        Response::Failure("no unwrapped key for that keyfile".into())
+                        Response::Failure(FailureKind::Query)
                     }
                 }
                 Request::FlushKeys => {
@@ -194,7 +211,6 @@ impl Agent {
                 }
             };
 
-            log::debug!("response: {:?}", resp);
             let _ = resp.write(&mut writer);
         }
     }
@@ -224,6 +240,8 @@ impl Client {
     }
 
     pub fn add_key(&self, keyfile: &str, password: SecretString) -> Result<()> {
+        log::debug!("add_key: requesting that agent unwrap {}", keyfile);
+
         let req = Request::UnwrapKey(keyfile.into(), password.expose_secret().into());
         let resp = self.request(&req)?;
 
@@ -232,29 +250,46 @@ impl Client {
                 log::debug!("agent reports success: {}", msg);
                 Ok(())
             }
-            Response::Failure(msg) => {
-                log::debug!("agent reports failure: {}", msg);
-                Err(anyhow!(msg))
-            }
+            Response::Failure(kind) => Err(anyhow!("adding key to agent failed: {:?}", kind)),
+        }
+    }
+
+    pub fn query_key(&self, keyfile: &str) -> Result<bool> {
+        log::debug!("query_key: asking whether client has key for {}", keyfile);
+
+        let req = Request::QueryUnwrappedKey(keyfile.into());
+        let resp = self.request(&req)?;
+
+        match resp {
+            Response::Success(_) => Ok(true),
+            Response::Failure(FailureKind::Query) => Ok(false),
+            Response::Failure(kind) => Err(anyhow!("querying key from agent failed: {:?}", kind)),
         }
     }
 
     pub fn get_key(&self, keyfile: &str) -> Result<String> {
+        log::debug!("get_key: requesting unwrapped key for {}", keyfile);
+
         let req = Request::GetUnwrappedKey(keyfile.into());
         let resp = self.request(&req)?;
 
         match resp {
             Response::Success(unwrapped_key) => Ok(unwrapped_key),
-            Response::Failure(msg) => Err(anyhow!(msg)),
+            Response::Failure(kind) => Err(anyhow!(
+                "retrieving unwrapped key from agent failed: {:?}",
+                kind
+            )),
         }
     }
 
     pub fn flush_keys(&self) -> Result<()> {
+        log::debug!("flush_keys: asking agent to forget all keys");
         self.request(&Request::FlushKeys)?;
         Ok(())
     }
 
     pub fn quit_agent(self) -> Result<()> {
+        log::debug!("quit_agent: asking agent to exit gracefully");
         self.request(&Request::Quit)?;
         Ok(())
     }

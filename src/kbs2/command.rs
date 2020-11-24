@@ -35,13 +35,14 @@ pub fn agent(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     // No subcommand: run the agent itself
     match matches.subcommand() {
         None => agent::run(),
-        Some(("flush", matches)) => agent_flush(&matches, &config),
+        Some(("flush", matches)) => agent_flush(&matches),
         Some(("unwrap", matches)) => agent_unwrap(&matches, &config),
         _ => unreachable!(),
     }
 }
 
-fn agent_flush(matches: &ArgMatches, _config: &config::Config) -> Result<()> {
+/// Implements the `kbs2 agent flush` subcommand.
+fn agent_flush(matches: &ArgMatches) -> Result<()> {
     let client = agent::Client::new()?;
     client.flush_keys()?;
 
@@ -52,8 +53,19 @@ fn agent_flush(matches: &ArgMatches, _config: &config::Config) -> Result<()> {
     Ok(())
 }
 
-fn agent_unwrap(_matches: &ArgMatches, _config: &config::Config) -> Result<()> {
-    Err(anyhow!("unimpl"))
+/// Implements the `kbs2 agent unwrap` subcommand.
+fn agent_unwrap(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
+    let client = agent::Client::new()?;
+
+    if client.query_key(&config.keyfile)? {
+        println!("kbs2 agent already has this key; ignoring.");
+        return Ok(())
+    }
+
+    let password = util::get_password()?;
+    client.add_key(&config.keyfile, password)?;
+
+    Ok(())
 }
 
 /// Implements the `kbs2 new` command.
