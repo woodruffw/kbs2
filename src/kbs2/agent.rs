@@ -126,8 +126,7 @@ impl Agent {
             .and_then(|mut r| {
                 r.read_to_string(&mut unwrapped_key)
                     .map_err(|_| anyhow!("i/o error while decrypting"))
-            })
-            .or_else(Err)?;
+            })?;
         log::debug!("finished key unwrap!");
 
         Ok(Secret::new(unwrapped_key))
@@ -205,6 +204,7 @@ impl Agent {
                     let password = Secret::new(password);
                     // If the running agent is already tracking an unwrapped key for this
                     // keyfile, return early with a success.
+                    #[allow(clippy::map_entry)]
                     if self.unwrapped_keys.contains_key(&keyfile) {
                         log::debug!(
                             "client requested unwrap for already unwrapped keyfile: {}",
