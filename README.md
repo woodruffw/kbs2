@@ -14,9 +14,10 @@ Quick links:
 * [Installation](#installation)
 * [Quick start guide](#quick-start-guide)
 * [CLI documentation](#cli-documentation)
+  * [`kbs2 agent`](#kbs2-agent)
+  * [`kbs2 agent flush`](#kbs2-agent)
+  * [`kbs2 agent unwrap`](#kbs2-agent)
   * [`kbs2 init`](#kbs2-init)
-  * [`kbs2 unlock`](#kbs2-unlock)
-  * [`kbs2 lock`](#kbs2-lock)
   * [`kbs2 new`](#kbs2-new)
   * [`kbs2 list`](#kbs2-list)
   * [`kbs2 rm`](#kbs2-rm)
@@ -93,6 +94,15 @@ $ kbs2 init
 `kbs2 init` will automatically generate a configuration file and keypair, prompting you for
 a "master" password.
 
+Start the `kbs2` authentication agent:
+
+```bash
+$ kbs2 agent
+```
+
+`kbs2 agent` will prompt you for your newly-minted "master" password, and will store your key
+material in memory for subsequent `kbs2` invocations.
+
 Create a new (login) record:
 
 ```bash
@@ -128,6 +138,98 @@ run each with `--help` to see a full set of supported options.
 
 ## CLI documentation
 
+### `kbs2 agent`
+
+#### Usage
+
+```
+run the kbs2 authentication agent
+
+USAGE:
+    kbs2 agent [FLAGS] [SUBCOMMAND]
+
+FLAGS:
+    -F, --foreground    run the agent in the foreground
+    -h, --help          Prints help information
+    -U, --no-unwrap     don't unwrap the current config's key
+
+SUBCOMMANDS:
+    flush     remove all unwrapped keys from the running agent
+    help      Prints this message or the help of the given subcommand(s)
+    unwrap    unwrap the current config's key in the running agent
+```
+
+#### Examples
+
+Run the `kbs2` agent in the background, prompting the user to unwrap the current config's key:
+
+```bash
+$ kbs2 agent
+```
+
+Run the `kbs2` agent in the background, without unwrapping the current config's key:
+
+```bash
+$ kbs2 agent -U
+```
+
+Run the `kbs2` agent in the foreground, for debugging purposes:
+
+```bash
+$ RUST_LOG=debug kbs2 agent --foreground
+```
+
+### `kbs2 agent flush`
+
+#### Usage
+
+```
+remove all unwrapped keys from the running agent
+
+USAGE:
+    kbs2 agent flush [FLAGS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -q, --quit       quit the agent after flushing
+```
+
+#### Examples
+
+Remove all keys from the current `kbs2` agent:
+
+```bash
+$ kbs2 agent flush
+```
+
+### `kbs2 agent unwrap`
+
+#### Usage
+
+```
+unwrap the current config's key in the running agent
+
+USAGE:
+    kbs2 agent unwrap
+
+FLAGS:
+    -h, --help       Prints help information
+```
+
+#### Examples
+
+Add the current config's key to the `kbs2` agent:
+
+```bash
+$ kbs2 agent unwrap
+```
+
+Add a custom config's key to the `kbs2` agent:
+
+```bash
+$ kbs2 -c /path/to/config/dir agent unwrap
+```
+
 ### `kbs2 init`
 
 #### Usage
@@ -156,51 +258,6 @@ Create a new config and keypair **without** a master password:
 
 ```bash
 $ kbs2 init --insecure-not-wrapped
-```
-
-### `kbs2 unlock`
-
-#### Usage
-
-```
-unwrap the private key for use
-
-USAGE:
-    kbs2 unlock
-
-FLAGS:
-    -h, --help    Prints help information
-```
-
-#### Examples
-
-Unwrap the private key, allowing future commands to run without the master password:
-
-```bash
-$ kbs2 unlock
-```
-
-### `kbs2 lock`
-
-#### Usage
-
-```
-remove the unwrapped key, if any, from shared memory
-
-USAGE:
-    kbs2 lock
-
-FLAGS:
-    -h, --help    Prints help information
-```
-
-#### Examples
-
-Remove the unwrapped private key from shared memory, requiring future commands to prompt for
-the master password:
-
-```bash
-$ kbs2 lock
 ```
 
 ### `kbs2 new`
@@ -572,18 +629,25 @@ Users may modify this setting to store their records in custom directory.
 
 The `pre-hook` setting can be used to run a command before (almost) every `kbs2` invocation.
 
+There are currently three cases where the configured `pre-hook` will *not* run:
+
+* `kbs2` (i.e., no subcommand)
+* `kbs2 agent` (and all `kbs2 agent` subcommands)
+* `kbs2 init`
+
+All other subcommands, including custom subcommands, will cause the configured `pre-hook` to run.
+
 Read the [Hooks](#hooks) documentation for more details.
 
 ### `post-hook` (default: `None`)
 
 The `post-hook` setting can be used to run a command after (almost) every `kbs2` invocation.
 
-There are currently four cases when the configured `post-hook` will *not* run:
+There are currently three cases where the configured `post-hook` will *not* run:
 
 * `kbs2` (i.e., no subcommand)
+* `kbs2 agent` (and all `kbs2 agent` subcommands)
 * `kbs2 init`
-* `kbs2 unlock`
-* `kbs2 lock`
 
 All other subcommands, including custom subcommands, will cause the configured `post-hook` to run.
 
@@ -875,15 +939,11 @@ a wrapped private key by default.
 Without any persistence, wrapped key usage would be tedious: the user would have to re-enter
 their master password on each `kbs2` action, defeating the point of having a secret manager.
 
-To avoid this, `kbs2` establishes persistence of the unwrapped key with a POSIX shared memory
-object (specifically, an object named `/_kbs2_uk_{truncated-SHA256-of-your-keyfile-path}`). This
-is done after first use *or* explicitly with `kbs2 unlock`. The unwrapped key can be de-persisted
-either by rebooting the machine *or* by running `kbs2 lock`.
-
-Unlike like `ssh-agent` and `gpg-agent`, `kbs2`'s shared memory object is *not* tied to a user's
-session. This means that logging out and logging back in does *not* require the user to re-enter
-their master password *unless* they have otherwise configured their system to run `kbs2 lock`
-before the end of their session.
+To avoid this, `kbs2` establishes persistence of the unwrapped key with an authentication agent:
+running `kbs2 agent` will start a daemon in the background, which subsequent `kbs2` invocations
+can connect to (as needed) via a Unix domain socket. By default, running `kbs2 agent`
+will prompt the user for the currently configured key's master password. Users can add additional
+unwrapped keys to their running agent by invoking [`kbs2 agent unwrap`](#kbs2-agent-unwrap).
 
 ## Hacking
 
