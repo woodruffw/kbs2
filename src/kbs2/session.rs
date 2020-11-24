@@ -113,10 +113,10 @@ mod tests {
         let backend = {
             let key = age::SecretKey::generate();
 
-            Box::new(backend::RageLib {
+            RageLib {
                 pubkey: key.to_public(),
                 identities: vec![key.into()],
-            })
+            }
         };
 
         let config = {
