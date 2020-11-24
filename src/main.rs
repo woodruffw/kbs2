@@ -37,10 +37,16 @@ fn app<'a>() -> App<'a> {
             App::new("agent")
                 .about("run the kbs2 authentication agent")
                 .arg(
-                    Arg::new("no-unwrap-default")
-                        .about("don't unwrap the default key")
+                    Arg::new("foreground")
+                        .about("run the agent in the foreground")
+                        .short('F')
+                        .long("foreground"),
+                )
+                .arg(
+                    Arg::new("no-unwrap")
+                        .about("don't unwrap the current config's key")
                         .short('U')
-                        .long("no-unwrap-default"),
+                        .long("no-unwrap"),
                 )
                 .subcommand(
                     App::new("flush")

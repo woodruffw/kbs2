@@ -34,10 +34,14 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
 pub fn agent(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("agent subcommand dispatch");
 
+    if matches.subcommand().is_none() {
+        // TODO(ww): Daemonize the agent.
+        agent::run()?;
+        return Ok(());
+    }
+
     // No subcommand: run the agent itself
     match matches.subcommand() {
-        // TODO(ww): Daemonize the agent.
-        None => agent::run(),
         Some(("flush", matches)) => agent_flush(&matches),
         Some(("unwrap", matches)) => agent_unwrap(&matches, &config),
         _ => unreachable!(),
