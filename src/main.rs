@@ -43,17 +43,17 @@ fn app<'a>() -> App<'a> {
                         .long("no-unwrap-default"),
                 )
                 .subcommand(
-                    App::new("lock")
+                    App::new("flush")
                         .about("remove all unwrapped keys from the running agent")
                         .arg(
-                            Arg::new("kill")
-                                .about("kill the agent after locking")
+                            Arg::new("quit")
+                                .about("quit the agent after flushing")
                                 .short('q')
                                 .long("quit"),
                         ),
                 )
                 .subcommand(
-                    App::new("unlock")
+                    App::new("unwrap")
                         .about("unwrap the current config's key in the running agent"),
                 ),
         )

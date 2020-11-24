@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use secrecy::ExposeSecret;
 
 use std::io::{Read, Write};
@@ -51,8 +51,10 @@ impl RageLib {
         let identities = if config.wrapped {
             log::debug!("config specifies a wrapped key");
 
-            let mut client = agent::Client::new()?;
-            let unwrapped_key = client.get_key(&config.keyfile)?;
+            let client = agent::Client::new().with_context(|| "failed to connect to kbs2 agent")?;
+            let unwrapped_key = client
+                .get_key(&config.keyfile)
+                .with_context(|| format!("agent has no unwrapped key for {}", config.keyfile))?;
 
             log::debug!("parsing unwrapped key");
             age::keys::Identity::from_buffer(unwrapped_key.as_bytes())?

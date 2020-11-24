@@ -35,17 +35,24 @@ pub fn agent(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     // No subcommand: run the agent itself
     match matches.subcommand() {
         None => agent::run(),
-        Some(("lock", matches)) => agent_lock(&matches, &config),
-        Some(("unlock", matches)) => agent_unlock(&matches, &config),
+        Some(("flush", matches)) => agent_flush(&matches, &config),
+        Some(("unwrap", matches)) => agent_unwrap(&matches, &config),
         _ => unreachable!(),
     }
 }
 
-fn agent_lock(_matches: &ArgMatches, _config: &config::Config) -> Result<()> {
-    Err(anyhow!("unimpl"))
+fn agent_flush(matches: &ArgMatches, _config: &config::Config) -> Result<()> {
+    let client = agent::Client::new()?;
+    client.flush_keys()?;
+
+    if matches.is_present("quit") {
+        client.quit_agent()?;
+    }
+
+    Ok(())
 }
 
-fn agent_unlock(_matches: &ArgMatches, _config: &config::Config) -> Result<()> {
+fn agent_unwrap(_matches: &ArgMatches, _config: &config::Config) -> Result<()> {
     Err(anyhow!("unimpl"))
 }
 
