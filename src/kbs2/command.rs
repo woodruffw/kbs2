@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use atty::Stream;
 use clap::ArgMatches;
 use clipboard::{ClipboardContext, ClipboardProvider};
+use daemonize::Daemonize;
 use nix::unistd::{fork, ForkResult};
 
 use std::env;
@@ -35,7 +36,9 @@ pub fn agent(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("agent subcommand dispatch");
 
     if matches.subcommand().is_none() {
-        // TODO(ww): Daemonize the agent.
+        if !matches.is_present("foreground") {
+            Daemonize::new().start()?;
+        }
         agent::run()?;
         return Ok(());
     }

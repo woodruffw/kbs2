@@ -127,7 +127,7 @@ impl Agent {
                 r.read_to_string(&mut unwrapped_key)
                     .map_err(|_| anyhow!("i/o error while decrypting"))
             })
-            .or_else(|e| Err(e))?;
+            .or_else(Err)?;
         log::debug!("finished key unwrap!");
 
         Ok(Secret::new(unwrapped_key))
