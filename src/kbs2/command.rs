@@ -64,13 +64,13 @@ fn agent_unwrap(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     // Bare keys are loaded directly from their `keyfile`.
     if !config.wrapped {
-        return Err(anyhow!("config specifies a bare key; nothing to do"))
+        return Err(anyhow!("config specifies a bare key; nothing to do"));
     }
 
     let client = agent::Client::new()?;
     if client.query_key(&config.keyfile)? {
         println!("kbs2 agent already has this key; ignoring.");
-        return Ok(())
+        return Ok(());
     }
 
     let password = util::get_password()?;

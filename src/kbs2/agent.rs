@@ -1,5 +1,6 @@
 use age::Decryptor;
 use anyhow::{anyhow, Result};
+use nix::unistd::geteuid;
 use secrecy::{ExposeSecret, Secret, SecretString};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -7,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
+use std::os::unix::io::AsRawFd;
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
 
@@ -23,6 +25,7 @@ enum Request {
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "type", content = "body")]
 enum FailureKind {
+    Auth,
     Io(String),
     Malformed(String),
     Unwrap(String),
@@ -130,20 +133,58 @@ impl Agent {
         Ok(Secret::new(unwrapped_key))
     }
 
-    fn handle_client(&mut self, stream: UnixStream) {
-        // TODO: verify client here.
+    // TODO(ww): These can be replaced with the UnixStream.peer_cred API once it stabilizes:
+    // https://doc.rust-lang.org/std/os/unix/net/struct.UnixStream.html#method.peer_cred
+    #[cfg(target_os = "linux")]
+    fn auth_client(&self, stream: &UnixStream) -> bool {
+        use nix::sys::socket::getsockopt;
+        use nix::sys::socket::sockopt::PeerCredentials;
 
+        let uid = geteuid().as_raw();
+        if let Ok(cred) = getsockopt(stream.as_raw_fd(), PeerCredentials) {
+            cred.uid == uid
+        } else {
+            log::error!("getsockopt failed; treating as auth failure");
+            false
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    fn auth_client(&self, stream: &UnixStream) -> bool {
+        let uid = geteuid().as_raw();
+        let mut peer_uid = 1;
+        let mut peer_gid = 1;
+
+        unsafe {
+            let ret = libc::getpeereid(stream.as_raw_fd(), &mut peer_uid, &mut peer_gid);
+            if ret == 0 {
+                uid == peer_uid
+            } else {
+                log::debug!("getpeereid failed; treating as auth failure");
+                false
+            }
+        }
+    }
+
+    fn handle_client(&mut self, stream: UnixStream) {
         let reader = BufReader::new(&stream);
         let mut writer = BufWriter::new(&stream);
+
+        // TODO: verify client here.
+        if !self.auth_client(&stream) {
+            log::warn!("client failed auth check");
+            // This can fail, but we don't care.
+            let _ = Response::Failure(FailureKind::Auth).write(&mut writer);
+            return;
+        }
 
         for line in reader.lines() {
             let line = match line {
                 Ok(line) => line,
                 Err(e) => {
-                    let resp = Response::Failure(FailureKind::Io(e.to_string()));
-                    log::error!("{:?}", resp);
+                    log::error!("i/o error: {:?}", e);
                     // This can fail, but we don't care.
-                    let _ = resp.write(&mut writer);
+                    let _ = Response::Failure(FailureKind::Io(e.to_string())).write(&mut writer);
                     return;
                 }
             };
@@ -151,10 +192,10 @@ impl Agent {
             let req = match serde_json::from_str(&line) {
                 Ok(req) => req,
                 Err(e) => {
-                    let resp = Response::Failure(FailureKind::Malformed(e.to_string()));
-                    log::error!("{:?}", resp);
+                    log::error!("malformed req: {:?}", e);
                     // This can fail, but we don't care.
-                    let _ = resp.write(&mut writer);
+                    let _ =
+                        Response::Failure(FailureKind::Malformed(e.to_string())).write(&mut writer);
                     return;
                 }
             };

@@ -590,6 +590,7 @@ dependencies = [
  "dialoguer",
  "env_logger",
  "home",
+ "libc",
  "log",
  "nix",
  "pinentry",
