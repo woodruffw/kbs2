@@ -22,6 +22,7 @@ impl Session {
     pub fn new(config: config::Config) -> Result<Session> {
         fs::create_dir_all(&config.store)?;
 
+        #[allow(clippy::redundant_field_names)]
         Ok(Session {
             backend: RageLib::new(&config)?,
             config: config,

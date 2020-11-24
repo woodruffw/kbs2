@@ -142,7 +142,7 @@ impl Agent {
 
         let uid = geteuid().as_raw();
         if let Ok(cred) = getsockopt(stream.as_raw_fd(), PeerCredentials) {
-            cred.uid == uid
+            cred.uid() == uid
         } else {
             log::error!("getsockopt failed; treating as auth failure");
             false
