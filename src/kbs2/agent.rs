@@ -292,6 +292,7 @@ impl Agent {
                 }
             };
 
+            // This can fail, but we don't care.
             let _ = resp.write(&mut writer);
         }
     }
