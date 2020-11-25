@@ -259,15 +259,16 @@ fn run() -> Result<()> {
     log::debug!("config dir: {:?}", config_dir);
     std::fs::create_dir_all(&config_dir)?;
 
-    // Subcommand dispatch happens here. All subcommands take a `Session`, with three exceptions:
+    // Subcommand dispatch happens here. All subcommands take a `Config`, with two exceptions:
     //
     // * No subcommand (i.e., just `kbs2`) does nothing besides printing help.
     //
     // * `kbs2 init` doesn't have access to a preexisting config, and so needs to be separated
     //   from the config-loading behavior of all other subcommands.
     //
-    // * `kbs2 agent` (and subcommands) don't run with a session, but *do* have access to a
-    //   preexisting and loaded `Config`.
+    // Internally, most (but not all) subcommands load a `Session` from their borrowed
+    // `Config` argument. This `Session` is in turn used to perform record and encryption
+    // operations.
     if matches.subcommand().is_none() {
         app.clone()
             .write_long_help(&mut io::stdout())
