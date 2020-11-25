@@ -282,22 +282,20 @@ fn run() -> Result<()> {
             return kbs2::command::agent(&matches, &config);
         }
 
-        let session = kbs2::session::Session::new(config)?;
-
-        if let Some(pre_hook) = &session.config.pre_hook {
+        if let Some(pre_hook) = &config.pre_hook {
             log::debug!("pre-hook: {}", pre_hook);
-            session.config.call_hook(pre_hook, &[])?;
+            config.call_hook(pre_hook, &[])?;
         }
 
         match matches.subcommand() {
-            Some(("new", matches)) => kbs2::command::new(&matches, &session)?,
-            Some(("list", matches)) => kbs2::command::list(&matches, &session)?,
-            Some(("rm", matches)) => kbs2::command::rm(&matches, &session)?,
-            Some(("dump", matches)) => kbs2::command::dump(&matches, &session)?,
-            Some(("pass", matches)) => kbs2::command::pass(&matches, &session)?,
-            Some(("env", matches)) => kbs2::command::env(&matches, &session)?,
-            Some(("edit", matches)) => kbs2::command::edit(&matches, &session)?,
-            Some(("generate", matches)) => kbs2::command::generate(&matches, &session)?,
+            Some(("new", matches)) => kbs2::command::new(&matches, &config)?,
+            Some(("list", matches)) => kbs2::command::list(&matches, &config)?,
+            Some(("rm", matches)) => kbs2::command::rm(&matches, &config)?,
+            Some(("dump", matches)) => kbs2::command::dump(&matches, &config)?,
+            Some(("pass", matches)) => kbs2::command::pass(&matches, &config)?,
+            Some(("env", matches)) => kbs2::command::env(&matches, &config)?,
+            Some(("edit", matches)) => kbs2::command::edit(&matches, &config)?,
+            Some(("generate", matches)) => kbs2::command::generate(&matches, &config)?,
             Some((cmd, matches)) => {
                 let cmd = format!("kbs2-{}", cmd);
 
@@ -311,7 +309,7 @@ fn run() -> Result<()> {
                 let status = Command::new(&cmd)
                     .args(&ext_args)
                     .env("KBS2_CONFIG_DIR", &config_dir)
-                    .env("KBS2_STORE", &session.config.store)
+                    .env("KBS2_STORE", &config.store)
                     .env("KBS2_SUBCOMMAND", "1")
                     .status()
                     .map_or(None, |s| Some(s.success()));
@@ -325,9 +323,9 @@ fn run() -> Result<()> {
             _ => unreachable!(),
         }
 
-        if let Some(post_hook) = &session.config.post_hook {
+        if let Some(post_hook) = &config.post_hook {
             log::debug!("post-hook: {}", post_hook);
-            session.config.call_hook(post_hook, &[])?;
+            config.call_hook(post_hook, &[])?;
         }
 
         Ok(())

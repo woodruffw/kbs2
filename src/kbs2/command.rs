@@ -5,6 +5,7 @@ use clipboard::{ClipboardContext, ClipboardProvider};
 use daemonize::Daemonize;
 use nix::unistd::{fork, ForkResult};
 
+use std::convert::TryInto;
 use std::env;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
@@ -15,7 +16,7 @@ use crate::kbs2::config;
 use crate::kbs2::generator::Generator;
 use crate::kbs2::input;
 use crate::kbs2::record::{self, FieldKind::*, RecordBody};
-use crate::kbs2::session;
+use crate::kbs2::session::Session;
 use crate::kbs2::util;
 
 /// Implements the `kbs2 init` command.
@@ -87,8 +88,10 @@ fn agent_unwrap(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
 }
 
 /// Implements the `kbs2 new` command.
-pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<()> {
+pub fn new(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("creating a new record");
+
+    let session: Session = config.try_into()?;
 
     if let Some(pre_hook) = &session.config.commands.new.pre_hook {
         log::debug!("pre-hook: {}", pre_hook);
@@ -135,7 +138,7 @@ pub fn new(matches: &ArgMatches, session: &session::Session) -> Result<()> {
 fn new_login(
     label: &str,
     terse: bool,
-    session: &session::Session,
+    session: &Session,
     generator: Option<&dyn Generator>,
 ) -> Result<()> {
     let fields = input::fields(
@@ -153,7 +156,7 @@ fn new_login(
 fn new_environment(
     label: &str,
     terse: bool,
-    session: &session::Session,
+    session: &Session,
     generator: Option<&dyn Generator>,
 ) -> Result<()> {
     let fields = input::fields(
@@ -171,7 +174,7 @@ fn new_environment(
 fn new_unstructured(
     label: &str,
     terse: bool,
-    session: &session::Session,
+    session: &Session,
     generator: Option<&dyn Generator>,
 ) -> Result<()> {
     let fields = input::fields(
@@ -186,8 +189,10 @@ fn new_unstructured(
 }
 
 /// Implements the `kbs2 list` command.
-pub fn list(matches: &ArgMatches, session: &session::Session) -> Result<()> {
+pub fn list(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("listing records");
+
+    let session: Session = config.try_into()?;
 
     let (details, filter_kind) = (matches.is_present("details"), matches.is_present("kind"));
 
@@ -223,8 +228,10 @@ pub fn list(matches: &ArgMatches, session: &session::Session) -> Result<()> {
 }
 
 /// Implements the `kbs2 rm` command.
-pub fn rm(matches: &ArgMatches, session: &session::Session) -> Result<()> {
+pub fn rm(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("removing a record");
+
+    let session: Session = config.try_into()?;
 
     let label = matches.value_of("label").unwrap();
     session.delete_record(label)?;
@@ -238,8 +245,10 @@ pub fn rm(matches: &ArgMatches, session: &session::Session) -> Result<()> {
 }
 
 /// Implements the `kbs2 dump` command.
-pub fn dump(matches: &ArgMatches, session: &session::Session) -> Result<()> {
+pub fn dump(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("dumping a record");
+
+    let session: Session = config.try_into()?;
 
     let label = matches.value_of("label").unwrap();
     let record = session.get_record(&label)?;
@@ -264,8 +273,10 @@ pub fn dump(matches: &ArgMatches, session: &session::Session) -> Result<()> {
 }
 
 /// Implements the `kbs2 pass` command.
-pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<()> {
+pub fn pass(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("getting a login's password");
+
+    let session: Session = config.try_into()?;
 
     if let Some(pre_hook) = &session.config.commands.pass.pre_hook {
         log::debug!("pre-hook: {}", pre_hook);
@@ -329,7 +340,7 @@ pub fn pass(matches: &ArgMatches, session: &session::Session) -> Result<()> {
 }
 
 #[doc(hidden)]
-fn clip(password: String, session: &session::Session) -> Result<()> {
+fn clip(password: String, session: &Session) -> Result<()> {
     let clipboard_duration = session.config.commands.pass.clipboard_duration;
     let clear_after = session.config.commands.pass.clear_after;
 
@@ -355,7 +366,7 @@ fn clip(password: String, session: &session::Session) -> Result<()> {
 
 #[doc(hidden)]
 #[cfg(target_os = "linux")]
-fn clip_primary(password: String, session: &session::Session) -> Result<()> {
+fn clip_primary(password: String, session: &Session) -> Result<()> {
     use clipboard::x11_clipboard::{Primary, X11ClipboardContext};
 
     let clipboard_duration = session.config.commands.pass.clipboard_duration;
@@ -382,8 +393,10 @@ fn clip_primary(password: String, session: &session::Session) -> Result<()> {
 }
 
 /// Implements the `kbs2 env` command.
-pub fn env(matches: &ArgMatches, session: &session::Session) -> Result<()> {
+pub fn env(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("getting a environment variable");
+
+    let session: Session = config.try_into()?;
 
     let label = matches.value_of("label").unwrap();
     let record = session.get_record(&label)?;
@@ -405,8 +418,10 @@ pub fn env(matches: &ArgMatches, session: &session::Session) -> Result<()> {
 }
 
 /// Implements the `kbs2 edit` command.
-pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<()> {
+pub fn edit(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("editing a record");
+
+    let session: Session = config.try_into()?;
 
     let editor = match session
         .config
@@ -462,10 +477,10 @@ pub fn edit(matches: &ArgMatches, session: &session::Session) -> Result<()> {
 }
 
 /// Implements the `kbs2 generate` command.
-pub fn generate(matches: &ArgMatches, session: &session::Session) -> Result<()> {
+pub fn generate(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     let generator = {
         let generator_name = matches.value_of("generator").unwrap();
-        match session.config.get_generator(generator_name) {
+        match config.get_generator(generator_name) {
             Some(generator) => generator,
             None => {
                 return Err(anyhow!(

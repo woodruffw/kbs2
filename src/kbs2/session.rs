@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 
+use std::convert::TryFrom;
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -9,23 +10,23 @@ use crate::kbs2::config;
 use crate::kbs2::record;
 
 /// Encapsulates the context needed by `kbs2` to interact with records.
-pub struct Session {
+pub struct Session<'a> {
     /// The `RageLib` backend used to encrypt and decrypt records.
     pub backend: RageLib,
 
     /// The configuration that `kbs2` was invoked with.
-    pub config: config::Config,
+    pub config: &'a config::Config,
 }
 
-impl Session {
+impl<'a> Session<'a> {
     /// Creates a new session, given a `Config`.
-    pub fn new(config: config::Config) -> Result<Session> {
+    fn new(config: &'a config::Config) -> Result<Session> {
         fs::create_dir_all(&config.store)?;
 
         #[allow(clippy::redundant_field_names)]
         Ok(Session {
             backend: RageLib::new(&config)?,
-            config: config,
+            config: &config,
         })
     }
 
@@ -99,6 +100,14 @@ impl Session {
             io::ErrorKind::NotFound => anyhow!("no such record: {}", label),
             _ => e.into(),
         })
+    }
+}
+
+impl<'a> TryFrom<&'a config::Config> for Session<'a> {
+    type Error = anyhow::Error;
+
+    fn try_from(config: &'a config::Config) -> Result<Self> {
+        Self::new(&config)
     }
 }
 
