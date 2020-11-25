@@ -79,13 +79,13 @@ trait Message {
     where
         Self: DeserializeOwned,
     {
-        // NOTE(ww): This would be cleaner with a BufReader, but unsafe: a BufReader
+        // NOTE(ww): This would be cleaner with a BufReader, but unsound: a BufReader
         // can buffer more than one line at once, causing us to silently drop client requests.
         // I don't think that would actually happen in this case (since each client sends exactly
         // one line before expecting a response), but it's one less thing to think about.
         let data: Result<Vec<u8>, _> = reader
             .bytes()
-            .take_while(|b| *b.as_ref().unwrap() != b'\n')
+            .take_while(|b| b.is_ok() && *b.as_ref().unwrap() != b'\n')
             .collect();
         let data = data?;
         let res = serde_json::from_slice(&data)?;
