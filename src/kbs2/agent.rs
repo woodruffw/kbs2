@@ -210,7 +210,6 @@ impl Agent {
         let reader = BufReader::new(&stream);
         let mut writer = BufWriter::new(&stream);
 
-        // TODO: verify client here.
         if !self.auth_client(&stream) {
             log::warn!("client failed auth check");
             // This can fail, but we don't care.
