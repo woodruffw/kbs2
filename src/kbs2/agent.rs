@@ -12,33 +12,59 @@ use std::os::unix::io::AsRawFd;
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
 
+/// Represents the kinds of requests understood by the `kbs2` authentication agent.
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "type", content = "body")]
 enum Request {
+    /// Unwrap a particular keyfile (first element) with a password (second element).
     UnwrapKey(String, String),
+
+    /// Check whether a particular keyfile has been unwrapped in the agent.
     QueryUnwrappedKey(String),
+
+    /// Get the actual unwrapped key, by keyfile path.
     GetUnwrappedKey(String),
+
+    /// Flush all keys from the agent.
     FlushKeys,
+
+    /// Ask the agent to exit.
     Quit,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
-#[serde(tag = "type", content = "body")]
-enum FailureKind {
-    Auth,
-    Io(String),
-    Malformed(String),
-    Unwrap(String),
-    Query,
-}
-
+/// Represents the kinds of responses sent by the `kbs2` authentication agent.
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "type", content = "body")]
 enum Response {
+    /// A successful request, with some request-specific response data.
     Success(String),
+
+    /// A failed request, of `FailureKind`.
     Failure(FailureKind),
 }
 
+/// Represents the kinds of failures encoded by a `kbs2` `Response`.
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[serde(tag = "type", content = "body")]
+enum FailureKind {
+    /// The request failed because the client couldn't be authenticated.
+    Auth,
+
+    /// The request failed because one or more I/O operations failed.
+    Io(String),
+
+    /// The request failed because it was malformed.
+    Malformed(String),
+
+    /// The request failed because key unwrapping failed.
+    Unwrap(String),
+
+    /// The request failed because the requested query failed.
+    Query,
+}
+
+/// A convenience trait for marshaling and unmarshaling `Request`s and `Response`s
+/// through Rust's `Read` and `Write` traits.
 trait Message {
     fn read<R: Read>(reader: R) -> Result<Self>
     where
@@ -73,12 +99,16 @@ trait Message {
 impl Message for Request {}
 impl Message for Response {}
 
+/// Represents the state in a running `kbs2` authentication agent.
 struct Agent {
+    /// A map of keyfile => unwrapped key material.
     unwrapped_keys: HashMap<String, SecretString>,
+    /// Whether or not the agent intends to quit momentarily.
     quitting: bool,
 }
 
 impl Agent {
+    /// Returns a unique, user-specific socket path that the authentication agent listens on.
     fn path() -> PathBuf {
         let mut agent_path = PathBuf::from("/tmp");
         agent_path.push(format!("kbs2-agent-{}", whoami::username()));
@@ -86,6 +116,7 @@ impl Agent {
         agent_path
     }
 
+    /// Initializes a new agent without accepting connections.
     fn new() -> Self {
         Self {
             unwrapped_keys: HashMap::new(),
@@ -93,6 +124,7 @@ impl Agent {
         }
     }
 
+    /// Unwraps a key, given its wrapped keyfile and password.
     fn unwrap_keyfile(&self, keyfile: &str, password: SecretString) -> Result<SecretString> {
         // TODO(ww): Hardening: check keyfile's size before reading the whole thing in.
         // Read the wrapped key from disk.
@@ -165,6 +197,8 @@ impl Agent {
         }
     }
 
+    /// Handles a single client connection.
+    /// Individual clients may issue multiple requests in a single session.
     fn handle_client(&mut self, stream: UnixStream) {
         let reader = BufReader::new(&stream);
         let mut writer = BufWriter::new(&stream);
@@ -264,22 +298,28 @@ impl Drop for Agent {
     }
 }
 
+/// Represents a client to the `kbs2` authentication agent.
+///
+/// Clients may send multiple requests and receive multiple responses while active.
 pub struct Client {
     stream: UnixStream,
 }
 
 impl Client {
+    /// Create and return a new client, failing if connection to the agent fails.
     pub fn new() -> Result<Self> {
         let stream = UnixStream::connect(Agent::path())?;
         Ok(Self { stream })
     }
 
+    /// Issue the given request to the agent, returning the agent's `Response`.
     fn request(&self, req: &Request) -> Result<Response> {
         req.write(&self.stream)?;
         let resp = Response::read(&self.stream)?;
         Ok(resp)
     }
 
+    /// Instruct the agent to unwrap the given keyfile, using the given password.
     pub fn add_key(&self, keyfile: &str, password: SecretString) -> Result<()> {
         log::debug!("add_key: requesting that agent unwrap {}", keyfile);
 
@@ -295,6 +335,7 @@ impl Client {
         }
     }
 
+    /// Ask the agent whether it has an unwrapped key for the given keyfile.
     pub fn query_key(&self, keyfile: &str) -> Result<bool> {
         log::debug!("query_key: asking whether client has key for {}", keyfile);
 
@@ -308,6 +349,7 @@ impl Client {
         }
     }
 
+    /// Ask the agent for the unwrapped key material for the given keyfile.
     pub fn get_key(&self, keyfile: &str) -> Result<String> {
         log::debug!("get_key: requesting unwrapped key for {}", keyfile);
 
@@ -323,12 +365,14 @@ impl Client {
         }
     }
 
+    /// Ask the agent to flush all of its unwrapped keys.
     pub fn flush_keys(&self) -> Result<()> {
         log::debug!("flush_keys: asking agent to forget all keys");
         self.request(&Request::FlushKeys)?;
         Ok(())
     }
 
+    /// Ask the agent to quit gracefully.
     pub fn quit_agent(self) -> Result<()> {
         log::debug!("quit_agent: asking agent to exit gracefully");
         self.request(&Request::Quit)?;
@@ -336,6 +380,10 @@ impl Client {
     }
 }
 
+/// Run the `kbs2` authentication agent.
+///
+/// The function does not return *unless* either an error occurs on agent startup *or*
+/// a client asks the agent to quit.
 pub fn run() -> Result<()> {
     log::debug!("agent run requested");
 
