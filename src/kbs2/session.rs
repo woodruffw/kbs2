@@ -117,7 +117,7 @@ mod tests {
     use tempfile::{tempdir, TempDir};
 
     // NOTE: We pass store in here instead of creating it for lifetime reasons:
-    // the temp dir is destroyed when its TempDir object is destructed, so we need
+    // the temp dir is unlinked when its TempDir object is destructed, so we need
     // to keep it alive long enough for each unit test.
     fn dummy_config(store: &TempDir) -> config::Config {
         config::Config {
