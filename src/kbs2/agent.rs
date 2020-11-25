@@ -12,6 +12,15 @@ use std::os::unix::io::AsRawFd;
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
 
+use crate::kbs2::util;
+
+/// The maximum size of a wrapped key file, on disk.
+///
+/// This is an **extremely** conservative maximum: actual plain-text formatted
+/// wrapped keys should never be more than a few hundred bytes. But we need some
+/// number of harden the I/O that the agent does, and a single page/4K seems reasonable.
+const MAX_WRAPPED_KEY_FILESIZE: u64 = 4096;
+
 /// Represents the kinds of requests understood by the `kbs2` authentication agent.
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "type", content = "body")]
@@ -126,9 +135,7 @@ impl Agent {
 
     /// Unwraps a key, given its wrapped keyfile and password.
     fn unwrap_keyfile(&self, keyfile: &str, password: SecretString) -> Result<SecretString> {
-        // TODO(ww): Hardening: check keyfile's size before reading the whole thing in.
-        // Read the wrapped key from disk.
-        let wrapped_key = fs::read(&keyfile)?;
+        let wrapped_key = util::read_guarded(&keyfile, MAX_WRAPPED_KEY_FILESIZE)?;
 
         // Create a new decryptor for the wrapped key.
         let decryptor = match Decryptor::new(wrapped_key.as_slice()) {
