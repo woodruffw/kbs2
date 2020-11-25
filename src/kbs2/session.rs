@@ -119,7 +119,24 @@ mod tests {
     // NOTE: We pass store in here instead of creating it for lifetime reasons:
     // the temp dir is destroyed when its TempDir object is destructed, so we need
     // to keep it alive long enough for each unit test.
-    fn dummy_session(store: &TempDir) -> Session {
+    fn dummy_config(store: &TempDir) -> config::Config {
+        config::Config {
+            config_dir: "/not/a/real/dir".into(),
+            // NOTE: We create the backend above manually, so the public_key and keyfile
+            // here are dummy values that shouldn't need to be interacted with.
+            public_key: "not a real public key".into(),
+            keyfile: "not a real private key file".into(),
+            wrapped: false,
+            store: store.path().to_str().unwrap().into(),
+            pre_hook: None,
+            post_hook: None,
+            reentrant_hooks: false,
+            generators: vec![config::GeneratorConfig::Internal(Default::default())],
+            commands: Default::default(),
+        }
+    }
+
+    fn dummy_session(config: &config::Config) -> Session {
         let backend = {
             let key = age::SecretKey::generate();
 
@@ -129,24 +146,10 @@ mod tests {
             }
         };
 
-        let config = {
-            config::Config {
-                config_dir: "/not/a/real/dir".into(),
-                // NOTE: We create the backend above manually, so the public_key and keyfile
-                // here are dummy values that shouldn't need to be interacted with.
-                public_key: "not a real public key".into(),
-                keyfile: "not a real private key file".into(),
-                wrapped: false,
-                store: store.path().to_str().unwrap().into(),
-                pre_hook: None,
-                post_hook: None,
-                reentrant_hooks: false,
-                generators: vec![config::GeneratorConfig::Internal(Default::default())],
-                commands: Default::default(),
-            }
-        };
-
-        Session { backend, config }
+        Session {
+            backend,
+            config: &config,
+        }
     }
 
     // TODO: Figure out how to test Session::new. Doing so will require an interface for
@@ -157,14 +160,16 @@ mod tests {
     fn test_record_labels() {
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
 
             assert_eq!(session.record_labels().unwrap(), Vec::<String>::new());
         }
 
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
             let record = record::Record::login("foo", "bar", "baz");
 
             session.add_record(&record).unwrap();
@@ -176,7 +181,8 @@ mod tests {
     fn test_has_record() {
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
             let record = record::Record::login("foo", "bar", "baz");
 
             session.add_record(&record).unwrap();
@@ -185,7 +191,8 @@ mod tests {
 
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
 
             assert!(!session.has_record("does-not-exist"));
         }
@@ -195,7 +202,8 @@ mod tests {
     fn test_get_record() {
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
             let record = record::Record::login("foo", "bar", "baz");
 
             session.add_record(&record).unwrap();
@@ -207,7 +215,8 @@ mod tests {
 
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
 
             let err = session.get_record("foo").unwrap_err();
             assert_eq!(err.to_string(), "no such record: foo");
@@ -218,7 +227,8 @@ mod tests {
     fn test_add_record() {
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
 
             let record1 = record::Record::login("foo", "bar", "baz");
             session.add_record(&record1).unwrap();
@@ -246,7 +256,8 @@ mod tests {
     fn test_delete_record() {
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
             let record = record::Record::login("foo", "bar", "baz");
 
             session.add_record(&record).unwrap();
@@ -258,7 +269,8 @@ mod tests {
 
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
 
             let record1 = record::Record::login("foo", "bar", "baz");
             session.add_record(&record1).unwrap();
@@ -272,7 +284,8 @@ mod tests {
 
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
 
             let err = session.delete_record("does-not-exist").unwrap_err();
             assert_eq!(err.to_string(), "no such record: does-not-exist");
