@@ -1,3 +1,4 @@
+use age::armor::ArmoredReader;
 use age::Decryptor;
 use anyhow::{anyhow, Result};
 use nix::unistd::geteuid;
@@ -138,7 +139,7 @@ impl Agent {
         let wrapped_key = util::read_guarded(&keyfile, MAX_WRAPPED_KEY_FILESIZE)?;
 
         // Create a new decryptor for the wrapped key.
-        let decryptor = match Decryptor::new(wrapped_key.as_slice()) {
+        let decryptor = match Decryptor::new(ArmoredReader::new(wrapped_key.as_slice())) {
             Ok(Decryptor::Passphrase(d)) => d,
             Ok(_) => {
                 return Err(anyhow!(
