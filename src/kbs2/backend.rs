@@ -1,3 +1,4 @@
+use age::armor::{ArmoredReader, ArmoredWriter, Format};
 use anyhow::{anyhow, Context, Result};
 use secrecy::ExposeSecret;
 
@@ -37,15 +38,15 @@ pub trait Backend {
 
 /// Encapsulates the age crate (i.e., the `rage` CLI's backing library).
 pub struct RageLib {
-    pub pubkey: age::keys::RecipientKey,
-    pub identities: Vec<age::keys::Identity>,
+    pub pubkey: age::x25519::Recipient,
+    pub identities: Vec<age::x25519::Identity>,
 }
 
 impl RageLib {
     pub fn new(config: &config::Config) -> Result<RageLib> {
         let pubkey = config
             .public_key
-            .parse::<age::keys::RecipientKey>()
+            .parse::<age::x25519::Recipient>()
             .map_err(|e| anyhow!("unable to parse public key (backend reports: {:?})", e))?;
 
         let identities = if config.wrapped {
@@ -57,10 +58,11 @@ impl RageLib {
                 .with_context(|| format!("agent has no unwrapped key for {}", config.keyfile))?;
 
             log::debug!("parsing unwrapped key");
-            age::keys::Identity::from_buffer(unwrapped_key.as_bytes())?
+            age::IdentityFile::from_buffer(unwrapped_key.as_bytes())?
         } else {
-            age::keys::Identity::from_file(config.keyfile.clone())?
-        };
+            age::IdentityFile::from_file(config.keyfile.clone())?
+        }
+        .into_identities();
         log::debug!("successfully parsed a private key!");
 
         if identities.len() != 1 {
@@ -76,7 +78,7 @@ impl RageLib {
 
 impl Backend for RageLib {
     fn create_keypair(path: &Path) -> Result<String> {
-        let keypair = age::SecretKey::generate();
+        let keypair = age::x25519::Identity::generate();
 
         std::fs::write(path, keypair.to_string().expose_secret())?;
 
@@ -85,15 +87,21 @@ impl Backend for RageLib {
 
     fn create_wrapped_keypair(path: &Path) -> Result<String> {
         let password = util::get_password()?;
-        let keypair = age::SecretKey::generate();
+        let keypair = age::x25519::Identity::generate();
 
         let wrapped_key = {
             let encryptor = age::Encryptor::with_user_passphrase(password);
 
             let mut wrapped_key = vec![];
-            let mut writer = encryptor.wrap_output(&mut wrapped_key, age::Format::AsciiArmor)?;
+            // TODO(ww): https://github.com/str4d/rage/pull/158
+            let mut writer = encryptor
+                .wrap_output(ArmoredWriter::wrap_output(
+                    &mut wrapped_key,
+                    Format::AsciiArmor,
+                )?)
+                .map_err(|e| anyhow!("wrap_output failed (backend report: {:?})", e))?;
             writer.write_all(keypair.to_string().expose_secret().as_bytes())?;
-            writer.finish()?;
+            writer.finish().and_then(|armor| armor.finish())?;
 
             wrapped_key
         };
@@ -104,17 +112,22 @@ impl Backend for RageLib {
     }
 
     fn encrypt(&self, record: &Record) -> Result<String> {
-        let encryptor = age::Encryptor::with_recipients(vec![self.pubkey.clone()]);
+        let encryptor = age::Encryptor::with_recipients(vec![Box::new(self.pubkey.clone())]);
         let mut encrypted = vec![];
-        let mut writer = encryptor.wrap_output(&mut encrypted, age::Format::AsciiArmor)?;
+        let mut writer = encryptor
+            .wrap_output(ArmoredWriter::wrap_output(
+                &mut encrypted,
+                Format::AsciiArmor,
+            )?)
+            .map_err(|e| anyhow!("wrap_output failed (backend report: {:?})", e))?;
         writer.write_all(serde_json::to_string(record)?.as_bytes())?;
-        writer.finish()?;
+        writer.finish().and_then(|armor| armor.finish())?;
 
         Ok(String::from_utf8(encrypted)?)
     }
 
     fn decrypt(&self, encrypted: &str) -> Result<Record> {
-        let decryptor = match age::Decryptor::new(encrypted.as_bytes())
+        let decryptor = match age::Decryptor::new(ArmoredReader::new(encrypted.as_bytes()))
             .map_err(|e| anyhow!("unable to load private key (backend reports: {:?})", e))?
         {
             age::Decryptor::Recipients(d) => d,
@@ -126,11 +139,17 @@ impl Backend for RageLib {
         let mut decrypted = String::new();
 
         decryptor
-            .decrypt(&self.identities)
+            .decrypt(
+                self.identities
+                    .iter()
+                    .cloned()
+                    .map(Box::new)
+                    .map(|i| i as Box<dyn age::Identity>),
+            )
             .map_err(|e| anyhow!("unable to decrypt (backend reports: {:?})", e))
             .and_then(|mut r| {
                 r.read_to_string(&mut decrypted)
-                    .map_err(|_| anyhow!("i/o error while decrypting"))
+                    .map_err(|e| anyhow!("i/o error while decrypting: {:?}", e))
             })?;
 
         Ok(serde_json::from_str(&decrypted)?)
@@ -142,7 +161,7 @@ mod tests {
     use super::*;
 
     fn ragelib_backend() -> Box<dyn Backend> {
-        let key = age::SecretKey::generate();
+        let key = age::x25519::Identity::generate();
 
         Box::new(RageLib {
             pubkey: key.to_public(),
@@ -151,8 +170,8 @@ mod tests {
     }
 
     fn ragelib_backend_bad_keypair() -> Box<dyn Backend> {
-        let key1 = age::SecretKey::generate();
-        let key2 = age::SecretKey::generate();
+        let key1 = age::x25519::Identity::generate();
+        let key2 = age::x25519::Identity::generate();
 
         Box::new(RageLib {
             pubkey: key1.to_public(),

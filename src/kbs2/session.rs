@@ -138,7 +138,7 @@ mod tests {
 
     fn dummy_session(config: &config::Config) -> Session {
         let backend = {
-            let key = age::SecretKey::generate();
+            let key = age::x25519::Identity::generate();
 
             RageLib {
                 pubkey: key.to_public(),

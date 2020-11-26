@@ -22,7 +22,7 @@ depends = "$auto, libxcb-shape0-dev, libxcb-xfixes0-dev"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-age = "0.4"
+age = { version = "0.5", features = ["armor"] }
 anyhow = "1.0"
 atty = "0.2.14"
 dialoguer = "0.7.1"
@@ -35,10 +35,10 @@ home = "0.5"
 libc = "0.2"
 log = "0.4"
 nix = "0.19.0"
-pinentry = "0.1"
+pinentry = "0.2"
 rand = "0.7"
 rpassword = "5.0"
-secrecy = "0.6.0"
+secrecy = "0.7"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 shellexpand = "2.0.0"
