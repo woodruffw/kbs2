@@ -160,23 +160,23 @@ impl Backend for RageLib {
 mod tests {
     use super::*;
 
-    fn ragelib_backend() -> Box<dyn Backend> {
+    fn ragelib_backend() -> RageLib {
         let key = age::x25519::Identity::generate();
 
-        Box::new(RageLib {
+        RageLib {
             pubkey: key.to_public(),
             identities: vec![key.into()],
-        })
+        }
     }
 
-    fn ragelib_backend_bad_keypair() -> Box<dyn Backend> {
+    fn ragelib_backend_bad_keypair() -> RageLib {
         let key1 = age::x25519::Identity::generate();
         let key2 = age::x25519::Identity::generate();
 
-        Box::new(RageLib {
+        RageLib {
             pubkey: key1.to_public(),
             identities: vec![key2.into()],
-        })
+        }
     }
 
     #[test]
