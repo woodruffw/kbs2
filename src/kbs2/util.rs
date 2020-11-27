@@ -121,6 +121,7 @@ pub fn read_guarded<P: AsRef<Path>>(path: P, limit: u64) -> Result<Vec<u8>> {
 }
 
 /// Unwraps a key, given its wrapped keyfile and password.
+// TODO(ww): This probably belongs directly in Backend/RageLib.
 pub fn unwrap_keyfile<P: AsRef<Path>>(keyfile: P, password: SecretString) -> Result<SecretString> {
     let wrapped_key = read_guarded(&keyfile, MAX_WRAPPED_KEY_FILESIZE)?;
 
@@ -158,6 +159,9 @@ pub fn unwrap_keyfile<P: AsRef<Path>>(keyfile: P, password: SecretString) -> Res
     Ok(SecretString::new(unwrapped_key))
 }
 
+/// Wraps the given key material with the given password, returning a buffer
+/// containing an armored version of the wrapped key.
+// TODO(ww): This probably belongs directly in Backend/RageLib.
 pub fn wrap_key(key: SecretString, password: SecretString) -> Result<Vec<u8>> {
     let encryptor = age::Encryptor::with_user_passphrase(password);
 
