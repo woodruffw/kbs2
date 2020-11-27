@@ -29,7 +29,13 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
         ));
     }
 
-    config::initialize(&config_dir, !matches.is_present("insecure-not-wrapped"))
+    let password = if matches.is_present("insecure-not-wrapped") {
+        Some(util::get_password()?)
+    } else {
+        None
+    };
+
+    config::initialize(&config_dir, password)
 }
 
 /// Implements the `kbs2 agent` command (and subcommands).

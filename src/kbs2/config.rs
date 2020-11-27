@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use secrecy::SecretString;
 use serde::{de, Deserialize, Serialize};
 
 use std::env;
@@ -319,12 +320,14 @@ fn store_dir() -> Result<PathBuf> {
 /// # Arguments
 ///
 /// * `config_dir` - The configuration directory to initialize within
-/// * `wrapped` - Whether or not to generate a passphrase-wrapped keypair
-pub fn initialize(config_dir: &Path, wrapped: bool) -> Result<()> {
+/// * `password` - An optional master password for wrapping the secret
+pub fn initialize(config_dir: &Path, password: Option<SecretString>) -> Result<()> {
     let keyfile = config_dir.join(DEFAULT_KEY_BASENAME);
 
-    let public_key = if wrapped {
-        RageLib::create_wrapped_keypair(&keyfile)?
+    let mut wrapped = false;
+    let public_key = if let Some(password) = password {
+        wrapped = true;
+        RageLib::create_wrapped_keypair(&keyfile, password)?
     } else {
         RageLib::create_keypair(&keyfile)?
     };
@@ -368,7 +371,7 @@ mod tests {
     use super::*;
     use tempfile::tempdir;
 
-    fn dummy_config() -> Config {
+    fn dummy_unwrapped_config() -> Config {
         Config {
             config_dir: "/not/a/real/dir".into(),
             public_key: "not a real public key".into(),
@@ -402,17 +405,10 @@ mod tests {
     }
 
     #[test]
-    fn test_initialize() {
-        // TODO: Figure out how to test initialization with a wrapped key.
-        // The current API requires graphical interaction.
-        // {
-        //     let dir = tempdir().unwrap();
-        //     assert!(initialize(dir.path(), true).is_ok());
-        // }
-
+    fn test_initialize_unwrapped() {
         {
             let dir = tempdir().unwrap();
-            assert!(initialize(dir.path(), false).is_ok());
+            assert!(initialize(dir.path(), None).is_ok());
 
             let path = dir.path();
             assert!(path.exists());
@@ -423,6 +419,30 @@ mod tests {
 
             assert!(path.join(DEFAULT_KEY_BASENAME).exists());
             assert!(path.join(DEFAULT_KEY_BASENAME).is_file());
+
+            let config = load(path).unwrap();
+            assert!(!config.wrapped);
+        }
+    }
+
+    #[test]
+    fn test_initialize_wrapped() {
+        {
+            let dir = tempdir().unwrap();
+            assert!(initialize(dir.path(), Some(SecretString::new("badpassword".into()))).is_ok());
+
+            let path = dir.path();
+            assert!(path.exists());
+            assert!(path.is_dir());
+
+            assert!(path.join(CONFIG_BASENAME).exists());
+            assert!(path.join(CONFIG_BASENAME).is_file());
+
+            assert!(path.join(DEFAULT_KEY_BASENAME).exists());
+            assert!(path.join(DEFAULT_KEY_BASENAME).is_file());
+
+            let config = load(path).unwrap();
+            assert!(config.wrapped);
         }
     }
 
@@ -430,14 +450,14 @@ mod tests {
     fn test_load() {
         {
             let dir = tempdir().unwrap();
-            initialize(dir.path(), false).unwrap();
+            initialize(dir.path(), None).unwrap();
 
             assert!(load(dir.path()).is_ok());
         }
 
         {
             let dir = tempdir().unwrap();
-            initialize(dir.path(), false).unwrap();
+            initialize(dir.path(), None).unwrap();
 
             let config = load(dir.path()).unwrap();
             assert_eq!(dir.path().to_str().unwrap(), config.config_dir);
@@ -446,7 +466,7 @@ mod tests {
 
     #[test]
     fn test_call_hook() {
-        let config = dummy_config();
+        let config = dummy_unwrapped_config();
 
         {
             assert!(config
@@ -476,7 +496,7 @@ mod tests {
 
     #[test]
     fn test_get_generator() {
-        let config = dummy_config();
+        let config = dummy_unwrapped_config();
 
         assert!(config.get_generator("default").is_some());
         assert!(config.get_generator("nonexistent-generator").is_none());

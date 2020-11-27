@@ -1,6 +1,6 @@
 use age::armor::{ArmoredReader, ArmoredWriter, Format};
 use anyhow::{anyhow, Context, Result};
-use secrecy::ExposeSecret;
+use secrecy::{ExposeSecret, SecretString};
 
 use std::io::{Read, Write};
 use std::path::Path;
@@ -8,7 +8,6 @@ use std::path::Path;
 use crate::kbs2::agent;
 use crate::kbs2::config;
 use crate::kbs2::record::Record;
-use crate::kbs2::util;
 
 /// Represents the operations that all age backends are capable of.
 pub trait Backend {
@@ -25,7 +24,7 @@ pub trait Backend {
     /// NOTE: Like `create_keypair`, this writes an ASCII-armored private component.
     /// It also prompts the user to enter a password for encrypting the generated
     /// private key.
-    fn create_wrapped_keypair(path: &Path) -> Result<String>
+    fn create_wrapped_keypair(path: &Path, password: SecretString) -> Result<String>
     where
         Self: Sized;
 
@@ -85,8 +84,7 @@ impl Backend for RageLib {
         Ok(keypair.to_public().to_string())
     }
 
-    fn create_wrapped_keypair(path: &Path) -> Result<String> {
-        let password = util::get_password()?;
+    fn create_wrapped_keypair(path: &Path, password: SecretString) -> Result<String> {
         let keypair = age::x25519::Identity::generate();
 
         let wrapped_key = {
