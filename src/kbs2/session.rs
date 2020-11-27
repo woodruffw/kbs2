@@ -128,6 +128,7 @@ mod tests {
             keyfile: "not a real private key file".into(),
             wrapped: false,
             store: store.path().to_str().unwrap().into(),
+            pinentry: Default::default(),
             pre_hook: None,
             post_hook: None,
             reentrant_hooks: false,

@@ -13,7 +13,7 @@ use std::process;
 
 use crate::kbs2::agent;
 use crate::kbs2::backend::{self, Backend};
-use crate::kbs2::config;
+use crate::kbs2::config::{self, Pinentry};
 use crate::kbs2::generator::Generator;
 use crate::kbs2::input;
 use crate::kbs2::record::{self, FieldKind::*, RecordBody};
@@ -31,7 +31,7 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
     }
 
     let password = if matches.is_present("insecure-not-wrapped") {
-        Some(util::get_password(None)?)
+        Some(util::get_password(None, &Pinentry::default())?)
     } else {
         None
     };
@@ -88,7 +88,7 @@ fn agent_unwrap(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
         return Ok(());
     }
 
-    let password = util::get_password(None)?;
+    let password = util::get_password(None, &config.pinentry)?;
     client.add_key(&config.keyfile, password)?;
 
     Ok(())
@@ -526,8 +526,8 @@ pub fn rewrap(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         );
     }
 
-    let old = util::get_password(Some("OLD master password: "))?;
-    let new = util::get_password(Some("NEW master password: "))?;
+    let old = util::get_password(Some("OLD master password: "), &config.pinentry)?;
+    let new = util::get_password(Some("NEW master password: "), &config.pinentry)?;
 
     backend::RageLib::rewrap_keyfile(&config.keyfile, old, new)
 }

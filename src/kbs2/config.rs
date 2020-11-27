@@ -3,6 +3,7 @@ use secrecy::SecretString;
 use serde::{de, Deserialize, Serialize};
 
 use std::env;
+use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -54,6 +55,10 @@ pub struct Config {
     /// The path to the directory where encrypted records are stored.
     #[serde(deserialize_with = "deserialize_with_tilde")]
     pub store: String,
+
+    /// The pinentry binary to use for password prompts.
+    #[serde(default)]
+    pub pinentry: Pinentry,
 
     /// An optional command to run before each `kbs2` subcommand.
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]
@@ -126,6 +131,22 @@ impl Config {
         }
 
         None
+    }
+}
+
+/// A newtype wrapper around a `String`, used to provide a sensible default for `Config.pinentry`.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Pinentry(String);
+
+impl Default for Pinentry {
+    fn default() -> Self {
+        Self("pinentry".into())
+    }
+}
+
+impl AsRef<OsStr> for Pinentry {
+    fn as_ref(&self) -> &OsStr {
+        &self.0.as_ref()
     }
 }
 
@@ -342,6 +363,7 @@ pub fn initialize(config_dir: &Path, password: Option<SecretString>) -> Result<(
         keyfile: keyfile.to_str().unwrap().into(),
         wrapped: wrapped,
         store: store_dir()?.to_str().unwrap().into(),
+        pinentry: Default::default(),
         pre_hook: None,
         post_hook: None,
         reentrant_hooks: false,
@@ -378,6 +400,7 @@ mod tests {
             keyfile: "not a real private key file".into(),
             wrapped: false,
             store: "/tmp".into(),
+            pinentry: Default::default(),
             pre_hook: Some("true".into()),
             post_hook: Some("false".into()),
             reentrant_hooks: false,
