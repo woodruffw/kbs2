@@ -507,6 +507,10 @@ pub fn generate(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 pub fn rewrap(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("attempting key rewrap");
 
+    if !config.wrapped {
+        return Err(anyhow!("config specifies a bare key; nothing to rewrap"));
+    }
+
     if !matches.is_present("no-backup") {
         let keyfile_backup: PathBuf = format!("{}.old", &config.keyfile).into();
         if keyfile_backup.exists() && !matches.is_present("force") {
@@ -516,6 +520,10 @@ pub fn rewrap(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         }
 
         std::fs::copy(&config.keyfile, &keyfile_backup)?;
+        println!(
+            "Backup of the OLD wrapped keyfile saved to: {:?}",
+            keyfile_backup
+        );
     }
 
     let old = util::get_password(Some("OLD master password: "))?;
