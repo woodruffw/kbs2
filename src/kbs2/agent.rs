@@ -1,5 +1,3 @@
-use age::armor::ArmoredReader;
-use age::Decryptor;
 use anyhow::{anyhow, Result};
 use nix::unistd::geteuid;
 use secrecy::{ExposeSecret, Secret, SecretString};
@@ -14,13 +12,6 @@ use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
 
 use crate::kbs2::util;
-
-/// The maximum size of a wrapped key file, on disk.
-///
-/// This is an **extremely** conservative maximum: actual plain-text formatted
-/// wrapped keys should never be more than a few hundred bytes. But we need some
-/// number of harden the I/O that the agent does, and a single page/4K seems reasonable.
-const MAX_WRAPPED_KEY_FILESIZE: u64 = 4096;
 
 /// Represents the kinds of requests understood by the `kbs2` authentication agent.
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
@@ -134,44 +125,6 @@ impl Agent {
         }
     }
 
-    /// Unwraps a key, given its wrapped keyfile and password.
-    fn unwrap_keyfile(&self, keyfile: &str, password: SecretString) -> Result<SecretString> {
-        let wrapped_key = util::read_guarded(&keyfile, MAX_WRAPPED_KEY_FILESIZE)?;
-
-        // Create a new decryptor for the wrapped key.
-        let decryptor = match Decryptor::new(ArmoredReader::new(wrapped_key.as_slice())) {
-            Ok(Decryptor::Passphrase(d)) => d,
-            Ok(_) => {
-                return Err(anyhow!(
-                    "key unwrap failed; not a password-wrapped keyfile?"
-                ));
-            }
-            Err(e) => {
-                return Err(anyhow!(
-                    "unable to load private key (backend reports: {:?})",
-                    e
-                ));
-            }
-        };
-
-        // ...and decrypt (i.e., unwrap) using the master password.
-        log::debug!("beginning key unwrap...");
-        let mut unwrapped_key = String::new();
-
-        // NOTE(ww): A work factor of 18 is an educated guess here; rage generated some
-        // encrypted messages that needed this factor.
-        decryptor
-            .decrypt(&password, Some(18))
-            .map_err(|e| anyhow!("unable to decrypt (backend reports: {:?})", e))
-            .and_then(|mut r| {
-                r.read_to_string(&mut unwrapped_key)
-                    .map_err(|_| anyhow!("i/o error while decrypting"))
-            })?;
-        log::debug!("finished key unwrap!");
-
-        Ok(Secret::new(unwrapped_key))
-    }
-
     // TODO(ww): These can be replaced with the UnixStream.peer_cred API once it stabilizes:
     // https://doc.rust-lang.org/std/os/unix/net/struct.UnixStream.html#method.peer_cred
     #[cfg(target_os = "linux")]
@@ -253,7 +206,7 @@ impl Agent {
                         );
                         Response::Success("OK; agent already has unwrapped key".into())
                     } else {
-                        match self.unwrap_keyfile(&keyfile, password) {
+                        match util::unwrap_keyfile(&keyfile, password) {
                             Ok(unwrapped_key) => {
                                 self.unwrapped_keys.insert(keyfile, unwrapped_key);
                                 Response::Success("OK; unwrapped key ready".into())

@@ -8,6 +8,7 @@ use std::path::Path;
 use crate::kbs2::agent;
 use crate::kbs2::config;
 use crate::kbs2::record::Record;
+use crate::kbs2::util;
 
 /// Represents the operations that all age backends are capable of.
 pub trait Backend {
@@ -27,6 +28,12 @@ pub trait Backend {
     fn create_wrapped_keypair(path: &Path, password: SecretString) -> Result<String>
     where
         Self: Sized;
+
+    /// Rewraps the given keyfile in place, decrypting it with the `old` password
+    /// and re-encrypting it with the `new` password.
+    ///
+    /// NOTE: This function does *not* make a backup of the original keyfile.
+    fn rewrap_keyfile<P: AsRef<Path>>(path: P, old: SecretString, new: SecretString) -> Result<()>;
 
     /// Encrypts the given record, returning it as an ASCII-armored string.
     fn encrypt(&self, record: &Record) -> Result<String>;
@@ -86,27 +93,22 @@ impl Backend for RageLib {
 
     fn create_wrapped_keypair(path: &Path, password: SecretString) -> Result<String> {
         let keypair = age::x25519::Identity::generate();
-
-        let wrapped_key = {
-            let encryptor = age::Encryptor::with_user_passphrase(password);
-
-            let mut wrapped_key = vec![];
-            // TODO(ww): https://github.com/str4d/rage/pull/158
-            let mut writer = encryptor
-                .wrap_output(ArmoredWriter::wrap_output(
-                    &mut wrapped_key,
-                    Format::AsciiArmor,
-                )?)
-                .map_err(|e| anyhow!("wrap_output failed (backend report: {:?})", e))?;
-            writer.write_all(keypair.to_string().expose_secret().as_bytes())?;
-            writer.finish().and_then(|armor| armor.finish())?;
-
-            wrapped_key
-        };
-
+        let wrapped_key = util::wrap_key(keypair.to_string(), password)?;
         std::fs::write(path, wrapped_key)?;
 
         Ok(keypair.to_public().to_string())
+    }
+
+    fn rewrap_keyfile<P: AsRef<Path>>(
+        keyfile: P,
+        old: SecretString,
+        new: SecretString,
+    ) -> Result<()> {
+        let unwrapped_key = util::unwrap_keyfile(&keyfile, old)?;
+        let rewrapped_key = util::wrap_key(unwrapped_key, new)?;
+
+        std::fs::write(&keyfile, rewrapped_key)?;
+        Ok(())
     }
 
     fn encrypt(&self, record: &Record) -> Result<String> {

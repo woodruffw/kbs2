@@ -8,10 +8,11 @@ use nix::unistd::{fork, ForkResult};
 use std::convert::TryInto;
 use std::env;
 use std::io::{Read, Seek, SeekFrom, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process;
 
 use crate::kbs2::agent;
+use crate::kbs2::backend::{self, Backend};
 use crate::kbs2::config;
 use crate::kbs2::generator::Generator;
 use crate::kbs2::input;
@@ -30,7 +31,7 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
     }
 
     let password = if matches.is_present("insecure-not-wrapped") {
-        Some(util::get_password()?)
+        Some(util::get_password(None)?)
     } else {
         None
     };
@@ -87,7 +88,7 @@ fn agent_unwrap(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
         return Ok(());
     }
 
-    let password = util::get_password()?;
+    let password = util::get_password(None)?;
     client.add_key(&config.keyfile, password)?;
 
     Ok(())
@@ -500,4 +501,33 @@ pub fn generate(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     println!("{}", generator.secret()?);
 
     Ok(())
+}
+
+/// Implements the `kbs2 rewrap` command.
+pub fn rewrap(matches: &ArgMatches, config: &config::Config) -> Result<()> {
+    log::debug!("attempting key rewrap");
+
+    if !config.wrapped {
+        return Err(anyhow!("config specifies a bare key; nothing to rewrap"));
+    }
+
+    if !matches.is_present("no-backup") {
+        let keyfile_backup: PathBuf = format!("{}.old", &config.keyfile).into();
+        if keyfile_backup.exists() && !matches.is_present("force") {
+            return Err(anyhow!(
+                "refusing to overwrite a previous key backup without --force"
+            ));
+        }
+
+        std::fs::copy(&config.keyfile, &keyfile_backup)?;
+        println!(
+            "Backup of the OLD wrapped keyfile saved to: {:?}",
+            keyfile_backup
+        );
+    }
+
+    let old = util::get_password(Some("OLD master password: "))?;
+    let new = util::get_password(Some("NEW master password: "))?;
+
+    backend::RageLib::rewrap_keyfile(&config.keyfile, old, new)
 }

@@ -26,6 +26,7 @@ Quick links:
   * [`kbs2 env`](#kbs2-env)
   * [`kbs2 edit`](#kbs2-edit)
   * [`kbs2 generate`](#kbs2-generate)
+  * [`kbs2 rewrap`](#kbs2-rewrap)
 * [Configuration](#configuration)
   * [Generators](#generators)
 * [Customization](#customization)
@@ -577,6 +578,42 @@ Generate a secret using a generator named `pwgen`:
 ```bash
 $ kbs2 generate pwgen
 iit4wie6faeL4aiyupheec5Xochosero
+```
+
+### `kbs2 rewrap`
+
+#### Usage
+
+```
+change the master password on a wrapped key
+
+USAGE:
+    kbs2 rewrap [FLAGS]
+
+FLAGS:
+    -f, --force        overwrite a previous backup, if one exists
+    -h, --help         Prints help information
+    -n, --no-backup    don't make a backup of the old wrapped key
+```
+
+#### Examples
+
+Change the password on the wrapped key in the default config:
+
+```bash
+$ kbs2 rewrap
+```
+
+Change the password on a wrapped key in another config:
+
+```bash
+$ kbs2 -c /path/to/config/dir rewrap
+```
+
+Change the password on a wrapped key without making a backup of the old wrapped key:
+
+```bash
+$ kbs2 rewrap -n
 ```
 
 ## Configuration

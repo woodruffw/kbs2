@@ -229,6 +229,22 @@ fn app<'a>() -> App<'a> {
                         .default_value("default"),
                 ),
         )
+        .subcommand(
+            App::new("rewrap")
+                .about("change the master password on a wrapped key")
+                .arg(
+                    Arg::new("no-backup")
+                        .about("don't make a backup of the old wrapped key")
+                        .short('n')
+                        .long("no-backup"),
+                )
+                .arg(
+                    Arg::new("force")
+                        .about("overwrite a previous backup, if one exists")
+                        .short('f')
+                        .long("force"),
+                ),
+        )
 }
 
 fn run() -> Result<()> {
@@ -297,6 +313,7 @@ fn run() -> Result<()> {
             Some(("env", matches)) => kbs2::command::env(&matches, &config)?,
             Some(("edit", matches)) => kbs2::command::edit(&matches, &config)?,
             Some(("generate", matches)) => kbs2::command::generate(&matches, &config)?,
+            Some(("rewrap", matches)) => kbs2::command::rewrap(&matches, &config)?,
             Some((cmd, matches)) => {
                 let cmd = format!("kbs2-{}", cmd);
 
