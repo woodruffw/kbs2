@@ -1,12 +1,21 @@
+use age::armor::{ArmoredReader, ArmoredWriter, Format};
+use age::Decryptor;
 use anyhow::{anyhow, Result};
 use pinentry::PassphraseInput;
-use secrecy::SecretString;
+use secrecy::{ExposeSecret, SecretString};
 
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+/// The maximum size of a wrapped key file, on disk.
+///
+/// This is an **extremely** conservative maximum: actual plain-text formatted
+/// wrapped keys should never be more than a few hundred bytes. But we need some
+/// number of harden the I/O that the agent does, and a single page/4K seems reasonable.
+pub const MAX_WRAPPED_KEY_FILESIZE: u64 = 4096;
 
 /// Given an input string formatted according to shell quoting rules,
 /// split it into its command and argument parts and return each.
@@ -53,17 +62,21 @@ pub fn run_with_output(command: &str, args: &[&str]) -> Result<String> {
 /// NOTE: This function currently uses pinentry internally, which
 /// will delegate to the appropriate pinentry binary on the user's
 /// system.
-pub fn get_password() -> Result<SecretString> {
+pub fn get_password(prompt: Option<&'static str>) -> Result<SecretString> {
+    let prompt = match prompt {
+        Some(prompt) => prompt,
+        None => "Password: ",
+    };
+
     if let Some(mut input) = PassphraseInput::with_default_binary() {
         input
-            .with_description("Enter your master kbs2 password")
-            .with_prompt("Password:")
+            .with_prompt(prompt)
             .interact()
             .map_err(|e| anyhow!("pinentry failed: {}", e.to_string()))
     } else {
         log::debug!("no pinentry binary, falling back on rpassword");
 
-        rpassword::read_password_from_tty(Some("Password: "))
+        rpassword::read_password_from_tty(Some(prompt))
             .map(SecretString::new)
             .map_err(|e| anyhow!("password prompt failed: {}", e.to_string()))
     }
@@ -105,6 +118,61 @@ pub fn read_guarded<P: AsRef<Path>>(path: P, limit: u64) -> Result<Vec<u8>> {
     file.read_to_end(&mut buf)?;
 
     Ok(buf)
+}
+
+/// Unwraps a key, given its wrapped keyfile and password.
+pub fn unwrap_keyfile<P: AsRef<Path>>(keyfile: P, password: SecretString) -> Result<SecretString> {
+    let wrapped_key = read_guarded(&keyfile, MAX_WRAPPED_KEY_FILESIZE)?;
+
+    // Create a new decryptor for the wrapped key.
+    let decryptor = match Decryptor::new(ArmoredReader::new(wrapped_key.as_slice())) {
+        Ok(Decryptor::Passphrase(d)) => d,
+        Ok(_) => {
+            return Err(anyhow!(
+                "key unwrap failed; not a password-wrapped keyfile?"
+            ));
+        }
+        Err(e) => {
+            return Err(anyhow!(
+                "unable to load private key (backend reports: {:?})",
+                e
+            ));
+        }
+    };
+
+    // ...and decrypt (i.e., unwrap) using the master password.
+    log::debug!("beginning key unwrap...");
+    let mut unwrapped_key = String::new();
+
+    // NOTE(ww): A work factor of 18 is an educated guess here; rage generated some
+    // encrypted messages that needed this factor.
+    decryptor
+        .decrypt(&password, Some(18))
+        .map_err(|e| anyhow!("unable to decrypt (backend reports: {:?})", e))
+        .and_then(|mut r| {
+            r.read_to_string(&mut unwrapped_key)
+                .map_err(|_| anyhow!("i/o error while decrypting"))
+        })?;
+    log::debug!("finished key unwrap!");
+
+    Ok(SecretString::new(unwrapped_key))
+}
+
+pub fn wrap_key(key: SecretString, password: SecretString) -> Result<Vec<u8>> {
+    let encryptor = age::Encryptor::with_user_passphrase(password);
+
+    let mut wrapped_key = vec![];
+    // TODO(ww): https://github.com/str4d/rage/pull/158
+    let mut writer = encryptor
+        .wrap_output(ArmoredWriter::wrap_output(
+            &mut wrapped_key,
+            Format::AsciiArmor,
+        )?)
+        .map_err(|e| anyhow!("wrap_output failed (backend reports: {:?})", e))?;
+    writer.write_all(key.expose_secret().as_bytes())?;
+    writer.finish().and_then(|armor| armor.finish())?;
+
+    Ok(wrapped_key)
 }
 
 #[cfg(test)]
