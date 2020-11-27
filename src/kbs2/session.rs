@@ -1,30 +1,33 @@
 use anyhow::{anyhow, Result};
 
+use std::convert::TryFrom;
 use std::fs;
 use std::io;
 use std::path::Path;
 
-use crate::kbs2::backend;
+use crate::kbs2::backend::{Backend, RageLib};
 use crate::kbs2::config;
 use crate::kbs2::record;
 
 /// Encapsulates the context needed by `kbs2` to interact with records.
-pub struct Session {
-    /// The age backend used to encrypt and decrypt records.
-    pub backend: Box<dyn backend::Backend>,
+pub struct Session<'a> {
+    /// The `RageLib` backend used to encrypt and decrypt records.
+    pub backend: RageLib,
 
     /// The configuration that `kbs2` was invoked with.
-    pub config: config::Config,
+    pub config: &'a config::Config,
 }
 
-impl Session {
+impl<'a> Session<'a> {
     /// Creates a new session, given a `Config`.
-    pub fn new(config: config::Config) -> Result<Session> {
+    fn new(config: &'a config::Config) -> Result<Session> {
         fs::create_dir_all(&config.store)?;
 
-        let backend: Box<dyn backend::Backend> = Box::new(backend::RageLib::new(&config)?);
-
-        Ok(Session { backend, config })
+        #[allow(clippy::redundant_field_names)]
+        Ok(Session {
+            backend: RageLib::new(&config)?,
+            config: &config,
+        })
     }
 
     /// Returns the label of every record available in the store.
@@ -100,42 +103,53 @@ impl Session {
     }
 }
 
+impl<'a> TryFrom<&'a config::Config> for Session<'a> {
+    type Error = anyhow::Error;
+
+    fn try_from(config: &'a config::Config) -> Result<Self> {
+        Self::new(&config)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use tempfile::{tempdir, TempDir};
 
     // NOTE: We pass store in here instead of creating it for lifetime reasons:
-    // the temp dir is destroyed when its TempDir object is destructed, so we need
+    // the temp dir is unlinked when its TempDir object is destructed, so we need
     // to keep it alive long enough for each unit test.
-    fn dummy_session(store: &TempDir) -> Session {
-        let backend = {
-            let key = age::SecretKey::generate();
+    fn dummy_config(store: &TempDir) -> config::Config {
+        config::Config {
+            config_dir: "/not/a/real/dir".into(),
+            // NOTE: We create the backend above manually, so the public_key and keyfile
+            // here are dummy values that shouldn't need to be interacted with.
+            public_key: "not a real public key".into(),
+            keyfile: "not a real private key file".into(),
+            wrapped: false,
+            store: store.path().to_str().unwrap().into(),
+            pre_hook: None,
+            post_hook: None,
+            reentrant_hooks: false,
+            generators: vec![config::GeneratorConfig::Internal(Default::default())],
+            commands: Default::default(),
+        }
+    }
 
-            Box::new(backend::RageLib {
+    fn dummy_session(config: &config::Config) -> Session {
+        let backend = {
+            let key = age::x25519::Identity::generate();
+
+            RageLib {
                 pubkey: key.to_public(),
                 identities: vec![key.into()],
-            })
-        };
-
-        let config = {
-            config::Config {
-                config_dir: "/not/a/real/dir".into(),
-                // NOTE: We create the backend above manually, so the public_key and keyfile
-                // here are dummy values that shouldn't need to be interacted with.
-                public_key: "not a real public key".into(),
-                keyfile: "not a real private key file".into(),
-                wrapped: false,
-                store: store.path().to_str().unwrap().into(),
-                pre_hook: None,
-                post_hook: None,
-                reentrant_hooks: false,
-                generators: vec![config::GeneratorConfig::Internal(Default::default())],
-                commands: Default::default(),
             }
         };
 
-        Session { backend, config }
+        Session {
+            backend,
+            config: &config,
+        }
     }
 
     // TODO: Figure out how to test Session::new. Doing so will require an interface for
@@ -146,14 +160,16 @@ mod tests {
     fn test_record_labels() {
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
 
             assert_eq!(session.record_labels().unwrap(), Vec::<String>::new());
         }
 
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
             let record = record::Record::login("foo", "bar", "baz");
 
             session.add_record(&record).unwrap();
@@ -165,7 +181,8 @@ mod tests {
     fn test_has_record() {
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
             let record = record::Record::login("foo", "bar", "baz");
 
             session.add_record(&record).unwrap();
@@ -174,7 +191,8 @@ mod tests {
 
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
 
             assert!(!session.has_record("does-not-exist"));
         }
@@ -184,7 +202,8 @@ mod tests {
     fn test_get_record() {
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
             let record = record::Record::login("foo", "bar", "baz");
 
             session.add_record(&record).unwrap();
@@ -196,7 +215,8 @@ mod tests {
 
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
 
             let err = session.get_record("foo").unwrap_err();
             assert_eq!(err.to_string(), "no such record: foo");
@@ -207,7 +227,8 @@ mod tests {
     fn test_add_record() {
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
 
             let record1 = record::Record::login("foo", "bar", "baz");
             session.add_record(&record1).unwrap();
@@ -235,7 +256,8 @@ mod tests {
     fn test_delete_record() {
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
             let record = record::Record::login("foo", "bar", "baz");
 
             session.add_record(&record).unwrap();
@@ -247,7 +269,8 @@ mod tests {
 
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
 
             let record1 = record::Record::login("foo", "bar", "baz");
             session.add_record(&record1).unwrap();
@@ -261,7 +284,8 @@ mod tests {
 
         {
             let store = tempdir().unwrap();
-            let session = dummy_session(&store);
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
 
             let err = session.delete_record("does-not-exist").unwrap_err();
             assert_eq!(err.to_string(), "no such record: does-not-exist");

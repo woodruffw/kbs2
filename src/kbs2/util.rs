@@ -2,7 +2,9 @@ use anyhow::{anyhow, Result};
 use pinentry::PassphraseInput;
 use secrecy::SecretString;
 
-use std::path::PathBuf;
+use std::fs::File;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -90,9 +92,26 @@ pub fn home_dir() -> Result<PathBuf> {
     }
 }
 
+/// Read the entire given file into a `Vec<u8>`, or fail if its on-disk size exceeds
+/// some limit.
+pub fn read_guarded<P: AsRef<Path>>(path: P, limit: u64) -> Result<Vec<u8>> {
+    let mut file = File::open(&path)?;
+    let meta = file.metadata()?;
+    if meta.len() > limit {
+        return Err(anyhow!("requested file is suspiciously large, refusing"));
+    }
+
+    let mut buf = Vec::with_capacity(meta.len() as usize);
+    file.read_to_end(&mut buf)?;
+
+    Ok(buf)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
 
     #[test]
     fn test_parse_and_split_args() {
@@ -186,5 +205,26 @@ mod tests {
 
         assert!(dir.exists());
         assert!(dir.is_dir());
+    }
+
+    #[test]
+    fn test_read_guarded() {
+        {
+            let mut small = NamedTempFile::new().unwrap();
+            small.write(b"test").unwrap();
+            small.flush().unwrap();
+
+            let contents = read_guarded(small.path(), 1024);
+            assert!(contents.is_ok());
+            assert_eq!(contents.unwrap().as_slice(), b"test");
+        }
+
+        {
+            let mut toobig = NamedTempFile::new().unwrap();
+            toobig.write(b"slightlytoobig").unwrap();
+            toobig.flush().unwrap();
+
+            assert!(read_guarded(toobig.path(), 10).is_err());
+        }
     }
 }
