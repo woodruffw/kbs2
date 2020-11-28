@@ -662,6 +662,15 @@ The `store` setting records the path to the secret store, i.e. where records are
 
 Users may modify this setting to store their records in custom directory.
 
+### `pinentry` (default: `"pinentry"`)
+
+The `pinentry` setting specifies the
+[Pinentry](https://gnupg.org/related_software/pinentry/index.html) binary to use for passphrase
+operations (i.e., prompting the user for their master password).
+
+`pinentry` is a reasonable default for most systems; macOS users may wish to use
+[`pinentry-mac`](https://github.com/GPGTools/pinentry-mac) instead.
+
 ### `pre-hook` (default: `None`)
 
 The `pre-hook` setting can be used to run a command before (almost) every `kbs2` invocation.

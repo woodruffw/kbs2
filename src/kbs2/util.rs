@@ -4,6 +4,7 @@ use anyhow::{anyhow, Result};
 use pinentry::PassphraseInput;
 use secrecy::{ExposeSecret, SecretString};
 
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -62,15 +63,20 @@ pub fn run_with_output(command: &str, args: &[&str]) -> Result<String> {
 /// NOTE: This function currently uses pinentry internally, which
 /// will delegate to the appropriate pinentry binary on the user's
 /// system.
-pub fn get_password(prompt: Option<&'static str>) -> Result<SecretString> {
+pub fn get_password<S: AsRef<OsStr>>(
+    prompt: Option<&'static str>,
+    pinentry: S,
+) -> Result<SecretString> {
     let prompt = match prompt {
         Some(prompt) => prompt,
         None => "Password: ",
     };
 
-    if let Some(mut input) = PassphraseInput::with_default_binary() {
+    if let Some(mut input) = PassphraseInput::with_binary(pinentry) {
         input
+            .with_description("Enter your master kbs2 password")
             .with_prompt(prompt)
+            .required("A non-empty password is required")
             .interact()
             .map_err(|e| anyhow!("pinentry failed: {}", e.to_string()))
     } else {
