@@ -15,7 +15,7 @@ pub trait Backend {
     /// Creates an age keypair, saving the private component to the given path.
     ///
     /// NOTE: The private component is written in an ASCII-armored format.
-    fn create_keypair(path: &Path) -> Result<String>
+    fn create_keypair<P: AsRef<Path>>(path: P) -> Result<String>
     where
         Self: Sized;
 
@@ -25,7 +25,7 @@ pub trait Backend {
     /// NOTE: Like `create_keypair`, this writes an ASCII-armored private component.
     /// It also prompts the user to enter a password for encrypting the generated
     /// private key.
-    fn create_wrapped_keypair(path: &Path, password: SecretString) -> Result<String>
+    fn create_wrapped_keypair<P: AsRef<Path>>(path: P, password: SecretString) -> Result<String>
     where
         Self: Sized;
 
@@ -83,7 +83,7 @@ impl RageLib {
 }
 
 impl Backend for RageLib {
-    fn create_keypair(path: &Path) -> Result<String> {
+    fn create_keypair<P: AsRef<Path>>(path: P) -> Result<String> {
         let keypair = age::x25519::Identity::generate();
 
         std::fs::write(path, keypair.to_string().expose_secret())?;
@@ -91,7 +91,7 @@ impl Backend for RageLib {
         Ok(keypair.to_public().to_string())
     }
 
-    fn create_wrapped_keypair(path: &Path, password: SecretString) -> Result<String> {
+    fn create_wrapped_keypair<P: AsRef<Path>>(path: P, password: SecretString) -> Result<String> {
         let keypair = age::x25519::Identity::generate();
         let wrapped_key = util::wrap_key(keypair.to_string(), password)?;
         std::fs::write(path, wrapped_key)?;
@@ -187,7 +187,55 @@ mod tests {
     fn test_ragelib_create_keypair() {
         let keyfile = tempfile::NamedTempFile::new().unwrap();
 
-        assert!(RageLib::create_keypair(keyfile.path()).is_ok());
+        assert!(RageLib::create_keypair(&keyfile).is_ok());
+    }
+
+    #[test]
+    fn test_ragelib_create_wrapped_keypair() {
+        let keyfile = tempfile::NamedTempFile::new().unwrap();
+
+        // Creating a wrapped keypair with a particular password should succeed.
+        assert!(RageLib::create_wrapped_keypair(
+            &keyfile,
+            SecretString::new("weakpassword".into())
+        )
+        .is_ok());
+
+        // Unwrapping the keyfile using the same password should succeed.
+        assert!(util::unwrap_keyfile(&keyfile, SecretString::new("weakpassword".into())).is_ok());
+    }
+
+    #[test]
+    fn test_ragelib_rewrap_keyfile() {
+        let keyfile = tempfile::NamedTempFile::new().unwrap();
+
+        RageLib::create_wrapped_keypair(&keyfile, SecretString::new("weakpassword".into()))
+            .unwrap();
+
+        let wrapped_key_a = std::fs::read(&keyfile).unwrap();
+        let unwrapped_key_a =
+            util::unwrap_keyfile(&keyfile, SecretString::new("weakpassword".into())).unwrap();
+
+        // Changing the password on a wrapped keyfile should succeed.
+        assert!(RageLib::rewrap_keyfile(
+            &keyfile,
+            SecretString::new("weakpassword".into()),
+            SecretString::new("stillweak".into()),
+        )
+        .is_ok());
+
+        let wrapped_key_b = std::fs::read(&keyfile).unwrap();
+        let unwrapped_key_b =
+            util::unwrap_keyfile(&keyfile, SecretString::new("stillweak".into())).unwrap();
+
+        // The wrapped envelopes should not be equal, since the password has changed.
+        assert_ne!(wrapped_key_a, wrapped_key_b);
+
+        // However, the wrapped key itself should be preserved.
+        assert_eq!(
+            unwrapped_key_a.expose_secret(),
+            unwrapped_key_b.expose_secret()
+        );
     }
 
     #[test]

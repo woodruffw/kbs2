@@ -393,7 +393,7 @@ mod tests {
     use super::*;
     use tempfile::tempdir;
 
-    fn dummy_unwrapped_config() -> Config {
+    fn dummy_config_unwrapped_key() -> Config {
         Config {
             config_dir: "/not/a/real/dir".into(),
             public_key: "not a real public key".into(),
@@ -489,7 +489,7 @@ mod tests {
 
     #[test]
     fn test_call_hook() {
-        let config = dummy_unwrapped_config();
+        let config = dummy_config_unwrapped_key();
 
         {
             assert!(config
@@ -519,11 +519,9 @@ mod tests {
 
     #[test]
     fn test_get_generator() {
-        let config = dummy_unwrapped_config();
+        let config = dummy_config_unwrapped_key();
 
         assert!(config.get_generator("default").is_some());
         assert!(config.get_generator("nonexistent-generator").is_none());
     }
-
-    // TODO: Test Config::unwrap_keyfile.
 }
