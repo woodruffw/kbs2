@@ -11,7 +11,7 @@ use std::os::unix::io::AsRawFd;
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
 
-use crate::kbs2::util;
+use crate::kbs2::backend::{Backend, RageLib};
 
 /// Represents the kinds of requests understood by the `kbs2` authentication agent.
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
@@ -206,7 +206,7 @@ impl Agent {
                         );
                         Response::Success("OK; agent already has unwrapped key".into())
                     } else {
-                        match util::unwrap_keyfile(&keyfile, password) {
+                        match RageLib::unwrap_keyfile(&keyfile, password) {
                             Ok(unwrapped_key) => {
                                 self.unwrapped_keys.insert(keyfile, unwrapped_key);
                                 Response::Success("OK; unwrapped key ready".into())
