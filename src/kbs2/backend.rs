@@ -1,4 +1,5 @@
 use age::armor::{ArmoredReader, ArmoredWriter, Format};
+use age::Decryptor;
 use anyhow::{anyhow, Context, Result};
 use secrecy::{ExposeSecret, SecretString};
 
@@ -10,14 +11,19 @@ use crate::kbs2::config;
 use crate::kbs2::record::Record;
 use crate::kbs2::util;
 
+/// The maximum size of a wrapped key file, on disk.
+///
+/// This is an **extremely** conservative maximum: actual plain-text formatted
+/// wrapped keys should never be more than a few hundred bytes. But we need some
+/// number of harden the I/O that the agent does, and a single page/4K seems reasonable.
+pub const MAX_WRAPPED_KEY_FILESIZE: u64 = 4096;
+
 /// Represents the operations that all age backends are capable of.
 pub trait Backend {
     /// Creates an age keypair, saving the private component to the given path.
     ///
     /// NOTE: The private component is written in an ASCII-armored format.
-    fn create_keypair<P: AsRef<Path>>(path: P) -> Result<String>
-    where
-        Self: Sized;
+    fn create_keypair<P: AsRef<Path>>(path: P) -> Result<String>;
 
     /// Creates a wrapped age keypair, saving the encrypted private component to the
     /// given path.
@@ -25,9 +31,13 @@ pub trait Backend {
     /// NOTE: Like `create_keypair`, this writes an ASCII-armored private component.
     /// It also prompts the user to enter a password for encrypting the generated
     /// private key.
-    fn create_wrapped_keypair<P: AsRef<Path>>(path: P, password: SecretString) -> Result<String>
-    where
-        Self: Sized;
+    fn create_wrapped_keypair<P: AsRef<Path>>(path: P, password: SecretString) -> Result<String>;
+
+    /// Unwraps the given `keyfile` using `password`, returning the unwrapped contents.
+    fn unwrap_keyfile<P: AsRef<Path>>(keyfile: P, password: SecretString) -> Result<SecretString>;
+
+    /// Wraps the given `key` using the given `password`, returning the wrapped result.
+    fn wrap_key(key: SecretString, password: SecretString) -> Result<Vec<u8>>;
 
     /// Rewraps the given keyfile in place, decrypting it with the `old` password
     /// and re-encrypting it with the `new` password.
@@ -93,10 +103,64 @@ impl Backend for RageLib {
 
     fn create_wrapped_keypair<P: AsRef<Path>>(path: P, password: SecretString) -> Result<String> {
         let keypair = age::x25519::Identity::generate();
-        let wrapped_key = util::wrap_key(keypair.to_string(), password)?;
+        let wrapped_key = Self::wrap_key(keypair.to_string(), password)?;
         std::fs::write(path, wrapped_key)?;
 
         Ok(keypair.to_public().to_string())
+    }
+
+    fn unwrap_keyfile<P: AsRef<Path>>(keyfile: P, password: SecretString) -> Result<SecretString> {
+        let wrapped_key = util::read_guarded(&keyfile, MAX_WRAPPED_KEY_FILESIZE)?;
+
+        // Create a new decryptor for the wrapped key.
+        let decryptor = match Decryptor::new(ArmoredReader::new(wrapped_key.as_slice())) {
+            Ok(Decryptor::Passphrase(d)) => d,
+            Ok(_) => {
+                return Err(anyhow!(
+                    "key unwrap failed; not a password-wrapped keyfile?"
+                ));
+            }
+            Err(e) => {
+                return Err(anyhow!(
+                    "unable to load private key (backend reports: {:?})",
+                    e
+                ));
+            }
+        };
+
+        // ...and decrypt (i.e., unwrap) using the master password.
+        log::debug!("beginning key unwrap...");
+        let mut unwrapped_key = String::new();
+
+        // NOTE(ww): A work factor of 18 is an educated guess here; rage generated some
+        // encrypted messages that needed this factor.
+        decryptor
+            .decrypt(&password, Some(18))
+            .map_err(|e| anyhow!("unable to decrypt (backend reports: {:?})", e))
+            .and_then(|mut r| {
+                r.read_to_string(&mut unwrapped_key)
+                    .map_err(|_| anyhow!("i/o error while decrypting"))
+            })?;
+        log::debug!("finished key unwrap!");
+
+        Ok(SecretString::new(unwrapped_key))
+    }
+
+    fn wrap_key(key: SecretString, password: SecretString) -> Result<Vec<u8>> {
+        let encryptor = age::Encryptor::with_user_passphrase(password);
+
+        let mut wrapped_key = vec![];
+        // TODO(ww): https://github.com/str4d/rage/pull/158
+        let mut writer = encryptor
+            .wrap_output(ArmoredWriter::wrap_output(
+                &mut wrapped_key,
+                Format::AsciiArmor,
+            )?)
+            .map_err(|e| anyhow!("wrap_output failed (backend reports: {:?})", e))?;
+        writer.write_all(key.expose_secret().as_bytes())?;
+        writer.finish().and_then(|armor| armor.finish())?;
+
+        Ok(wrapped_key)
     }
 
     fn rewrap_keyfile<P: AsRef<Path>>(
@@ -104,8 +168,8 @@ impl Backend for RageLib {
         old: SecretString,
         new: SecretString,
     ) -> Result<()> {
-        let unwrapped_key = util::unwrap_keyfile(&keyfile, old)?;
-        let rewrapped_key = util::wrap_key(unwrapped_key, new)?;
+        let unwrapped_key = Self::unwrap_keyfile(&keyfile, old)?;
+        let rewrapped_key = Self::wrap_key(unwrapped_key, new)?;
 
         std::fs::write(&keyfile, rewrapped_key)?;
         Ok(())
@@ -202,7 +266,9 @@ mod tests {
         .is_ok());
 
         // Unwrapping the keyfile using the same password should succeed.
-        assert!(util::unwrap_keyfile(&keyfile, SecretString::new("weakpassword".into())).is_ok());
+        assert!(
+            RageLib::unwrap_keyfile(&keyfile, SecretString::new("weakpassword".into())).is_ok()
+        );
     }
 
     #[test]
@@ -214,7 +280,7 @@ mod tests {
 
         let wrapped_key_a = std::fs::read(&keyfile).unwrap();
         let unwrapped_key_a =
-            util::unwrap_keyfile(&keyfile, SecretString::new("weakpassword".into())).unwrap();
+            RageLib::unwrap_keyfile(&keyfile, SecretString::new("weakpassword".into())).unwrap();
 
         // Changing the password on a wrapped keyfile should succeed.
         assert!(RageLib::rewrap_keyfile(
@@ -226,7 +292,7 @@ mod tests {
 
         let wrapped_key_b = std::fs::read(&keyfile).unwrap();
         let unwrapped_key_b =
-            util::unwrap_keyfile(&keyfile, SecretString::new("stillweak".into())).unwrap();
+            RageLib::unwrap_keyfile(&keyfile, SecretString::new("stillweak".into())).unwrap();
 
         // The wrapped envelopes should not be equal, since the password has changed.
         assert_ne!(wrapped_key_a, wrapped_key_b);
