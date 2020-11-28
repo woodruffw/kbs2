@@ -152,7 +152,6 @@ USAGE:
 FLAGS:
     -F, --foreground    run the agent in the foreground
     -h, --help          Prints help information
-    -U, --no-unwrap     don't unwrap the current config's key
 
 SUBCOMMANDS:
     flush     remove all unwrapped keys from the running agent
@@ -166,12 +165,6 @@ Run the `kbs2` agent in the background, prompting the user to unwrap the current
 
 ```bash
 $ kbs2 agent
-```
-
-Run the `kbs2` agent in the background, without unwrapping the current config's key:
-
-```bash
-$ kbs2 agent -U
 ```
 
 Run the `kbs2` agent in the foreground, for debugging purposes:

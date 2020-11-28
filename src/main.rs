@@ -42,12 +42,6 @@ fn app<'a>() -> App<'a> {
                         .short('F')
                         .long("foreground"),
                 )
-                .arg(
-                    Arg::new("no-unwrap")
-                        .about("don't unwrap the current config's key")
-                        .short('U')
-                        .long("no-unwrap"),
-                )
                 .subcommand(
                     App::new("flush")
                         .about("remove all unwrapped keys from the running agent")
