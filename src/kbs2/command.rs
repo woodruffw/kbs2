@@ -44,10 +44,11 @@ pub fn agent(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("agent subcommand dispatch");
 
     if matches.subcommand().is_none() {
+        let mut agent = agent::Agent::new()?;
         if !matches.is_present("foreground") {
             Daemonize::new().start()?;
         }
-        agent::run()?;
+        agent.run()?;
         return Ok(());
     }
 

@@ -101,7 +101,9 @@ impl Message for Request {}
 impl Message for Response {}
 
 /// Represents the state in a running `kbs2` authentication agent.
-struct Agent {
+pub struct Agent {
+    /// The local path to the Unix domain socket.
+    agent_path: PathBuf,
     /// A map of keyfile => unwrapped key material.
     unwrapped_keys: HashMap<String, SecretString>,
     /// Whether or not the agent intends to quit momentarily.
@@ -118,11 +120,20 @@ impl Agent {
     }
 
     /// Initializes a new agent without accepting connections.
-    fn new() -> Self {
-        Self {
+    pub fn new() -> Result<Self> {
+        let agent_path = Self::path();
+        if agent_path.exists() {
+            return Err(anyhow!(
+                "an agent is already running or didn't exit cleanly"
+            ));
+        }
+
+        #[allow(clippy::redundant_field_names)]
+        Ok(Self {
+            agent_path: agent_path,
             unwrapped_keys: HashMap::new(),
             quitting: false,
-        }
+        })
     }
 
     // TODO(ww): These can be replaced with the UnixStream.peer_cred API once it stabilizes:
@@ -250,6 +261,44 @@ impl Agent {
             let _ = resp.write(&mut writer);
         }
     }
+
+    /// Run the `kbs2` authentication agent.
+    ///
+    /// The function does not return *unless* either an error occurs on agent startup *or*
+    /// a client asks the agent to quit.
+    pub fn run(&mut self) -> Result<()> {
+        log::debug!("agent run requested");
+
+        let listener = UnixListener::bind(&self.agent_path)?;
+
+        // NOTE(ww): This could spawn a separate thread for each incoming connection, but I see
+        // no reason to do so:
+        //
+        // 1. The incoming queue already provides a synchronization mechanism, and we don't
+        //    expect a number of simultaneous clients that would come close to exceeding the
+        //    default queue length. Even if that were to happen, rejecting pending clients
+        //    is an acceptable error mode.
+        // 2. Using separate threads here makes the rest of the code unnecessarily complicated:
+        //    each `Agent` becomes an `Arc<Mutex<Agent>>` to protect the underlying `HashMap`,
+        //    and makes actually quitting the agent with a `Quit` request more difficult than it
+        //    needs to be.
+        for stream in listener.incoming() {
+            match stream {
+                Ok(stream) => {
+                    self.handle_client(stream);
+                    if self.quitting {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    log::error!("connect error: {:?}", e);
+                    continue;
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl Drop for Agent {
@@ -339,50 +388,4 @@ impl Client {
         self.request(&Request::Quit)?;
         Ok(())
     }
-}
-
-/// Run the `kbs2` authentication agent.
-///
-/// The function does not return *unless* either an error occurs on agent startup *or*
-/// a client asks the agent to quit.
-pub fn run() -> Result<()> {
-    log::debug!("agent run requested");
-
-    let agent_path = Agent::path();
-    if agent_path.exists() {
-        return Err(anyhow!(
-            "an agent is already running or didn't exit cleanly"
-        ));
-    }
-
-    let mut agent = Agent::new();
-    let listener = UnixListener::bind(&agent_path)?;
-
-    // NOTE(ww): This could spawn a separate thread for each incoming connection, but I see
-    // no reason to do so:
-    //
-    // 1. The incoming queue already provides a synchronization mechanism, and we don't
-    //    expect a number of simultaneous clients that would come close to exceeding the
-    //    default queue length. Even if that were to happen, rejecting pending clients
-    //    is an acceptable error mode.
-    // 2. Using separate threads here makes the rest of the code unnecessarily complicated:
-    //    each `Agent` becomes an `Arc<Mutex<Agent>>` to protect the underlying `HashMap`,
-    //    and makes actually quitting the agent with a `Quit` request more difficult than it
-    //    needs to be.
-    for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => {
-                agent.handle_client(stream);
-                if agent.quitting {
-                    break;
-                }
-            }
-            Err(e) => {
-                log::error!("connect error: {:?}", e);
-                continue;
-            }
-        }
-    }
-
-    Ok(())
 }
