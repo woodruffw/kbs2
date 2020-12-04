@@ -706,6 +706,9 @@ There are currently three cases where the configured `error-hook` will *not* run
 
 All other subcommands, including custom subcommands, will cause the configured `error-hook` to run.
 
+The `error-hook` setting passes a single argument to its hook, which is a string representation
+of the error that occurred.
+
 Read the [Hooks](#hooks) documentation for more details.
 
 ### `reentrant-hooks` (default: `false`)
