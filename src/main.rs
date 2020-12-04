@@ -1,17 +1,17 @@
-use anyhow::{anyhow, Result};
-use clap::{App, AppSettings, Arg};
+use anyhow::{anyhow, Context, Result};
+use clap::{App, AppSettings, Arg, ArgMatches};
 use clap_generate::{generate, generators};
 
 use std::io;
 use std::path::Path;
-use std::process::{self, Command};
+use std::process::Command;
 
 mod kbs2;
 
-fn app<'a>() -> App<'a> {
+fn app<'a>(default_config_dir: &'a Path) -> Result<App<'a>> {
     // TODO(ww): Put this in a separate file, or switch to YAML.
     // The latter probably won't work with env!, though.
-    App::new(env!("CARGO_PKG_NAME"))
+    Ok(App::new(env!("CARGO_PKG_NAME"))
         .setting(AppSettings::AllowExternalSubcommands)
         .setting(AppSettings::VersionlessSubcommands)
         .version(env!("CARGO_PKG_VERSION"))
@@ -23,7 +23,8 @@ fn app<'a>() -> App<'a> {
                 .long("config-dir")
                 .value_name("DIR")
                 .takes_value(true)
-                .env("KBS2_CONFIG_DIR"),
+                .env("KBS2_CONFIG_DIR")
+                .default_value_os(default_config_dir.as_ref()),
         )
         .arg(
             Arg::new("completions")
@@ -238,13 +239,81 @@ fn app<'a>() -> App<'a> {
                         .short('f')
                         .long("force"),
                 ),
-        )
+        ))
 }
 
-fn run() -> Result<()> {
-    let mut app = app();
+fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
+    // Subcommand dispatch happens here. All subcommands handled here take a `Config`.
+    //
+    // Internally, most (but not all) subcommands load a `Session` from their borrowed
+    // `Config` argument. This `Session` is in turn used to perform record and encryption
+    // operations.
+
+    // Special case: `kbs2 agent` does not receive pre- or post-hooks.
+    if let Some(("agent", matches)) = matches.subcommand() {
+        return kbs2::command::agent(&matches, &config);
+    }
+
+    if let Some(pre_hook) = &config.pre_hook {
+        log::debug!("pre-hook: {}", pre_hook);
+        config.call_hook(pre_hook, &[])?;
+    }
+
+    match matches.subcommand() {
+        Some(("new", matches)) => kbs2::command::new(&matches, &config)?,
+        Some(("list", matches)) => kbs2::command::list(&matches, &config)?,
+        Some(("rm", matches)) => kbs2::command::rm(&matches, &config)?,
+        Some(("dump", matches)) => kbs2::command::dump(&matches, &config)?,
+        Some(("pass", matches)) => kbs2::command::pass(&matches, &config)?,
+        Some(("env", matches)) => kbs2::command::env(&matches, &config)?,
+        Some(("edit", matches)) => kbs2::command::edit(&matches, &config)?,
+        Some(("generate", matches)) => kbs2::command::generate(&matches, &config)?,
+        Some(("rewrap", matches)) => kbs2::command::rewrap(&matches, &config)?,
+        Some((cmd, matches)) => {
+            let cmd = format!("kbs2-{}", cmd);
+
+            let ext_args: Vec<&str> = match matches.values_of("") {
+                Some(values) => values.collect(),
+                None => vec![],
+            };
+
+            log::debug!("external command requested: {} (args: {:?})", cmd, ext_args);
+
+            let status = Command::new(&cmd)
+                .args(&ext_args)
+                .env("KBS2_CONFIG_DIR", &config.config_dir)
+                .env("KBS2_STORE", &config.store)
+                .env("KBS2_SUBCOMMAND", "1")
+                .status()
+                .with_context(|| format!("no such command: {}", cmd))?;
+
+            if !status.success() {
+                return Err(match status.code() {
+                    Some(code) => anyhow!("{} failed: exited with {}", cmd, code),
+                    None => anyhow!("{} failed: terminated by signal",),
+                });
+            }
+        }
+        _ => unreachable!(),
+    }
+
+    if let Some(post_hook) = &config.post_hook {
+        log::debug!("post-hook: {}", post_hook);
+        config.call_hook(post_hook, &[])?;
+    }
+
+    Ok(())
+}
+
+fn main() -> Result<()> {
+    env_logger::init();
+
+    let default_config_dir = kbs2::config::find_config_dir()?;
+    let mut app = app(&default_config_dir)?;
     let matches = app.clone().get_matches();
 
+    // Shell completion generation is completely independent, so perform it before
+    // any config or subcommand operations.
     if let Some(shell) = matches.value_of("completions") {
         match shell {
             "bash" => {
@@ -261,90 +330,34 @@ fn run() -> Result<()> {
         return Ok(());
     }
 
-    let config_dir = match matches.value_of("config-dir") {
-        Some(path) => Path::new(path).to_path_buf(),
-        None => kbs2::config::find_config_dir()?,
-    };
-
+    let config_dir = Path::new(matches.value_of_os("config-dir").unwrap());
     log::debug!("config dir: {:?}", config_dir);
     std::fs::create_dir_all(&config_dir)?;
 
-    // Subcommand dispatch happens here. All subcommands take a `Config`, with two exceptions:
+    // There are two special cases that are not handled in `run`:
     //
-    // * No subcommand (i.e., just `kbs2`) does nothing besides printing help.
-    //
-    // * `kbs2 init` doesn't have access to a preexisting config, and so needs to be separated
-    //   from the config-loading behavior of all other subcommands.
-    //
-    // Internally, most (but not all) subcommands load a `Session` from their borrowed
-    // `Config` argument. This `Session` is in turn used to perform record and encryption
-    // operations.
+    // * `kbs2` (no subcommand): Act as if a long --help message was requested and exit.
+    // * `kbs2 init`: We're initializing a config instead of loading one.
     if matches.subcommand().is_none() {
-        app.clone()
-            .write_long_help(&mut io::stdout())
-            .map_err(|_| anyhow!("failed to print help"))
+        return app
+            .clone()
+            .print_long_help()
+            .with_context(|| "failed to print help".to_string());
     } else if let Some(("init", matches)) = matches.subcommand() {
-        kbs2::command::init(&matches, &config_dir)
-    } else {
-        let config = kbs2::config::load(&config_dir)?;
-        log::debug!("loaded config: {:?}", config);
-
-        if let Some(("agent", matches)) = matches.subcommand() {
-            return kbs2::command::agent(&matches, &config);
-        }
-
-        if let Some(pre_hook) = &config.pre_hook {
-            log::debug!("pre-hook: {}", pre_hook);
-            config.call_hook(pre_hook, &[])?;
-        }
-
-        match matches.subcommand() {
-            Some(("new", matches)) => kbs2::command::new(&matches, &config)?,
-            Some(("list", matches)) => kbs2::command::list(&matches, &config)?,
-            Some(("rm", matches)) => kbs2::command::rm(&matches, &config)?,
-            Some(("dump", matches)) => kbs2::command::dump(&matches, &config)?,
-            Some(("pass", matches)) => kbs2::command::pass(&matches, &config)?,
-            Some(("env", matches)) => kbs2::command::env(&matches, &config)?,
-            Some(("edit", matches)) => kbs2::command::edit(&matches, &config)?,
-            Some(("generate", matches)) => kbs2::command::generate(&matches, &config)?,
-            Some(("rewrap", matches)) => kbs2::command::rewrap(&matches, &config)?,
-            Some((cmd, matches)) => {
-                let cmd = format!("kbs2-{}", cmd);
-
-                let ext_args: Vec<&str> = match matches.values_of("") {
-                    Some(values) => values.collect(),
-                    None => vec![],
-                };
-
-                log::debug!("external command requested: {} (args: {:?})", cmd, ext_args);
-
-                let status = Command::new(&cmd)
-                    .args(&ext_args)
-                    .env("KBS2_CONFIG_DIR", &config_dir)
-                    .env("KBS2_STORE", &config.store)
-                    .env("KBS2_SUBCOMMAND", "1")
-                    .status()
-                    .map_or(None, |s| Some(s.success()));
-
-                match status {
-                    Some(true) => (),
-                    Some(false) => process::exit(2),
-                    None => return Err(anyhow!("no such command: {}", cmd)),
-                }
-            }
-            _ => unreachable!(),
-        }
-
-        if let Some(post_hook) = &config.post_hook {
-            log::debug!("post-hook: {}", post_hook);
-            config.call_hook(post_hook, &[])?;
-        }
-
-        Ok(())
+        return kbs2::command::init(&matches, &config_dir);
     }
-}
 
-fn main() -> Result<()> {
-    env_logger::init();
-    run()
+    // Everything else (i.e., all other subcommands) go through here.
+    let config = kbs2::config::load(&config_dir)?;
+    match run(&matches, &config) {
+        Ok(()) => Ok(()),
+        Err(e) => {
+            if let Some(error_hook) = &config.error_hook {
+                log::debug!("error-hook: {}", error_hook);
+                config.call_hook(error_hook, &[&e.to_string()])?;
+            }
+
+            Err(e)
+        }
+    }
 }
