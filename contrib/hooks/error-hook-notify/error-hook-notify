@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+[[ -n "${KBS2_HOOK}" ]] \
+  || { >&2 echo "Fatal: Not being run as a hook?"; exit 1; }
+
+system=$(uname -s)
+
+if [[ "${system}" == Linux ]]; then
+  notify-send --urgency=critical "kbs2" "Error: ${1}"
+elif [[ "${system}" == Darwin ]]; then
+  # https://stackoverflow.com/a/23923108
+  osascript \
+    -e 'on run(argv)' \
+    -e 'display notification ("Error: " & item 1 of argv) with title "kbs2"' \
+    -e 'end' \
+    -- "${1}"
+else
+  >&2 echo "[+] Unsupported system: ${system}"
+fi
