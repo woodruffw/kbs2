@@ -72,6 +72,12 @@ pub struct Config {
     #[serde(default)]
     pub post_hook: Option<String>,
 
+    /// An optional command to run after each `kbs2` subcommand, on error.
+    #[serde(deserialize_with = "deserialize_optional_with_tilde")]
+    #[serde(rename = "error-hook")]
+    #[serde(default)]
+    pub error_hook: Option<String>,
+
     /// Whether or not any hooks are called when a hook itself invokes `kbs2`.
     #[serde(default)]
     #[serde(rename = "reentrant-hooks")]
@@ -366,6 +372,7 @@ pub fn initialize(config_dir: &Path, password: Option<SecretString>) -> Result<(
         pinentry: Default::default(),
         pre_hook: None,
         post_hook: None,
+        error_hook: None,
         reentrant_hooks: false,
         generators: vec![GeneratorConfig::Internal(Default::default())],
         commands: Default::default(),
@@ -403,6 +410,7 @@ mod tests {
             pinentry: Default::default(),
             pre_hook: Some("true".into()),
             post_hook: Some("false".into()),
+            error_hook: Some("true".into()),
             reentrant_hooks: false,
             generators: vec![GeneratorConfig::Internal(Default::default())],
             commands: CommandConfigs {
@@ -514,6 +522,12 @@ mod tests {
                 .unwrap_err();
 
             assert_eq!(err.to_string(), "hook exited with an error code: false");
+        }
+
+        {
+            assert!(config
+                .call_hook(config.error_hook.as_ref().unwrap(), &[])
+                .is_ok());
         }
     }
 

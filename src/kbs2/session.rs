@@ -131,6 +131,7 @@ mod tests {
             pinentry: Default::default(),
             pre_hook: None,
             post_hook: None,
+            error_hook: None,
             reentrant_hooks: false,
             generators: vec![config::GeneratorConfig::Internal(Default::default())],
             commands: Default::default(),

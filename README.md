@@ -680,7 +680,8 @@ Read the [Hooks](#hooks) documentation for more details.
 
 ### `post-hook` (default: `None`)
 
-The `post-hook` setting can be used to run a command after (almost) every `kbs2` invocation.
+The `post-hook` setting can be used to run a command after (almost) every `kbs2` invocation,
+*on success*.
 
 There are currently three cases where the configured `post-hook` will *not* run:
 
@@ -689,6 +690,24 @@ There are currently three cases where the configured `post-hook` will *not* run:
 * `kbs2 init`
 
 All other subcommands, including custom subcommands, will cause the configured `post-hook` to run.
+
+Read the [Hooks](#hooks) documentation for more details.
+
+### `error-hook` (default: `None`)
+
+The `error-hook` setting can be used to run a command after (almost) every `kbs2` invocation,
+*on failure*.
+
+There are currently three cases where the configured `error-hook` will *not* run:
+
+* `kbs2` (i.e., no subcommand)
+* `kbs2 agent` (and all `kbs2 agent` subcommands)
+* `kbs2 init`
+
+All other subcommands, including custom subcommands, will cause the configured `error-hook` to run.
+
+The `error-hook` setting passes a single argument to its hook, which is a string representation
+of the error that occurred.
 
 Read the [Hooks](#hooks) documentation for more details.
 
