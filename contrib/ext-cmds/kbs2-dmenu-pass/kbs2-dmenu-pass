@@ -8,6 +8,13 @@ set -eo pipefail
   || { >&2 echo "Fatal: Not being run as a subcommand?"; exit 1; }
 
 labels=$(kbs2 list -k login)
-label=$(dmenu -p kbs2 <<< "${labels}")
+
+# NOTE(ww): dmenu exits with 1 when canceled; use `|| exit 0` here to ignore
+# `set -e` so that we can check whether label is empty immediately below.
+label=$(dmenu -p kbs2 <<< "${labels}" || exit 0)
+
+# NOTE(ww): Exit with a success if the user canceled, to avoid nagging
+# them with an error-hook.
+[[ -z "${label}" ]] && exit 0
 
 kbs2 pass -c "${label}"
