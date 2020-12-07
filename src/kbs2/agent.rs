@@ -139,7 +139,9 @@ impl Agent {
         // UID and EUID indicates some SUID-bit weirdness that we didn't expect and don't want.
         let (uid, euid) = (Uid::current(), Uid::effective());
         if uid.is_root() || uid != euid {
-            return Err(anyhow!("unusual UID or UID/EUID pair found, refusing to spawn"));
+            return Err(anyhow!(
+                "unusual UID or UID/EUID pair found, refusing to spawn"
+            ));
         }
 
         // NOTE(ww): Given the above, it *should* be safe to spawn based on the path returned by
