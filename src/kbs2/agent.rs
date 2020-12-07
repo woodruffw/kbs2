@@ -1,5 +1,5 @@
-use anyhow::{anyhow, Result};
-use nix::unistd::geteuid;
+use anyhow::{anyhow, Context, Result};
+use nix::unistd::Uid;
 use secrecy::{ExposeSecret, Secret, SecretString};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -10,6 +10,9 @@ use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::os::unix::io::AsRawFd;
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
+use std::process::{Command, Stdio};
+use std::thread;
+use std::time::Duration;
 
 use crate::kbs2::backend::{Backend, RageLib};
 
@@ -119,6 +122,53 @@ impl Agent {
         agent_path
     }
 
+    /// Spawns a new agent as a daemon process, returning once the daemon
+    /// is ready to begin serving clients.
+    pub fn spawn() -> Result<()> {
+        let agent_path = Self::path();
+
+        // If an agent appears to be running already, do nothing.
+        if agent_path.exists() {
+            log::debug!("agent seems to be running; not trying to spawn another");
+            return Ok(());
+        }
+
+        log::debug!("agent isn't already running, attempting spawn");
+
+        // Sanity check: `kbs2` should never be run as root, and any difference between our
+        // UID and EUID indicates some SUID-bit weirdness that we didn't expect and don't want.
+        let (uid, euid) = (Uid::current(), Uid::effective());
+        if uid.is_root() || uid != euid {
+            return Err(anyhow!(
+                "unusual UID or UID/EUID pair found, refusing to spawn"
+            ));
+        }
+
+        // NOTE(ww): Given the above, it *should* be safe to spawn based on the path returned by
+        // `current_exe`: we know we aren't being tricked with any hardlink + SUID shenanigans.
+        let kbs2 = std::env::current_exe().with_context(|| "failed to locate the kbs2 binary")?;
+
+        // NOTE(ww): We could spawn the agent by forking and daemonizing, but that would require
+        // at least one direct use of unsafe{} (for the fork itself), and potentially others.
+        // This is a little simpler and requires less unsafety.
+        let _ = Command::new(kbs2)
+            .arg("agent")
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()?;
+
+        for attempt in 0..5 {
+            log::debug!("waiting for agent, loop {}...", attempt);
+            thread::sleep(Duration::from_millis(10));
+            if agent_path.exists() {
+                return Ok(());
+            }
+        }
+
+        Err(anyhow!("agent spawn timeout exhausted"))
+    }
+
     /// Initializes a new agent without accepting connections.
     pub fn new() -> Result<Self> {
         let agent_path = Self::path();
@@ -143,7 +193,7 @@ impl Agent {
         use nix::sys::socket::getsockopt;
         use nix::sys::socket::sockopt::PeerCredentials;
 
-        let uid = geteuid().as_raw();
+        let uid = Uid::effective().as_raw();
         if let Ok(cred) = getsockopt(stream.as_raw_fd(), PeerCredentials) {
             cred.uid() == uid
         } else {
@@ -154,7 +204,7 @@ impl Agent {
 
     #[cfg(target_os = "macos")]
     fn auth_client(&self, stream: &UnixStream) -> bool {
-        let uid = geteuid().as_raw();
+        let uid = Uid::effective().as_raw();
         let mut peer_uid = 1;
         let mut peer_gid = 1;
 

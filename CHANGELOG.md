@@ -9,11 +9,19 @@ All versions prior to 0.2.1 are untracked.
 
 ### Added
 
+* Config: `agent-autostart` now controls whether `kbs2 agent` is auto-spawned whenever a session is
+requested ([#118](https://github.com/woodruffw/kbs2/pull/118))
+
 ### Changed
+
+* Agent: Users no longer have to manually run `kbs2 agent`; most commands will now auto-start the
+agent by default ([#118](https://github.com/woodruffw/kbs2/pull/118))
 
 ### Removed
 
 ### Fixed
+
+* `wrapped` now always defaults to `true` ([#118](https://github.com/woodruffw/kbs2/pull/118))
 
 ## [0.2.1] - 2020-12-05
 

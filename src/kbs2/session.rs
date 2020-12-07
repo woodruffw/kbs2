@@ -5,6 +5,7 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
+use crate::kbs2::agent::Agent;
 use crate::kbs2::backend::{Backend, RageLib};
 use crate::kbs2::config;
 use crate::kbs2::record;
@@ -21,6 +22,11 @@ pub struct Session<'a> {
 impl<'a> Session<'a> {
     /// Creates a new session, given a `Config`.
     fn new(config: &'a config::Config) -> Result<Session> {
+        // NOTE(ww): I don't like that we do this here, but I'm not sure where else to put it.
+        if config.wrapped && config.agent_autostart {
+            Agent::spawn()?;
+        }
+
         fs::create_dir_all(&config.store)?;
 
         #[allow(clippy::redundant_field_names)]
@@ -126,6 +132,7 @@ mod tests {
             // here are dummy values that shouldn't need to be interacted with.
             public_key: "not a real public key".into(),
             keyfile: "not a real private key file".into(),
+            agent_autostart: false,
             wrapped: false,
             store: store.path().to_str().unwrap().into(),
             pinentry: Default::default(),
