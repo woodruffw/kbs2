@@ -48,8 +48,15 @@ pub struct Config {
     #[serde(deserialize_with = "deserialize_with_tilde")]
     pub keyfile: String,
 
+    /// Whether or not to auto-start the kbs2 authentication agent when
+    /// creating a session.
+    #[serde(rename = "agent-autostart")]
+    #[serde(default = "default_as_true")]
+    pub agent_autostart: bool,
+
     /// Whether or not the private component of the keypair is wrapped with
     /// a passphrase.
+    #[serde(default = "default_as_true")]
     pub wrapped: bool,
 
     /// The path to the directory where encrypted records are stored.
@@ -300,6 +307,7 @@ pub struct RmConfig {
 }
 
 #[doc(hidden)]
+#[inline]
 fn deserialize_with_tilde<'de, D>(deserializer: D) -> std::result::Result<String, D::Error>
 where
     D: de::Deserializer<'de>,
@@ -309,6 +317,7 @@ where
 }
 
 #[doc(hidden)]
+#[inline]
 fn deserialize_optional_with_tilde<'de, D>(
     deserializer: D,
 ) -> std::result::Result<Option<String>, D::Error>
@@ -321,6 +330,13 @@ where
         Some(unexpanded) => Ok(Some(shellexpand::tilde(unexpanded).into_owned())),
         None => Ok(None),
     }
+}
+
+#[doc(hidden)]
+#[inline]
+fn default_as_true() -> bool {
+    // https://github.com/serde-rs/serde/issues/1030
+    true
 }
 
 /// Returns a suitable configuration directory path for `kbs2`.
@@ -367,6 +383,7 @@ pub fn initialize(config_dir: &Path, password: Option<SecretString>) -> Result<(
         config_dir: config_dir.to_str().unwrap().into(),
         public_key: public_key,
         keyfile: keyfile.to_str().unwrap().into(),
+        agent_autostart: true,
         wrapped: wrapped,
         store: store_dir()?.to_str().unwrap().into(),
         pinentry: Default::default(),
@@ -405,6 +422,7 @@ mod tests {
             config_dir: "/not/a/real/dir".into(),
             public_key: "not a real public key".into(),
             keyfile: "not a real private key file".into(),
+            agent_autostart: false,
             wrapped: false,
             store: "/tmp".into(),
             pinentry: Default::default(),

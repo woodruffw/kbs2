@@ -95,14 +95,8 @@ $ kbs2 init
 `kbs2 init` will automatically generate a configuration file and keypair, prompting you for
 a "master" password.
 
-Start the `kbs2` authentication agent:
-
-```bash
-$ kbs2 agent
-```
-
-`kbs2 agent` will prompt you for your newly-minted "master" password, and will store your key
-material in memory for subsequent `kbs2` invocations.
+**Note**: By default, most `kbs2` commands will start the authentication agent (`kbs2 agent`)
+in the background if it isn't already running.
 
 Create a new (login) record:
 
@@ -640,6 +634,15 @@ The `keyfile` setting records the path to the private half of the age keypair us
 
 `kbs2 init` pre-populates this setting; users should **not** modify it **unless** also modifying
 the `public-key` setting (e.g., to point to a pre-existing age keypair).
+
+### `agent-autostart` (default: `true`)
+
+The `agent-autostart` setting controls whether or not `kbs2` attempts to auto-start the
+authentication agent (`kbs2 agent`) whenever encryption or decryption operations are requested.
+By default, `kbs2 agent` will be started (unless it's already running).
+
+When set to `false`, `kbs2` will report an error if `kbs2 agent` is not running. In this case,
+users should configure their system to launch `kbs2 agent` at login (or some other convenient time).
 
 ### `wrapped` (default: `true`)
 
