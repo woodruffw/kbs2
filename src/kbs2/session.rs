@@ -5,6 +5,7 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
+use crate::kbs2::agent::Agent;
 use crate::kbs2::backend::{Backend, RageLib};
 use crate::kbs2::config;
 use crate::kbs2::record;
@@ -107,6 +108,11 @@ impl<'a> TryFrom<&'a config::Config> for Session<'a> {
     type Error = anyhow::Error;
 
     fn try_from(config: &'a config::Config) -> Result<Self> {
+        // NOTE(ww): I don't like that we do this here, but I'm not sure where else to put it.
+        if config.wrapped {
+            Agent::spawn()?;
+        }
+
         Self::new(&config)
     }
 }
