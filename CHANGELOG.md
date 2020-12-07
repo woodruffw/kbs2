@@ -8,6 +8,13 @@ All versions prior to 0.2.1 are untracked.
 ## Unreleased
 
 ### Added
+### Changed
+### Removed
+### Fixed
+
+## [0.2.2] - 2020-12-06
+
+### Added
 
 * Config: `agent-autostart` now controls whether `kbs2 agent` is auto-spawned whenever a session is
 requested ([#118](https://github.com/woodruffw/kbs2/pull/118))
@@ -17,11 +24,9 @@ requested ([#118](https://github.com/woodruffw/kbs2/pull/118))
 * Agent: Users no longer have to manually run `kbs2 agent`; most commands will now auto-start the
 agent by default ([#118](https://github.com/woodruffw/kbs2/pull/118))
 
-### Removed
-
 ### Fixed
 
-* `wrapped` now always defaults to `true` ([#118](https://github.com/woodruffw/kbs2/pull/118))
+* Config: `wrapped` now always defaults to `true` ([#118](https://github.com/woodruffw/kbs2/pull/118))
 
 ## [0.2.1] - 2020-12-05
 
@@ -47,3 +52,4 @@ cause `kbs2` to exit with 1, instead of 2.
 * CLI: `kbs2 lock` and `kbs2 unlock` were removed entirely as part of the `kbs2 agent` refactor.
 
 [0.2.1]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.1
+[0.2.2]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.2
