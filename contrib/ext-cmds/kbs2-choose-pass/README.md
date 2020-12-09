@@ -24,5 +24,20 @@ From the command line:
 kbs2 choose-pass
 ```
 
-Alternatively, if you have a Touch Bar, you can use `kbs2-choose-pass` as a "Quick Action".
+### "Quick Action" (Touch Bar)
+
+If you have a Touch Bar, you can use `kbs2-choose-pass` as a "Quick Action".
+
 An installable workflow is provided in this directory.
+
+### Karabiner-Elements
+
+Alternatively, if you use [Karabiner-Elements](https://github.com/pqrs-org/Karabiner-Elements),
+you can use the binding provided [here](./kbs2-choose-pass.karabiner.json). By default, F12
+(Function-12) is bound to `kbs2 choose-pass`.
+
+```bash
+cp kbs2-choose-pass.karabiner.json ~/.config/karabiner/assets/complex_modifications/kbs2.json
+```
+
+...and add "`kbs2-choose-pass`" in the "complex modifications" pane.

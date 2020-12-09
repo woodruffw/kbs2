@@ -1,0 +1,21 @@
+{
+   "rules": [
+      {
+         "manipulators": [
+            {
+               "description": "choose-pass",
+               "type": "basic",
+               "to": [
+                  {
+                     "shell_command": "/bin/bash -lc 'kbs2 choose-pass'"
+                  }
+               ],
+               "from": {
+                  "key_code": "f12"
+               }
+            }
+         ]
+      }
+   ],
+   "title": "kbs2 choose-pass"
+}
