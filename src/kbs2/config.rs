@@ -370,6 +370,8 @@ pub fn initialize<P: AsRef<Path>>(
     store_dir: P,
     password: Option<SecretString>,
 ) -> Result<()> {
+    fs::create_dir_all(&config_dir)?;
+
     let keyfile = config_dir.as_ref().join(DEFAULT_KEY_BASENAME);
 
     let mut wrapped = false;
@@ -478,10 +480,7 @@ mod tests {
         // NOTE: Like above: just make sure it isn't something weird like a regular file.
         assert!(!dir.is_file());
 
-        let parent = dir.parent().unwrap();
-
-        assert!(parent.exists());
-        assert!(parent.is_dir());
+        // The default store's parents aren't guaranteed to exist.
     }
 
     #[test]
