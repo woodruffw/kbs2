@@ -8,6 +8,10 @@ All versions prior to 0.2.1 are untracked.
 ## Unreleased
 
 ### Added
+
+* CLI: `kbs2 init` now supports `-s`/`--store-dir` for configuring the record store at
+config initialization time ([#123](https://github.com/woodruffw/kbs2/pull/118))
+
 ### Changed
 ### Removed
 ### Fixed

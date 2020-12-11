@@ -2,13 +2,17 @@ use anyhow::{anyhow, Context, Result};
 use clap::{App, AppSettings, Arg, ArgMatches};
 use clap_generate::{generate, generators};
 
+use std::ffi::OsStr;
 use std::io;
 use std::path::Path;
 use std::process::Command;
 
 mod kbs2;
 
-fn app<'a>(default_config_dir: &'a Path) -> Result<App<'a>> {
+fn app<'a, P: AsRef<OsStr>>(
+    default_config_dir: &'a P,
+    default_store_dir: &'a P,
+) -> Result<App<'a>> {
     // TODO(ww): Put this in a separate file, or switch to YAML.
     // The latter probably won't work with env!, though.
     Ok(App::new(env!("CARGO_PKG_NAME"))
@@ -66,6 +70,15 @@ fn app<'a>(default_config_dir: &'a Path) -> Result<App<'a>> {
                         .about("overwrite the config and keyfile, if already present")
                         .short('f')
                         .long("force"),
+                )
+                .arg(
+                    Arg::new("store-dir")
+                        .about("the directory to store encrypted kbs2 records in")
+                        .short('s')
+                        .long("store-dir")
+                        .value_name("DIR")
+                        .takes_value(true)
+                        .default_value_os(default_store_dir.as_ref()),
                 )
                 .arg(
                     Arg::new("insecure-not-wrapped")
@@ -308,8 +321,10 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
 fn main() -> Result<()> {
     env_logger::init();
 
-    let default_config_dir = kbs2::config::find_config_dir()?;
-    let mut app = app(&default_config_dir)?;
+    let default_config_dir = kbs2::config::find_default_config_dir()?;
+    let default_store_dir = kbs2::config::find_default_store_dir()?;
+
+    let mut app = app(&default_config_dir, &default_store_dir)?;
     let matches = app.clone().get_matches();
 
     // Shell completion generation is completely independent, so perform it before

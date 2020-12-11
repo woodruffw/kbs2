@@ -339,19 +339,19 @@ fn default_as_true() -> bool {
     true
 }
 
-/// Returns a suitable configuration directory path for `kbs2`.
+/// Returns a suitable default configuration directory path for `kbs2`.
 ///
 /// NOTE: This function always chooses `$HOME/.config/kbs2`, across all platforms.
-pub fn find_config_dir() -> Result<PathBuf> {
+pub fn find_default_config_dir() -> Result<PathBuf> {
     // TODO(ww): This should respect XDG on Linux.
     let home = util::home_dir()?;
     Ok(home.join(".config").join(CONFIG_BASEDIR))
 }
 
-/// Returns a suitable record store directory path for `kbs2`.
+/// Returns a suitable default record store directory path for `kbs2`.
 ///
 /// NOTE: This function always chooses `$HOME/.local/share/kbs2`, across all platforms.
-fn store_dir() -> Result<PathBuf> {
+pub fn find_default_store_dir() -> Result<PathBuf> {
     // TODO(ww): This should respect XDG on Linux.
     let home = util::home_dir()?;
     Ok(home.join(".local/share").join(STORE_BASEDIR))
@@ -363,9 +363,16 @@ fn store_dir() -> Result<PathBuf> {
 /// # Arguments
 ///
 /// * `config_dir` - The configuration directory to initialize within
+/// * `store_dir` - The record store directory to use
 /// * `password` - An optional master password for wrapping the secret
-pub fn initialize(config_dir: &Path, password: Option<SecretString>) -> Result<()> {
-    let keyfile = config_dir.join(DEFAULT_KEY_BASENAME);
+pub fn initialize<P: AsRef<Path>>(
+    config_dir: P,
+    store_dir: P,
+    password: Option<SecretString>,
+) -> Result<()> {
+    fs::create_dir_all(&config_dir)?;
+
+    let keyfile = config_dir.as_ref().join(DEFAULT_KEY_BASENAME);
 
     let mut wrapped = false;
     let public_key = if let Some(password) = password {
@@ -377,37 +384,51 @@ pub fn initialize(config_dir: &Path, password: Option<SecretString>) -> Result<(
 
     log::debug!("public key: {}", public_key);
 
-    #[allow(clippy::redundant_field_names)]
-    let serialized = toml::to_string(&Config {
-        // NOTE(ww): Not actually serialized; just here to make the compiler happy.
-        config_dir: config_dir.to_str().unwrap().into(),
-        public_key: public_key,
-        keyfile: keyfile.to_str().unwrap().into(),
-        agent_autostart: true,
-        wrapped: wrapped,
-        store: store_dir()?.to_str().unwrap().into(),
-        pinentry: Default::default(),
-        pre_hook: None,
-        post_hook: None,
-        error_hook: None,
-        reentrant_hooks: false,
-        generators: vec![GeneratorConfig::Internal(Default::default())],
-        commands: Default::default(),
-    })?;
+    let serialized = {
+        let config_dir = config_dir
+            .as_ref()
+            .to_str()
+            .ok_or_else(|| anyhow!("unencodable config dir"))?
+            .into();
 
-    fs::write(config_dir.join(CONFIG_BASENAME), serialized)?;
+        let store = store_dir
+            .as_ref()
+            .to_str()
+            .ok_or_else(|| anyhow!("unencodable store dir"))?
+            .into();
+
+        #[allow(clippy::redundant_field_names)]
+        toml::to_string(&Config {
+            // NOTE(ww): Not actually serialized; just here to make the compiler happy.
+            config_dir: config_dir,
+            public_key: public_key,
+            keyfile: keyfile.to_str().unwrap().into(),
+            agent_autostart: true,
+            wrapped: wrapped,
+            store: store,
+            pinentry: Default::default(),
+            pre_hook: None,
+            post_hook: None,
+            error_hook: None,
+            reentrant_hooks: false,
+            generators: vec![GeneratorConfig::Internal(Default::default())],
+            commands: Default::default(),
+        })?
+    };
+
+    fs::write(config_dir.as_ref().join(CONFIG_BASENAME), serialized)?;
 
     Ok(())
 }
 
 /// Given a path to a `kbs2` configuration directory, loads the configuration
 /// file within and returns the resulting `Config`.
-pub fn load(config_dir: &Path) -> Result<Config> {
-    let config_path = config_dir.join(CONFIG_BASENAME);
+pub fn load<P: AsRef<Path>>(config_dir: P) -> Result<Config> {
+    let config_path = config_dir.as_ref().join(CONFIG_BASENAME);
     let contents = fs::read_to_string(config_path)?;
 
     Ok(Config {
-        config_dir: config_dir.to_str().unwrap().into(),
+        config_dir: config_dir.as_ref().to_str().unwrap().into(),
         ..toml::from_str(&contents).map_err(|e| anyhow!("config loading error: {}", e))?
     })
 }
@@ -441,8 +462,8 @@ mod tests {
     }
 
     #[test]
-    fn test_find_config_dir() {
-        let dir = find_config_dir().unwrap();
+    fn test_find_default_config_dir() {
+        let dir = find_default_config_dir().unwrap();
         // NOTE: We can't check whether the main config dir exists since we create it if it
         // doesn't; instead, we just check that it isn't something weird like a regular file.
         assert!(!dir.is_file());
@@ -454,22 +475,32 @@ mod tests {
     }
 
     #[test]
+    fn test_find_default_store_dir() {
+        let dir = find_default_store_dir().unwrap();
+        // NOTE: Like above: just make sure it isn't something weird like a regular file.
+        assert!(!dir.is_file());
+
+        // The default store's parents aren't guaranteed to exist.
+    }
+
+    #[test]
     fn test_initialize_unwrapped() {
         {
-            let dir = tempdir().unwrap();
-            assert!(initialize(dir.path(), None).is_ok());
+            let config_dir = tempdir().unwrap();
+            let store_dir = tempdir().unwrap();
+            assert!(initialize(&config_dir, &store_dir, None).is_ok());
 
-            let path = dir.path();
-            assert!(path.exists());
-            assert!(path.is_dir());
+            let config_dir = config_dir.path();
+            assert!(config_dir.exists());
+            assert!(config_dir.is_dir());
 
-            assert!(path.join(CONFIG_BASENAME).exists());
-            assert!(path.join(CONFIG_BASENAME).is_file());
+            assert!(config_dir.join(CONFIG_BASENAME).exists());
+            assert!(config_dir.join(CONFIG_BASENAME).is_file());
 
-            assert!(path.join(DEFAULT_KEY_BASENAME).exists());
-            assert!(path.join(DEFAULT_KEY_BASENAME).is_file());
+            assert!(config_dir.join(DEFAULT_KEY_BASENAME).exists());
+            assert!(config_dir.join(DEFAULT_KEY_BASENAME).is_file());
 
-            let config = load(path).unwrap();
+            let config = load(config_dir).unwrap();
             assert!(!config.wrapped);
         }
     }
@@ -477,20 +508,26 @@ mod tests {
     #[test]
     fn test_initialize_wrapped() {
         {
-            let dir = tempdir().unwrap();
-            assert!(initialize(dir.path(), Some(SecretString::new("badpassword".into()))).is_ok());
+            let config_dir = tempdir().unwrap();
+            let store_dir = tempdir().unwrap();
+            assert!(initialize(
+                &config_dir,
+                &store_dir,
+                Some(SecretString::new("badpassword".into()))
+            )
+            .is_ok());
 
-            let path = dir.path();
-            assert!(path.exists());
-            assert!(path.is_dir());
+            let config_dir = config_dir.path();
+            assert!(config_dir.exists());
+            assert!(config_dir.is_dir());
 
-            assert!(path.join(CONFIG_BASENAME).exists());
-            assert!(path.join(CONFIG_BASENAME).is_file());
+            assert!(config_dir.join(CONFIG_BASENAME).exists());
+            assert!(config_dir.join(CONFIG_BASENAME).is_file());
 
-            assert!(path.join(DEFAULT_KEY_BASENAME).exists());
-            assert!(path.join(DEFAULT_KEY_BASENAME).is_file());
+            assert!(config_dir.join(DEFAULT_KEY_BASENAME).exists());
+            assert!(config_dir.join(DEFAULT_KEY_BASENAME).is_file());
 
-            let config = load(path).unwrap();
+            let config = load(config_dir).unwrap();
             assert!(config.wrapped);
         }
     }
@@ -498,18 +535,21 @@ mod tests {
     #[test]
     fn test_load() {
         {
-            let dir = tempdir().unwrap();
-            initialize(dir.path(), None).unwrap();
+            let config_dir = tempdir().unwrap();
+            let store_dir = tempdir().unwrap();
+            initialize(&config_dir, &store_dir, None).unwrap();
 
-            assert!(load(dir.path()).is_ok());
+            assert!(load(&config_dir).is_ok());
         }
 
         {
-            let dir = tempdir().unwrap();
-            initialize(dir.path(), None).unwrap();
+            let config_dir = tempdir().unwrap();
+            let store_dir = tempdir().unwrap();
+            initialize(&config_dir, &store_dir, None).unwrap();
 
-            let config = load(dir.path()).unwrap();
-            assert_eq!(dir.path().to_str().unwrap(), config.config_dir);
+            let config = load(&config_dir).unwrap();
+            assert_eq!(config_dir.path().to_str().unwrap(), config.config_dir);
+            assert_eq!(store_dir.path().to_str().unwrap(), config.store);
         }
     }
 

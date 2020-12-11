@@ -92,6 +92,10 @@ Initialize a new `kbs2` configuration:
 $ kbs2 init
 ```
 
+By default, a fresh `kbs2` configuration will store records in `$HOME/.local/share/kbs2`. Users
+can override this by passing `--store-dir DIR` to `kbs2 init`, or at any point by modifying
+`store` in the config itself.
+
 `kbs2 init` will automatically generate a configuration file and keypair, prompting you for
 a "master" password.
 
@@ -226,12 +230,16 @@ $ kbs2 -c /path/to/config/dir agent unwrap
 initialize kbs2 with a new config and keypair
 
 USAGE:
-    kbs2 init [FLAGS]
+    kbs2 init [FLAGS] [OPTIONS]
 
 FLAGS:
     -f, --force                   overwrite the config and keyfile, if already present
     -h, --help                    Prints help information
         --insecure-not-wrapped    don't wrap the keypair with a master password
+
+OPTIONS:
+    -s, --store-dir <DIR>    the directory to store encrypted kbs2 records in
+                             [default: $HOME/.local/share/kbs2]
 ```
 
 #### Examples
@@ -246,6 +254,18 @@ Create a new config and keypair **without** a master password:
 
 ```bash
 $ kbs2 init --insecure-not-wrapped
+```
+
+Create a new config and keypair in a different location:
+
+```bash
+$ kbs2 -c /some/config/dir init
+```
+
+Create a new config keypair in a different location and specify a non-default store:
+
+```bash
+$ kbs2 -c /home/config/dir init --store-dir /some/store/dir
 ```
 
 ### `kbs2 new`
@@ -652,11 +672,11 @@ the private key itself is encrypted with a master password.
 By default, `kbs2 init` asks the user for a master password and creates a wrapped key.
 See the [`kbs2 init`](#kbs2-init) documentation for more information.
 
-### `store` (default: `<user data directory>/kbs2`)
+### `store` (default: `$HOME/.local/share/kbs2`)
 
 The `store` setting records the path to the secret store, i.e. where records are kept.
 
-Users may modify this setting to store their records in custom directory.
+Users may modify this setting to store their records in a custom directory.
 
 ### `pinentry` (default: `"pinentry"`)
 
