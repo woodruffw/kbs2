@@ -226,12 +226,16 @@ $ kbs2 -c /path/to/config/dir agent unwrap
 initialize kbs2 with a new config and keypair
 
 USAGE:
-    kbs2 init [FLAGS]
+    kbs2 init [FLAGS] [OPTIONS]
 
 FLAGS:
     -f, --force                   overwrite the config and keyfile, if already present
     -h, --help                    Prints help information
         --insecure-not-wrapped    don't wrap the keypair with a master password
+
+OPTIONS:
+    -s, --store-dir <DIR>    the directory to store encrypted kbs2 records in
+                             [default: $HOME/.local/share/kbs2]
 ```
 
 #### Examples
@@ -246,6 +250,18 @@ Create a new config and keypair **without** a master password:
 
 ```bash
 $ kbs2 init --insecure-not-wrapped
+```
+
+Create a new config and keypair in a different location:
+
+```bash
+$ kbs2 -c /some/config/dir init
+```
+
+Create a new config keypair in a different location and specify a non-default store:
+
+```bash
+$ kbs2 -c /home/config/dir init --store-dir /some/store/dir
 ```
 
 ### `kbs2 new`
