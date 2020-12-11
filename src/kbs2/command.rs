@@ -37,7 +37,7 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
         util::warn("Requested store directory already exists");
     }
 
-    let password = if matches.is_present("insecure-not-wrapped") {
+    let password = if !matches.is_present("insecure-not-wrapped") {
         Some(util::get_password(None, &Pinentry::default())?)
     } else {
         None
