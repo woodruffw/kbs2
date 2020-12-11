@@ -30,13 +30,20 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
         ));
     }
 
+    let store_dir = Path::new(matches.value_of_os("store-dir").unwrap());
+
+    // Warn, but don't fail, if the store directory is already present.
+    if store_dir.exists() {
+        util::warn("Requested store directory already exists");
+    }
+
     let password = if matches.is_present("insecure-not-wrapped") {
         Some(util::get_password(None, &Pinentry::default())?)
     } else {
         None
     };
 
-    config::initialize(&config_dir, password)
+    config::initialize(&config_dir, &store_dir, password)
 }
 
 /// Implements the `kbs2 agent` command (and subcommands).
