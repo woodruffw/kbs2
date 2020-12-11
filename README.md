@@ -92,6 +92,10 @@ Initialize a new `kbs2` configuration:
 $ kbs2 init
 ```
 
+By default, a fresh `kbs2` configuration will store records in `$HOME/.local/share/kbs2`. Users
+can override this by passing `--store-dir DIR` to `kbs2 init`, or at any point by modifying
+`store` in the config itself.
+
 `kbs2 init` will automatically generate a configuration file and keypair, prompting you for
 a "master" password.
 
@@ -668,11 +672,11 @@ the private key itself is encrypted with a master password.
 By default, `kbs2 init` asks the user for a master password and creates a wrapped key.
 See the [`kbs2 init`](#kbs2-init) documentation for more information.
 
-### `store` (default: `<user data directory>/kbs2`)
+### `store` (default: `$HOME/.local/share/kbs2`)
 
 The `store` setting records the path to the secret store, i.e. where records are kept.
 
-Users may modify this setting to store their records in custom directory.
+Users may modify this setting to store their records in a custom directory.
 
 ### `pinentry` (default: `"pinentry"`)
 
