@@ -8,13 +8,23 @@ All versions prior to 0.2.1 are untracked.
 ## Unreleased
 
 ### Added
-
-* CLI: `kbs2 init` now supports `-s`/`--store-dir` for configuring the record store at
-config initialization time ([#123](https://github.com/woodruffw/kbs2/pull/118))
-
 ### Changed
 ### Removed
 ### Fixed
+
+## [0.2.4] - 2020-12-10
+
+### Fixed
+
+* CLI: Fixed the functionality of `kbs2 init --insecure-not-wrapped`, broken
+during an earlier refactor
+
+## [0.2.3] - 2020-12-10
+
+### Added
+
+* CLI: `kbs2 init` now supports `-s`/`--store-dir` for configuring the record store at
+config initialization time ([#123](https://github.com/woodruffw/kbs2/pull/118))
 
 ## [0.2.2] - 2020-12-06
 
@@ -57,3 +67,5 @@ cause `kbs2` to exit with 1, instead of 2.
 
 [0.2.1]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.1
 [0.2.2]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.2
+[0.2.3]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.3
+[0.2.4]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.4
