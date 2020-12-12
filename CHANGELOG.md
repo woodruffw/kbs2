@@ -12,6 +12,12 @@ All versions prior to 0.2.1 are untracked.
 ### Removed
 ### Fixed
 
+## [0.2.5] - 2020-12-12
+
+### Fixed
+
+* Tests: Removed some overly conservative assertions with config directories
+
 ## [0.2.4] - 2020-12-10
 
 ### Fixed
@@ -69,3 +75,4 @@ cause `kbs2` to exit with 1, instead of 2.
 [0.2.2]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.2
 [0.2.3]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.3
 [0.2.4]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.4
+[0.2.5]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.5
