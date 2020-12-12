@@ -14,9 +14,6 @@ Quick links:
 * [Installation](#installation)
 * [Quick start guide](#quick-start-guide)
 * [CLI documentation](#cli-documentation)
-  * [`kbs2 agent`](#kbs2-agent)
-  * [`kbs2 agent flush`](#kbs2-agent)
-  * [`kbs2 agent unwrap`](#kbs2-agent)
   * [`kbs2 init`](#kbs2-init)
   * [`kbs2 new`](#kbs2-new)
   * [`kbs2 list`](#kbs2-list)
@@ -26,6 +23,9 @@ Quick links:
   * [`kbs2 env`](#kbs2-env)
   * [`kbs2 edit`](#kbs2-edit)
   * [`kbs2 generate`](#kbs2-generate)
+  * [`kbs2 agent`](#kbs2-agent)
+  * [`kbs2 agent flush`](#kbs2-agent)
+  * [`kbs2 agent unwrap`](#kbs2-agent)
   * [`kbs2 rewrap`](#kbs2-rewrap)
 * [Configuration](#configuration)
   * [Generators](#generators)
@@ -135,91 +135,6 @@ $ kbs2 rm facebook
 run each with `--help` to see a full set of supported options.
 
 ## CLI documentation
-
-### `kbs2 agent`
-
-#### Usage
-
-```
-run the kbs2 authentication agent
-
-USAGE:
-    kbs2 agent [FLAGS] [SUBCOMMAND]
-
-FLAGS:
-    -F, --foreground    run the agent in the foreground
-    -h, --help          Prints help information
-
-SUBCOMMANDS:
-    flush     remove all unwrapped keys from the running agent
-    help      Prints this message or the help of the given subcommand(s)
-    unwrap    unwrap the current config's key in the running agent
-```
-
-#### Examples
-
-Run the `kbs2` agent in the background, prompting the user to unwrap the current config's key:
-
-```bash
-$ kbs2 agent
-```
-
-Run the `kbs2` agent in the foreground, for debugging purposes:
-
-```bash
-$ RUST_LOG=debug kbs2 agent --foreground
-```
-
-### `kbs2 agent flush`
-
-#### Usage
-
-```
-remove all unwrapped keys from the running agent
-
-USAGE:
-    kbs2 agent flush [FLAGS]
-
-FLAGS:
-    -h, --help       Prints help information
-    -q, --quit       quit the agent after flushing
-```
-
-#### Examples
-
-Remove all keys from the current `kbs2` agent:
-
-```bash
-$ kbs2 agent flush
-```
-
-### `kbs2 agent unwrap`
-
-#### Usage
-
-```
-unwrap the current config's key in the running agent
-
-USAGE:
-    kbs2 agent unwrap
-
-FLAGS:
-    -h, --help       Prints help information
-```
-
-#### Examples
-
-Add the current config's key to the `kbs2` agent:
-
-```bash
-$ kbs2 agent unwrap
-```
-
-Add a custom config's key to the `kbs2` agent:
-
-```bash
-$ kbs2 -c /path/to/config/dir agent unwrap
-```
 
 ### `kbs2 init`
 
@@ -584,6 +499,91 @@ Generate a secret using a generator named `pwgen`:
 ```bash
 $ kbs2 generate pwgen
 iit4wie6faeL4aiyupheec5Xochosero
+```
+
+### `kbs2 agent`
+
+#### Usage
+
+```
+run the kbs2 authentication agent
+
+USAGE:
+    kbs2 agent [FLAGS] [SUBCOMMAND]
+
+FLAGS:
+    -F, --foreground    run the agent in the foreground
+    -h, --help          Prints help information
+
+SUBCOMMANDS:
+    flush     remove all unwrapped keys from the running agent
+    help      Prints this message or the help of the given subcommand(s)
+    unwrap    unwrap the current config's key in the running agent
+```
+
+#### Examples
+
+Run the `kbs2` agent in the background, prompting the user to unwrap the current config's key:
+
+```bash
+$ kbs2 agent
+```
+
+Run the `kbs2` agent in the foreground, for debugging purposes:
+
+```bash
+$ RUST_LOG=debug kbs2 agent --foreground
+```
+
+### `kbs2 agent flush`
+
+#### Usage
+
+```
+remove all unwrapped keys from the running agent
+
+USAGE:
+    kbs2 agent flush [FLAGS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -q, --quit       quit the agent after flushing
+```
+
+#### Examples
+
+Remove all keys from the current `kbs2` agent:
+
+```bash
+$ kbs2 agent flush
+```
+
+### `kbs2 agent unwrap`
+
+#### Usage
+
+```
+unwrap the current config's key in the running agent
+
+USAGE:
+    kbs2 agent unwrap
+
+FLAGS:
+    -h, --help       Prints help information
+```
+
+#### Examples
+
+Add the current config's key to the `kbs2` agent:
+
+```bash
+$ kbs2 agent unwrap
+```
+
+Add a custom config's key to the `kbs2` agent:
+
+```bash
+$ kbs2 -c /path/to/config/dir agent unwrap
 ```
 
 ### `kbs2 rewrap`
