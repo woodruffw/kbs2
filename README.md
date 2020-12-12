@@ -48,9 +48,8 @@ recommended way to install `kbs2` if you are not developing it.**
 By way of example:
 
 ```bash
-# replace X.X.X with your version
-$ wget https://github.com/woodruffw/kbs2/releases/download/vX.X.X/kbs2_X.X.X_amd64.deb
-$ sudo dpkg -i kbs2_X.X.X_amd64.deb
+$ wget https://github.com/woodruffw/kbs2/releases/download/v0.2.5/kbs2_0.2.5_amd64.deb
+$ sudo dpkg -i kbs2_0.2.5_amd64.deb
 # don't forget to request kbs2's dependencies
 $ sudo apt-get -f install
 ```
