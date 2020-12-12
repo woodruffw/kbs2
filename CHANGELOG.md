@@ -10,9 +10,8 @@ All versions prior to 0.2.1 are untracked.
 ## [Unreleased] - ReleaseDate
 
 ### Added
-### Changed
-### Removed
-### Fixed
+
+* Meta: The CHANGELOG and README are now semi-managed by `cargo release`
 
 ## [0.2.5] - 2020-12-12
 
