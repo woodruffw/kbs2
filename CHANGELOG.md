@@ -5,7 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 All versions prior to 0.2.1 are untracked.
 
-## Unreleased
+<!-- @next-header@ -->
+
+## [Unreleased] - ReleaseDate
 
 ### Added
 ### Changed
@@ -71,8 +73,10 @@ cause `kbs2` to exit with 1, instead of 2.
 
 * CLI: `kbs2 lock` and `kbs2 unlock` were removed entirely as part of the `kbs2 agent` refactor.
 
-[0.2.1]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.1
-[0.2.2]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.2
-[0.2.3]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.3
-[0.2.4]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.4
+<!-- @next-url@ -->
+[Unreleased]: https://github.com/assert-rs/predicates-rs/compare/v0.2.5...HEAD
 [0.2.5]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.5
+[0.2.4]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.4
+[0.2.3]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.3
+[0.2.2]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.2
+[0.2.1]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.1
