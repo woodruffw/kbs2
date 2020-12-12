@@ -74,7 +74,7 @@ cause `kbs2` to exit with 1, instead of 2.
 * CLI: `kbs2 lock` and `kbs2 unlock` were removed entirely as part of the `kbs2 agent` refactor.
 
 <!-- @next-url@ -->
-[Unreleased]: https://github.com/assert-rs/predicates-rs/compare/v0.2.5...HEAD
+[Unreleased]: https://github.com/woodruffw/kbs2/compare/v0.2.5...HEAD
 [0.2.5]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.5
 [0.2.4]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.4
 [0.2.3]: https://github.com/woodruffw/kbs2/releases/tag/v0.2.3
