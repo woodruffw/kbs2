@@ -40,7 +40,7 @@ impl Generator for config::GeneratorInternalConfig {
         let mut rng = rand::thread_rng();
         let alphabet = self.alphabet.as_bytes();
         let secret = (0..self.length)
-            .map(|_| alphabet[rng.gen_range(0, alphabet.len())] as char)
+            .map(|_| alphabet[rng.gen_range(0..alphabet.len())] as char)
             .collect::<String>();
 
         Ok(secret)
