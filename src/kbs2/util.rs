@@ -58,11 +58,7 @@ pub fn get_password<S: AsRef<OsStr>>(
     prompt: Option<&'static str>,
     pinentry: S,
 ) -> Result<SecretString> {
-    let prompt = match prompt {
-        Some(prompt) => prompt,
-        None => "Password: ",
-    };
-
+    let prompt = prompt.unwrap_or("Password: ");
     if let Some(mut input) = PassphraseInput::with_binary(pinentry) {
         input
             .with_description("Enter your master kbs2 password")
