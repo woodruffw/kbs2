@@ -137,10 +137,11 @@ impl Backend for RageLib {
         log::debug!("beginning key unwrap...");
         let mut unwrapped_key = String::new();
 
-        // NOTE(ww): A work factor of 18 is an educated guess here; rage generated some
-        // encrypted messages that needed this factor.
+        // NOTE(ww): A work factor of 22 is an educated guess here; rage has generated messages
+        // that have needed 17 and 18 before, so this should (hopefully) give us some
+        // breathing room.
         decryptor
-            .decrypt(&password, Some(18))
+            .decrypt(&password, Some(22))
             .map_err(|e| anyhow!("unable to decrypt (backend reports: {:?})", e))
             .and_then(|mut r| {
                 r.read_to_string(&mut unwrapped_key)
