@@ -13,6 +13,10 @@ All versions prior to 0.2.1 are untracked.
 
 * Meta: The CHANGELOG and README are now semi-managed by `cargo release`
 
+### Changed
+
+* Backend: The encryption backend now uses a default work factor of `22`, up from `18`
+
 ## [0.2.5] - 2020-12-12
 
 ### Fixed
