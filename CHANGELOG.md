@@ -12,6 +12,7 @@ All versions prior to 0.2.1 are untracked.
 ### Added
 
 * Meta: The CHANGELOG and README are now semi-managed by `cargo release`
+* Contrib: Added `kbs2-ssh-add`
 
 ### Changed
 
