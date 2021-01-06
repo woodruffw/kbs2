@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# kbs2-ssh-add: Add a kbs2-stored key to the ssh-agent.
+
+set -eo pipefail
+
+[[ -n "${KBS2_SUBCOMMAND}" ]] \
+  || { >&2 echo "Fatal: Not being run as a subcommand?"; exit 1; }
+
+record="${1}"
+
+[[ -n "${1}" ]] || { >&2 echo "Usage: kbs2 ssh-add <record>"; exit; }
+
+kbs2 dump --json "${record}" \
+  | jq --raw-output ".body.fields.contents" \
+  | ssh-add -
