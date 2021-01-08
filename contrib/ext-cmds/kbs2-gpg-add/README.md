@@ -17,23 +17,24 @@ allow-preset-passphrase
 
 Then, restart your GPG agent. Sending it `SIGHUP` won't work for this setting.
 
-You'll also need to load your GPG passphrase (or passphrases) into `kbs2`:
+You'll also need to get your GPG keygrip:
 
 ```bash
-kbs2 new gpg-passphrase
-```
-
-Finally, you'll need your key's GPG keygrip:
-
-```
 gpg --list-keys --with-keygrip
+```
+
+Finally, load your GPG keygrip and passphrase into `kbs2`:
+
+```bash
+# set your username to your keygrip, and password to your passphrase.
+kbs2 new gpg-passphrase-record
 ```
 
 ## Usage
 
-`kbs2-gpg-add` loads the given record into your GPG agent, associated with the
-given keygrip:
+`kbs2-gpg-add` loads the given record into your GPG agent, associating
+the passphrase with the keygrip:
 
 ```bash
-$ kbs2 gpg-add your-keygrip gpg-passphrase
+$ kbs2 gpg-add gpg-passphrase-record
 ```

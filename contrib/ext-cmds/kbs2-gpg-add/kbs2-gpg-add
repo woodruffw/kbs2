@@ -7,15 +7,17 @@ set -eo pipefail
 [[ -n "${KBS2_SUBCOMMAND}" ]] \
   || { >&2 echo "Fatal: Not being run as a subcommand?"; exit 1; }
 
-keygrip="${1}"
-record="${2}"
+record="${1}"
 gpg_preset_passphrase=/usr/lib/gnupg2/gpg-preset-passphrase
 
 [[ -f "${gpg_preset_passphrase}" ]] \
   || { >&2 echo "Fatal: couldn't find gpg-preset-passphrase"; exit 1; }
 
-[[ -n "${keygrip}" && -n "${record}" ]] \
+[[ -n "${record}" ]] \
   || { >&2 echo "Usage: kbs2 gpg-add <record>"; exit; }
 
-kbs2 pass "${record}" \
-  | "${gpg_preset_passphrase}" --preset "${keygrip}"
+contents=$(kbs2 dump --json "${record}")
+keygrip=$(jq --raw-output ".body.fields.username" <<< "${contents}")
+passphrase=$(jq --raw-output ".body.fields.password" <<< "${contents}")
+
+"${gpg_preset_passphrase}" --preset "${keygrip}" <<< "${passphrase}"
