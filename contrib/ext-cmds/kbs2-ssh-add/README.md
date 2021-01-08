@@ -1,7 +1,7 @@
 `kbs2-ssh-add`
 ===========
 
-`kbs2-ssh-add` is an external `kbs2 command` that loads an SSH key stored in `kbs2`
+`kbs2-ssh-add` is an external `kbs2` command that loads an SSH key stored in `kbs2`
 into your SSH agent via `ssh-add`.
 
 ## Setup
