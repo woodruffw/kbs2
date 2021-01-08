@@ -9,7 +9,7 @@ set -eo pipefail
 
 record="${1}"
 
-[[ -n "${1}" ]] || { >&2 echo "Usage: kbs2 ssh-add <record>"; exit; }
+[[ -n "${record}" ]] || { >&2 echo "Usage: kbs2 ssh-add <record>"; exit; }
 
 kbs2 dump --json "${record}" \
   | jq --raw-output ".body.fields.contents" \
