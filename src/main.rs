@@ -297,6 +297,9 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
                 .env("KBS2_CONFIG_DIR", &config.config_dir)
                 .env("KBS2_STORE", &config.store)
                 .env("KBS2_SUBCOMMAND", "1")
+                .env("KBS2_MAJOR_VERSION", env!("CARGO_PKG_VERSION_MAJOR"))
+                .env("KBS2_MINOR_VERSION", env!("CARGO_PKG_VERSION_MINOR"))
+                .env("KBS2_PATCH_VERSION", env!("CARGO_PKG_VERSION_PATCH"))
                 .status()
                 .with_context(|| format!("no such command: {}", cmd))?;
 
