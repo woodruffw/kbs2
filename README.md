@@ -915,6 +915,9 @@ in the configuration directory.
 * `KBS2_STORE`: The path to the secret store.
 * `KBS2_SUBCOMMAND`: Always set to `1`. This can be used to determine whether a subcommand was run
 via `kbs2` (e.g. `kbs2 foo`) versus directly (e.g. `kbs2-foo`).
+* `KBS2_MAJOR_VERSION`, `KBS2_MINOR_VERSION`, `KBS2_PATCH_VERSION`: The major, minor, and patch
+numbers for the version of `kbs2` that executed this subcommand. Subcommands can use these numbers
+to enforce running under a minimum (or maximum) version of `kbs2`.
 
 The [contrib/ext-cmds](contrib/ext-cmds/) directory contains several useful external commands.
 

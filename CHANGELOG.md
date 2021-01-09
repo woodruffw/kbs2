@@ -13,6 +13,8 @@ All versions prior to 0.2.1 are untracked.
 
 * Meta: The CHANGELOG and README are now semi-managed by `cargo release`
 * Contrib: Added `kbs2-ssh-add`
+* CLI: Custom subcommands now receive `KBS2_MAJOR_VERSION`, `KBS2_MINOR_VERSION`, and
+`KBS2_PATCH_VERSION` in their environments
 
 ### Changed
 
