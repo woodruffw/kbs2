@@ -59,7 +59,7 @@ depends = "$auto, libxcb-shape0-dev, libxcb-xfixes0-dev"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-age = { version = "0.5", features = ["armor"] }
+age = { git = "https://github.com/str4d/rage", rev = "9c564706", features = ["armor"] }
 anyhow = "1.0"
 atty = "0.2.14"
 dialoguer = "0.7.1"
