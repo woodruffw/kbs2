@@ -54,10 +54,18 @@ impl<'a> Session<'a> {
 
             // NOTE(ww): This unwrap is safe, since file_name always returns Some
             // for non-directories.
-            let label = path.file_name().unwrap();
+            #[allow(clippy::expect_used)]
+            let label = path
+                .file_name()
+                .expect("impossible: is_file=true for path but file_name=None");
 
             // NOTE(ww): This one isn't safe, but we don't care. Non-UTF-8 labels aren't supported.
-            labels.push(label.to_str().unwrap().into());
+            labels.push(
+                label
+                    .to_str()
+                    .ok_or_else(|| anyhow!("unrepresentable record label: {:?}", label))?
+                    .into(),
+            );
         }
 
         Ok(labels)

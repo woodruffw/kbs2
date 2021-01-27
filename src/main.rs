@@ -348,6 +348,7 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    #[allow(clippy::unwrap_used)]
     let config_dir = Path::new(matches.value_of_os("config-dir").unwrap());
     log::debug!("config dir: {:?}", config_dir);
     std::fs::create_dir_all(&config_dir)?;

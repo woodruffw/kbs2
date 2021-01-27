@@ -30,6 +30,7 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
         ));
     }
 
+    #[allow(clippy::unwrap_used)]
     let store_dir = Path::new(matches.value_of_os("store-dir").unwrap());
 
     // Warn, but don't fail, if the store directory is already present.
@@ -113,6 +114,7 @@ pub fn new(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         session.config.call_hook(pre_hook, &[])?;
     }
 
+    #[allow(clippy::unwrap_used)]
     let label = matches.value_of("label").unwrap();
     if session.has_record(label) && !matches.is_present("force") {
         return Err(anyhow!("refusing to overwrite a record without --force"));
@@ -121,6 +123,7 @@ pub fn new(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     let terse = atty::isnt(Stream::Stdin) || matches.is_present("terse");
 
     let generator = if matches.is_present("generate") {
+        #[allow(clippy::unwrap_used)]
         let generator_name = matches.value_of("generator").unwrap();
 
         Some(
@@ -134,6 +137,7 @@ pub fn new(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     };
 
     // TODO: new_* below is a little silly. This should be de-duped.
+    #[allow(clippy::unwrap_used)]
     match matches.value_of("kind").unwrap() {
         "login" => new_login(label, terse, &session, generator)?,
         "environment" => new_environment(label, terse, &session, generator)?,
@@ -218,6 +222,7 @@ pub fn list(matches: &ArgMatches, config: &config::Config) -> Result<()> {
             let record = session.get_record(&label)?;
 
             if filter_kind {
+                #[allow(clippy::unwrap_used)]
                 let kind = matches.value_of("kind").unwrap();
                 if record.body.to_string() != kind {
                     continue;
@@ -248,6 +253,7 @@ pub fn rm(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     let session: Session = config.try_into()?;
 
+    #[allow(clippy::unwrap_used)]
     let label = matches.value_of("label").unwrap();
     session.delete_record(label)?;
 
@@ -265,6 +271,7 @@ pub fn dump(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     let session: Session = config.try_into()?;
 
+    #[allow(clippy::unwrap_used)]
     let label = matches.value_of("label").unwrap();
     let record = session.get_record(&label)?;
 
@@ -298,6 +305,7 @@ pub fn pass(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         session.config.call_hook(pre_hook, &[])?;
     }
 
+    #[allow(clippy::unwrap_used)]
     let label = matches.value_of("label").unwrap();
     let record = session.get_record(&label)?;
 
@@ -413,6 +421,7 @@ pub fn env(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     let session: Session = config.try_into()?;
 
+    #[allow(clippy::unwrap_used)]
     let label = matches.value_of("label").unwrap();
     let record = session.get_record(&label)?;
 
@@ -455,6 +464,7 @@ pub fn edit(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     log::debug!("editor: {}, args: {:?}", editor, editor_args);
 
+    #[allow(clippy::unwrap_used)]
     let label = matches.value_of("label").unwrap();
     let record = session.get_record(&label)?;
 
@@ -494,6 +504,7 @@ pub fn edit(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 /// Implements the `kbs2 generate` command.
 pub fn generate(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     let generator = {
+        #[allow(clippy::unwrap_used)]
         let generator_name = matches.value_of("generator").unwrap();
         match config.get_generator(generator_name) {
             Some(generator) => generator,

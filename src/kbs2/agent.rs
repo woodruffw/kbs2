@@ -78,7 +78,10 @@ trait Message {
         // can buffer more than one line at once, causing us to silently drop client requests.
         // I don't think that would actually happen in this case (since each client sends exactly
         // one line before expecting a response), but it's one less thing to think about.
-        let data: Result<Vec<u8>, _> = reader
+        // NOTE(ww): Safe unwrap: we only perform after checking `is_ok`, and we capture
+        // the error by using `Result<Vec<_>, _>` with `collect`.
+        #[allow(clippy::unwrap_used)]
+        let data: Result<Vec<_>, _> = reader
             .bytes()
             .take_while(|b| b.is_ok() && *b.as_ref().unwrap() != b'\n')
             .collect();
@@ -354,6 +357,10 @@ impl Agent {
 impl Drop for Agent {
     fn drop(&mut self) {
         log::debug!("agent teardown");
+
+        // NOTE(ww): We don't expect this to fail, but it's okay if it does: the agent gets dropped
+        // at the very end of its lifecycle, meaning that an expect here is acceptable.
+        #[allow(clippy::expect_used)]
         fs::remove_file(Agent::path()).expect("attempted to remove missing agent socket");
     }
 }
