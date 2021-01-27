@@ -79,9 +79,10 @@ pub fn get_password<S: AsRef<OsStr>>(
 pub fn current_timestamp() -> u64 {
     // NOTE(ww): This unwrap should be safe, since every time should be
     // greater than or equal to the epoch.
+    #[allow(clippy::expect_used)]
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .expect("impossible: system time is before the UNIX epoch")
         .as_secs()
 }
 

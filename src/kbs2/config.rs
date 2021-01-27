@@ -402,7 +402,10 @@ pub fn initialize<P: AsRef<Path>>(
             // NOTE(ww): Not actually serialized; just here to make the compiler happy.
             config_dir: config_dir,
             public_key: public_key,
-            keyfile: keyfile.to_str().unwrap().into(),
+            keyfile: keyfile
+                .to_str()
+                .ok_or_else(|| anyhow!("unrepresentable keyfile path: {:?}", keyfile))?
+                .into(),
             agent_autostart: true,
             wrapped: wrapped,
             store: store,
@@ -424,11 +427,15 @@ pub fn initialize<P: AsRef<Path>>(
 /// Given a path to a `kbs2` configuration directory, loads the configuration
 /// file within and returns the resulting `Config`.
 pub fn load<P: AsRef<Path>>(config_dir: P) -> Result<Config> {
-    let config_path = config_dir.as_ref().join(CONFIG_BASENAME);
+    let config_dir = config_dir.as_ref();
+    let config_path = config_dir.join(CONFIG_BASENAME);
     let contents = fs::read_to_string(config_path)?;
 
     Ok(Config {
-        config_dir: config_dir.as_ref().to_str().unwrap().into(),
+        config_dir: config_dir
+            .to_str()
+            .ok_or_else(|| anyhow!("unrepresentable config dir path: {:?}", config_dir))?
+            .into(),
         ..toml::from_str(&contents).map_err(|e| anyhow!("config loading error: {}", e))?
     })
 }
