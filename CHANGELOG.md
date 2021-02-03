@@ -14,6 +14,7 @@ All versions prior to 0.2.1 are untracked.
 * Meta: The CHANGELOG and README are now semi-managed by `cargo release`
 * Contrib: Added `kbs2-ssh-add`
 * Control: Added `kbs2-gpg-add`
+* Contrib: `kbs2-snip` can now print instead of running snippet with `-p`, `--print`
 * CLI: Custom subcommands now receive `KBS2_MAJOR_VERSION`, `KBS2_MINOR_VERSION`, and
 `KBS2_PATCH_VERSION` in their environments
 

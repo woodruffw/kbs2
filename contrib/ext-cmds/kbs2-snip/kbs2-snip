@@ -5,12 +5,22 @@
 # By default, selecta is used as the fuzzy matcher.
 
 require "open3"
+require "optparse"
 require "json"
 require "tomlrb"
 
 abort "Fatal: Not being run as a subcommand?" unless ENV.key? "KBS2_SUBCOMMAND"
 
 trap(:INT) { exit! }
+
+options = { print: false }
+OptionParser.new do |opts|
+  opts.banner = "Usage: kbs2 snip [-p] record"
+
+  opts.on "-p", "--[no-]print", "print the snippet instead of running it" do |o|
+    options[:print] = o
+  end
+end.parse!
 
 config = begin
   config_file = File.join ENV["KBS2_CONFIG_DIR"], "kbs2.conf"
@@ -32,4 +42,9 @@ selection = output.chomp
 code = snippets[selection]
 
 return unless code
-exec code
+
+if options[:print]
+  puts code
+else
+  exec code
+end

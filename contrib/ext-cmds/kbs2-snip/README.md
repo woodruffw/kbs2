@@ -34,4 +34,5 @@ matcher = "fzf"
 ```bash
 $ kbs2 new -k unstructured ls-tmp <<< "snippet:ls /tmp"
 $ kbs2 snip
+$ kbs2 snip -p # print instead of running
 ```
