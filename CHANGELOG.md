@@ -17,6 +17,7 @@ All versions prior to 0.2.1 are untracked.
 * Contrib: `kbs2-snip` can now print instead of running snippet with `-p`, `--print`
 * CLI: Custom subcommands now receive `KBS2_MAJOR_VERSION`, `KBS2_MINOR_VERSION`, and
 `KBS2_PATCH_VERSION` in their environments
+* CLI: `kbs2 list` and `kbs2 dump` now use a more Unix-y format output
 
 ### Changed
 

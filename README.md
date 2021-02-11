@@ -270,22 +270,15 @@ pets.com
 email
 ```
 
-List (non-sensitive) details for each record:
+List (non-sensitive) details for each record. The format of the detailed listing is
+`{record} {kind} {timestamp}`.
 
 ```bash
 $ kbs2 list -d
-foobar
-  Kind: login
-  Timestamp: 1590277900
-twitter-api
-  Kind: environment
-  Timestamp: 1590277907
-pets.com
-  Kind: login
-  Timestamp: 1590277920
-email
-  Kind: login
-  Timestamp: 1590277953
+foobar login 1590277900
+twitter-api environment 1590277907
+pets.com login 1590277920
+email login 1590277953
 ```
 
 List only environment records:
@@ -344,10 +337,10 @@ Dump the `twitter-api` record:
 
 ```bash
 $ kbs2 dump twitter-api
-Label: twitter-api
-  Kind: environment
-  Variable: TWITTER_API
-  Value: 92h2890fn83fb2378fbf283bf73fbxkfnso90
+Label twitter-api
+Kind environment
+Variable TWITTER_API
+Value 92h2890fn83fb2378fbf283bf73fbxkfnso90
 ```
 
 Dump the `pets.com` record in JSON format:
