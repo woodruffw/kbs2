@@ -232,10 +232,7 @@ pub fn list(matches: &ArgMatches, config: &config::Config) -> Result<()> {
             display.push_str(&label);
 
             if details {
-                display.push_str(&format!(
-                    "\n\tKind: {}\n\tTimestamp: {}",
-                    record.body, record.timestamp
-                ));
+                display.push_str(&format!(" {} {}", record.body, record.timestamp));
             }
         } else {
             display.push_str(&label);
@@ -278,16 +275,16 @@ pub fn dump(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     if matches.is_present("json") {
         println!("{}", serde_json::to_string(&record)?);
     } else {
-        println!("Label: {}\n\tKind: {}", label, record.body);
+        println!("Label {}\nKind {}", label, record.body);
 
         match record.body {
             RecordBody::Login(l) => {
-                println!("\tUsername: {}\n\tPassword: {}", l.username, l.password)
+                println!("Username {}\nPassword {}", l.username, l.password)
             }
             RecordBody::Environment(e) => {
-                println!("\tVariable: {}\n\tValue: {}", e.variable, e.value)
+                println!("Variable {}\nValue {}", e.variable, e.value)
             }
-            RecordBody::Unstructured(u) => println!("\tContents: {}", u.contents),
+            RecordBody::Unstructured(u) => println!("Contents {}", u.contents),
         }
     }
 
