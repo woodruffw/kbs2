@@ -9,13 +9,10 @@ use std::process::Command;
 
 mod kbs2;
 
-fn app<'a, P: AsRef<OsStr>>(
-    default_config_dir: &'a P,
-    default_store_dir: &'a P,
-) -> Result<App<'a>> {
+fn app<'a, P: AsRef<OsStr>>(default_config_dir: &'a P, default_store_dir: &'a P) -> App<'a> {
     // TODO(ww): Put this in a separate file, or switch to YAML.
     // The latter probably won't work with env!, though.
-    Ok(App::new(env!("CARGO_PKG_NAME"))
+    App::new(env!("CARGO_PKG_NAME"))
         .setting(AppSettings::AllowExternalSubcommands)
         .setting(AppSettings::VersionlessSubcommands)
         .version(env!("CARGO_PKG_VERSION"))
@@ -252,7 +249,7 @@ fn app<'a, P: AsRef<OsStr>>(
                         .short('f')
                         .long("force"),
                 ),
-        ))
+        )
 }
 
 fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
@@ -327,7 +324,7 @@ fn main() -> Result<()> {
     let default_config_dir = kbs2::config::find_default_config_dir()?;
     let default_store_dir = kbs2::config::find_default_store_dir()?;
 
-    let mut app = app(&default_config_dir, &default_store_dir)?;
+    let mut app = app(&default_config_dir, &default_store_dir);
     let matches = app.clone().get_matches();
 
     // Shell completion generation is completely independent, so perform it before
