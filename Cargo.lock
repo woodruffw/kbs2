@@ -662,7 +662,7 @@ dependencies = [
 
 [[package]]
 name = "kbs2"
-version = "0.2.6-rc.1"
+version = "0.2.6"
 dependencies = [
  "age",
  "anyhow",
