@@ -161,7 +161,7 @@ impl Agent {
             .stderr(Stdio::null())
             .spawn()?;
 
-        for attempt in 0..5 {
+        for attempt in 0..10 {
             log::debug!("waiting for agent, loop {}...", attempt);
             thread::sleep(Duration::from_millis(10));
             if agent_path.exists() {
