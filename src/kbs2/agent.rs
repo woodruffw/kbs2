@@ -207,18 +207,17 @@ impl Agent {
 
     #[cfg(target_os = "macos")]
     fn auth_client(&self, stream: &UnixStream) -> bool {
+        use nix::unistd;
+
         let uid = Uid::effective().as_raw();
         let mut peer_uid = 1;
         let mut peer_gid = 1;
 
-        unsafe {
-            let ret = libc::getpeereid(stream.as_raw_fd(), &mut peer_uid, &mut peer_gid);
-            if ret == 0 {
-                uid == peer_uid
-            } else {
-                log::debug!("getpeereid failed; treating as auth failure");
-                false
-            }
+        if let Ok((peer_uid, _)) = unistd::getpeereid(stream.as_raw_fd()) {
+            uid == peer_uid
+        } else {
+            log::error!("getpeereid failed; treating as auth failure");
+            false
         }
     }
 
