@@ -196,29 +196,30 @@ impl Agent {
         use nix::sys::socket::getsockopt;
         use nix::sys::socket::sockopt::PeerCredentials;
 
-        let uid = Uid::effective().as_raw();
         if let Ok(cred) = getsockopt(stream.as_raw_fd(), PeerCredentials) {
-            cred.uid() == uid
+            cred.uid() == Uid::effective().as_raw()
         } else {
             log::error!("getsockopt failed; treating as auth failure");
             false
         }
     }
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(
+        target_os = "macos",
+        target_os = "ios",
+        target_os = "freebsd",
+        target_os = "openbsd",
+        target_os = "netbsd",
+        target_os = "dragonfly",
+    ))]
     fn auth_client(&self, stream: &UnixStream) -> bool {
-        let uid = Uid::effective().as_raw();
-        let mut peer_uid = 1;
-        let mut peer_gid = 1;
+        use nix::unistd;
 
-        unsafe {
-            let ret = libc::getpeereid(stream.as_raw_fd(), &mut peer_uid, &mut peer_gid);
-            if ret == 0 {
-                uid == peer_uid
-            } else {
-                log::debug!("getpeereid failed; treating as auth failure");
-                false
-            }
+        if let Ok((peer_uid, _)) = unistd::getpeereid(stream.as_raw_fd()) {
+            peer_uid == Uid::effective()
+        } else {
+            log::error!("getpeereid failed; treating as auth failure");
+            false
         }
     }
 
