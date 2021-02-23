@@ -204,7 +204,14 @@ impl Agent {
         }
     }
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(
+        target_os = "macos",
+        target_os = "ios",
+        target_os = "freebsd",
+        target_os = "openbsd",
+        target_os = "netbsd",
+        target_os = "dragonfly",
+    ))]
     fn auth_client(&self, stream: &UnixStream) -> bool {
         use nix::unistd;
 
