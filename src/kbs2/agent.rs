@@ -196,9 +196,8 @@ impl Agent {
         use nix::sys::socket::getsockopt;
         use nix::sys::socket::sockopt::PeerCredentials;
 
-        let uid = Uid::effective().as_raw();
         if let Ok(cred) = getsockopt(stream.as_raw_fd(), PeerCredentials) {
-            cred.uid() == uid
+            cred.uid() == Uid::effective().as_raw()
         } else {
             log::error!("getsockopt failed; treating as auth failure");
             false
@@ -209,12 +208,8 @@ impl Agent {
     fn auth_client(&self, stream: &UnixStream) -> bool {
         use nix::unistd;
 
-        let uid = Uid::effective().as_raw();
-        let mut peer_uid = 1;
-        let mut peer_gid = 1;
-
         if let Ok((peer_uid, _)) = unistd::getpeereid(stream.as_raw_fd()) {
-            uid == peer_uid
+            peer_uid == Uid::effective()
         } else {
             log::error!("getpeereid failed; treating as auth failure");
             false
