@@ -45,7 +45,7 @@ dependencies = [
  "sha2",
  "subtle",
  "x25519-dalek",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -185,7 +185,7 @@ dependencies = [
  "aead",
  "cipher",
  "poly1305",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -262,9 +262,9 @@ dependencies = [
 
 [[package]]
 name = "console"
-version = "0.13.0"
+version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a50aab2529019abfabfa93f1e6c41ef392f91fbf179b347a7e96abb524884a08"
+checksum = "3993e6445baa160675931ec041a5e03ca84b9c6e32a056150d3aa2bdda0a1f45"
 dependencies = [
  "encode_unicode",
  "lazy_static",
@@ -273,7 +273,6 @@ dependencies = [
  "terminal_size",
  "unicode-width",
  "winapi",
- "winapi-util",
 ]
 
 [[package]]
@@ -314,7 +313,7 @@ dependencies = [
  "digest",
  "rand_core 0.5.1",
  "subtle",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -339,14 +338,14 @@ dependencies = [
 
 [[package]]
 name = "dialoguer"
-version = "0.7.1"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70f807b2943dc90f9747497d9d65d7e92472149be0b88bf4ce1201b4ac979c26"
+checksum = "c9dd058f8b65922819fabb4a41e7d1964e56344042c26efbccd465202c23fa0c"
 dependencies = [
  "console",
  "lazy_static",
  "tempfile",
- "zeroize 0.9.3",
+ "zeroize",
 ]
 
 [[package]]
@@ -932,7 +931,7 @@ dependencies = [
  "percent-encoding",
  "secrecy",
  "which",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -1217,7 +1216,7 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0673d6a6449f5e7d12a1caf424fd9363e2af3a4953023ed455e3c4beef4597c0"
 dependencies = [
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -1647,7 +1646,7 @@ checksum = "bc614d95359fd7afc321b66d2107ede58b246b844cf5d8a0adcca413e439f088"
 dependencies = [
  "curve25519-dalek",
  "rand_core 0.5.1",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -1659,12 +1658,6 @@ dependencies = [
  "libc",
  "log",
 ]
-
-[[package]]
-name = "zeroize"
-version = "0.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45af6a010d13e4cf5b54c94ba5a2b2eba5596b9e46bf5875612d332a1f2b3f86"
 
 [[package]]
 name = "zeroize"
