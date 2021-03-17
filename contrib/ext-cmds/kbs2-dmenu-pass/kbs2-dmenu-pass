@@ -7,6 +7,31 @@ set -eo pipefail
 [[ -n "${KBS2_SUBCOMMAND}" ]] \
   || { >&2 echo "Fatal: Not being run as a subcommand?"; exit 1; }
 
+function installed() {
+  cmd=$(command -v "${1}")
+
+  [[ -n  "${cmd}" ]] && [[ -f "${cmd}" ]]
+  return ${?}
+}
+
+function maybe_notify_username() {
+  label="${1}"
+  config="${KBS2_CONFIG_DIR}/kbs2.conf"
+
+  [[ -f "${config}" ]] || return
+  installed jq && installed toml2json || return
+
+  setting=$(
+    toml2json < "${config}" \
+      | jq --raw-output '.commands."dmenu-pass"."notify-username" or false'
+  )
+
+  if [[ "${setting}" == "true" ]]; then
+    username=$(kbs2 dump -j "${label}" | jq -r '.body.fields.username')
+    notify-send "kbs2 dmenu-pass" "${label}: copied password for ${username}"
+  fi
+}
+
 labels=$(kbs2 list -k login)
 
 # NOTE(ww): dmenu exits with 1 when canceled; use `|| exit 0` here to ignore
@@ -16,5 +41,7 @@ label=$(dmenu -p kbs2 <<< "${labels}" || exit 0)
 # NOTE(ww): Exit with a success if the user canceled, to avoid nagging
 # them with an error-hook.
 [[ -z "${label}" ]] && exit 0
+
+maybe_notify_username "${label}"
 
 kbs2 pass -c "${label}"
