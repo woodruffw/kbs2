@@ -23,13 +23,12 @@ function maybe_notify_username() {
 
   setting=$(
     toml2json < "${config}" \
-      | jq --raw-output '.commands."dmenu-pass"."notify-username" or false'
+      | jq --raw-output '.commands."choose-pass"."notify-username" or false'
   )
 
   if [[ "${setting}" == "true" ]]; then
     username=$(kbs2 dump -j "${label}" | jq -r '.body.fields.username')
     osascript -e "display notification \"${label}: copied password for ${username}\" with title \"kbs2 choose-pass\""
-    notify-send "kbs2 dmenu-pass" "${label}: copied password for ${username}"
   fi
 }
 
