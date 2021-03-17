@@ -9,6 +9,12 @@ All versions prior to 0.2.1 are untracked.
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+* Contrib: The `kbs2-dmenu-pass` and `kbs2-choose-pass` commands now understand the
+`notify-username` (`bool`) setting, which allows them to send a desktop notification
+for the copied record's username.
+
 ## [0.2.6] - 2021-02-20
 
 ### Added
