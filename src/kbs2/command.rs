@@ -643,7 +643,7 @@ pub fn rekey(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     // Dupe the current config, update only the public key field, and write it back.
     let config = config::Config {
-        public_key: public_key,
+        public_key,
         ..config.clone()
     };
     std::fs::write(
