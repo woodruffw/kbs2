@@ -938,7 +938,9 @@ will cause `kbs2` to run `kbs2-frobulate --xyz`. Custom commands are allowed to 
 write to the config file under the `[commands.<name>]` hierarchy.
 
 **IMPORTANT**: In a future version of `kbs2`, custom commands will be required to
-use the `[ext.commands.<name>]` hierarchy instead of `[commands.<name>]`.
+use the `[commands.ext.<name>]` hierarchy instead of `[commands.<name>]`. Failure to
+use this reserved hierarchy may result in loss of custom external command configuration
+when using `kbs2` commands that rewrite the config (like `kbs2 rekey`) .
 
 When run via `kbs2`, custom commands receive the following environment variables:
 
