@@ -17,7 +17,7 @@ dependencies. See the configuration section for details.
 
 ## Configuration
 
-`kbs2 dmenu-pass` reads the `commands.dmenu-pass.notify-username` setting. If `true`,
+`kbs2 dmenu-pass` reads the `commands.ext.dmenu-pass.notify-username` setting. If `true`,
 a desktop notification is emitted containing the username of the record that
 the user has selected (and is currently in the clipboard).
 

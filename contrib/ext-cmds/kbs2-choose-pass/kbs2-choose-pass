@@ -23,7 +23,7 @@ function maybe_notify_username() {
 
   setting=$(
     toml2json < "${config}" \
-      | jq --raw-output '.commands."choose-pass"."notify-username" or false'
+      | jq --raw-output '.commands.ext."choose-pass"."notify-username" or false'
   )
 
   if [[ "${setting}" == "true" ]]; then
