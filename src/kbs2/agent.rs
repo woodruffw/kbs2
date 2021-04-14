@@ -405,7 +405,7 @@ impl Client {
 
     /// Ask the agent whether it has an unwrapped key for the given keyfile.
     pub fn query_key(&self, keyfile: &str) -> Result<bool> {
-        log::debug!("query_key: asking whether client has key for {}", keyfile);
+        log::debug!("query_key: asking whether agent has key for {}", keyfile);
 
         let req = Request::QueryUnwrappedKey(keyfile.into());
         let resp = self.request(&req)?;

@@ -31,7 +31,7 @@ pub static STORE_BASEDIR: &str = "kbs2";
 /// The main kbs2 configuration structure.
 /// The fields of this structure correspond directly to the fields
 /// loaded from the configuration file.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
     /// The path to the directory that this configuration was loaded from.
     ///
@@ -148,7 +148,7 @@ impl Config {
 }
 
 /// A newtype wrapper around a `String`, used to provide a sensible default for `Config.pinentry`.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Pinentry(String);
 
 impl Default for Pinentry {
@@ -164,7 +164,7 @@ impl AsRef<OsStr> for Pinentry {
 }
 
 /// The different types of generators known to `kbs2`.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum GeneratorConfig {
     Command(GeneratorCommandConfig),
@@ -181,7 +181,7 @@ impl GeneratorConfig {
 }
 
 /// The configuration settings for a "command" generator.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GeneratorCommandConfig {
     /// The name of the generator.
     pub name: String,
@@ -191,7 +191,7 @@ pub struct GeneratorCommandConfig {
 }
 
 /// The configuration settings for an "internal" generator.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GeneratorInternalConfig {
     /// The name of the generator.
     pub name: String,
@@ -216,7 +216,7 @@ impl Default for GeneratorInternalConfig {
 }
 
 /// The per-command configuration settings known to `kbs2`.
-#[derive(Default, Debug, Deserialize, Serialize)]
+#[derive(Clone, Default, Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct CommandConfigs {
     /// Settings for `kbs2 new`.
@@ -233,7 +233,7 @@ pub struct CommandConfigs {
 }
 
 /// Configuration settings for `kbs2 new`.
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct NewConfig {
     #[serde(rename = "generate-on-empty")]
@@ -248,7 +248,7 @@ pub struct NewConfig {
 }
 
 /// Configuration settings for `kbs2 pass`.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct PassConfig {
     #[serde(rename = "clipboard-duration")]
@@ -288,7 +288,7 @@ impl Default for PassConfig {
 }
 
 /// Configuration settings for `kbs2 edit`.
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct EditConfig {
     pub editor: Option<String>,
@@ -298,7 +298,7 @@ pub struct EditConfig {
 }
 
 /// Configuration settings for `kbs2 rm`.
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct RmConfig {
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]

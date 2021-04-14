@@ -9,6 +9,12 @@ All versions prior to 0.2.1 are untracked.
 
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+* CLI: `kbs2 rekey` enables users to rekey their entire secret store, re-encrypting
+all records with a new secret key. `kbs2 rekey` also handles the chore work of
+updating the user's config and related files for the new key.
+
 ### Changed
 
 * Contrib: The `kbs2-dmenu-pass` and `kbs2-choose-pass` commands now understand the

@@ -250,6 +250,17 @@ fn app<'a, P: AsRef<OsStr>>(default_config_dir: &'a P, default_store_dir: &'a P)
                         .long("force"),
                 ),
         )
+        .subcommand(
+            // NOTE: The absence of a --force option here is intentional.
+            App::new("rekey")
+                .about("re-encrypt the entire store with a new keypair and master password")
+                .arg(
+                    Arg::new("no-backup")
+                        .about("don't make a backup of the old wrapped key, config, or store")
+                        .short('n')
+                        .long("no-backup"),
+                ),
+        )
 }
 
 fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
@@ -279,6 +290,7 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
         Some(("edit", matches)) => kbs2::command::edit(&matches, &config)?,
         Some(("generate", matches)) => kbs2::command::generate(&matches, &config)?,
         Some(("rewrap", matches)) => kbs2::command::rewrap(&matches, &config)?,
+        Some(("rekey", matches)) => kbs2::command::rekey(&matches, &config)?,
         Some((cmd, matches)) => {
             let cmd = format!("kbs2-{}", cmd);
 

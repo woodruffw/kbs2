@@ -1,3 +1,4 @@
+use secrecy::Zeroize;
 use serde::{Deserialize, Serialize};
 
 use crate::kbs2::util;
@@ -29,6 +30,14 @@ pub struct Record {
     pub body: RecordBody,
 }
 
+impl Zeroize for Record {
+    fn zeroize(&mut self) {
+        self.timestamp.zeroize();
+        self.label.zeroize();
+        self.body.zeroize();
+    }
+}
+
 /// Represents the core contents of a `kbs2` record.
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "kind", content = "fields")]
@@ -36,6 +45,16 @@ pub enum RecordBody {
     Login(LoginFields),
     Environment(EnvironmentFields),
     Unstructured(UnstructuredFields),
+}
+
+impl Zeroize for RecordBody {
+    fn zeroize(&mut self) {
+        match self {
+            RecordBody::Login(l) => l.zeroize(),
+            RecordBody::Environment(e) => e.zeroize(),
+            RecordBody::Unstructured(u) => u.zeroize(),
+        };
+    }
 }
 
 impl std::fmt::Display for RecordBody {
@@ -58,6 +77,13 @@ pub struct LoginFields {
     pub password: String,
 }
 
+impl Zeroize for LoginFields {
+    fn zeroize(&mut self) {
+        self.username.zeroize();
+        self.password.zeroize();
+    }
+}
+
 /// Represents the fields of an environment record.
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct EnvironmentFields {
@@ -68,11 +94,24 @@ pub struct EnvironmentFields {
     pub value: String,
 }
 
+impl Zeroize for EnvironmentFields {
+    fn zeroize(&mut self) {
+        self.variable.zeroize();
+        self.value.zeroize();
+    }
+}
+
 /// Represents the fields of an unstructured record.
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct UnstructuredFields {
     /// The contents associated with the record.
     pub contents: String,
+}
+
+impl Zeroize for UnstructuredFields {
+    fn zeroize(&mut self) {
+        self.contents.zeroize();
+    }
 }
 
 impl Record {

@@ -29,8 +29,6 @@ pub trait Backend {
     /// given path.
     ///
     /// NOTE: Like `create_keypair`, this writes an ASCII-armored private component.
-    /// It also prompts the user to enter a password for encrypting the generated
-    /// private key.
     fn create_wrapped_keypair<P: AsRef<Path>>(path: P, password: SecretString) -> Result<String>;
 
     /// Unwraps the given `keyfile` using `password`, returning the unwrapped contents.

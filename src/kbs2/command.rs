@@ -3,7 +3,9 @@ use atty::Stream;
 use clap::ArgMatches;
 use clipboard::{ClipboardContext, ClipboardProvider};
 use daemonize::Daemonize;
+use dialoguer::Confirm;
 use nix::unistd::{fork, ForkResult};
+use secrecy::{ExposeSecret, Secret};
 
 use std::convert::TryInto;
 use std::env;
@@ -546,4 +548,130 @@ pub fn rewrap(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     let new = util::get_password(Some("NEW master password: "), &config.pinentry)?;
 
     backend::RageLib::rewrap_keyfile(&config.keyfile, old, new)
+}
+
+/// Implements the `kbs2 rekey` command.
+pub fn rekey(matches: &ArgMatches, config: &config::Config) -> Result<()> {
+    log::debug!("attempting to rekey the store");
+
+    // This is an artificial limitation; bare keys should never be used outside of testing,
+    // so support for them is unnecessary here.
+    if !config.wrapped {
+        return Err(anyhow!("rekeying is only supported on wrapped keys"));
+    }
+
+    let session: Session = config.try_into()?;
+
+    println!(
+        "This subcommand REKEYS your entire store ({}) and REWRITES your config",
+        session.config.store
+    );
+
+    if !Confirm::new()
+        .default(false)
+        .with_prompt("Are you SURE you want to continue?")
+        .interact()?
+    {
+        return Ok(());
+    }
+
+    if !matches.is_present("no-backup") {
+        // First, back up the keyfile.
+        let keyfile_backup: PathBuf = format!("{}.old", &config.keyfile).into();
+        if keyfile_backup.exists() {
+            return Err(anyhow!(
+                "refusing to overwrite a previous key backup during rekeying; resolve manually"
+            ));
+        }
+
+        std::fs::copy(&config.keyfile, &keyfile_backup)?;
+        println!(
+            "Backup of the OLD wrapped keyfile saved to: {:?}",
+            keyfile_backup
+        );
+
+        // Next, the config itself.
+        let config_backup: PathBuf =
+            Path::new(&config.config_dir).join(format!("{}.old", config::CONFIG_BASENAME));
+        if config_backup.exists() {
+            return Err(anyhow!(
+                "refusing to overwrite a previous config backup during rekeying; resolve manually"
+            ));
+        }
+
+        std::fs::copy(
+            Path::new(&config.config_dir).join(config::CONFIG_BASENAME),
+            &config_backup,
+        )?;
+        println!("Backup of the OLD config saved to: {:?}", config_backup);
+
+        // Finally, every record in the store.
+        let store_backup: PathBuf = format!("{}.old", &config.store).into();
+        if store_backup.exists() {
+            return Err(anyhow!(
+                "refusing to overwrite a previous store backup during rekeying; resolve manually"
+            ));
+        }
+
+        std::fs::create_dir_all(&store_backup)?;
+        for label in session.record_labels()? {
+            std::fs::copy(
+                Path::new(&config.store).join(&label),
+                store_backup.join(&label),
+            )?;
+        }
+        println!("Backup of the OLD store saved to: {:?}", &store_backup);
+    }
+
+    // Decrypt and collect all records.
+    let records: Vec<Secret<record::Record>> = {
+        let records: Result<Vec<record::Record>> = session
+            .record_labels()?
+            .iter()
+            .map(|l| session.get_record(&l))
+            .collect();
+
+        records?.into_iter().map(Secret::new).collect()
+    };
+
+    // Get a new master password.
+    let new_password = util::get_password(Some("NEW master password: "), &config.pinentry)?;
+
+    // Use it to generate a new wrapped keypair, overwriting the previous keypair.
+    let public_key =
+        backend::RageLib::create_wrapped_keypair(&config.keyfile, new_password.clone())?;
+
+    // Dupe the current config, update only the public key field, and write it back.
+    let config = config::Config {
+        public_key,
+        ..config.clone()
+    };
+    std::fs::write(
+        Path::new(&config.config_dir).join(config::CONFIG_BASENAME),
+        toml::to_string(&config)?,
+    )?;
+
+    // Flush the stale key from the active agent, and add the new key to the agent.
+    // NOTE(ww): This scope is essential: we need to drop this client before we
+    // create the new session below. Why? Because the session contains its
+    // own agent client, and the current agent implementation only allows a
+    // single client at a time. Clients yield their access by closing their
+    // underlying socket, so we need to drop here to prevent a deadlock.
+    {
+        let client = agent::Client::new()?;
+        client.flush_keys()?;
+        client.add_key(&config.keyfile, new_password)?;
+    }
+
+    // Create a new session from the new config and use it to re-encrypt each record.
+    println!("Re-encrypting all records, be patient...");
+    let session: Session = (&config).try_into()?;
+    for record in records {
+        log::debug!("re-encrypting {}", record.expose_secret().label);
+        session.add_record(record.expose_secret())?;
+    }
+
+    println!("All done.");
+
+    Ok(())
 }

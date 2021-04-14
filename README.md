@@ -27,11 +27,13 @@ Quick links:
   * [`kbs2 agent flush`](#kbs2-agent)
   * [`kbs2 agent unwrap`](#kbs2-agent)
   * [`kbs2 rewrap`](#kbs2-rewrap)
+  * [`kbs2 rekey`](#kbs2-rekey)
 * [Configuration](#configuration)
   * [Generators](#generators)
 * [Customization](#customization)
   * [Custom commands](#custom-commands)
   * [Hooks](#hooks)
+  * [Managing your key and master password](#managing-your-key-and-master-password)
 * [Why another password manager?](#why-another-password-manager)
 * [Technical details](#technical-details)
 * [Hacking](#hacking)
@@ -615,6 +617,41 @@ Change the password on a wrapped key without making a backup of the old wrapped 
 $ kbs2 rewrap -n
 ```
 
+### `kbs2 rekey`
+
+#### Usage
+
+```
+re-encrypt the entire store with a new keypair and master password
+
+USAGE:
+    kbs2 rekey [FLAGS]
+
+FLAGS:
+    -h, --help         Prints help information
+    -n, --no-backup    don't make a backup of the old wrapped key, config, or store
+```
+
+#### Examples
+
+Re-key the default config and its store:
+
+```bash
+$ kbs2 rekey
+```
+
+Re-key without making backups of the original keyfile, config, and store (**not** recommended):
+
+```bash
+$ kbs2 rekey --no-backup
+```
+
+Re-key a different configuration and store:
+
+```bash
+$ kbs2 -c /some/other/kbs2/conf/dir rekey
+```
+
 ## Configuration
 
 `kbs2` stores its configuration in `<config dir>/kbs2/kbs2.conf`, where `<config dir>` is determined
@@ -900,6 +937,11 @@ $ kbs2 frobulate --xyz
 will cause `kbs2` to run `kbs2-frobulate --xyz`. Custom commands are allowed to read from and
 write to the config file under the `[commands.<name>]` hierarchy.
 
+**IMPORTANT**: In a future version of `kbs2`, custom commands will be required to
+use the `[commands.ext.<name>]` hierarchy instead of `[commands.<name>]`. Failure to
+use this reserved hierarchy may result in loss of custom external command configuration
+when using `kbs2` commands that rewrite the config (like `kbs2 rekey`) .
+
 When run via `kbs2`, custom commands receive the following environment variables:
 
 * `KBS2_CONFIG_DIR`: The path to the configuration directory that `kbs2` itself was loaded with.
@@ -971,6 +1013,47 @@ reentrant &mdash; it's all or nothing, intentionally.
 * You can `unset` or otherwise delete the `KBS2_HOOK` environment variable in your hook
 before running `kbs2` internally. This allows you to control which hooks cause reentrancy.
 **Beware**: `KBS2_HOOK` is an implementation detail! Unset it at your own risk!
+
+### Managing your key and master password
+
+#### Rewrapping and rekeying
+
+`kbs2` supports two basic options for managing the (wrapped) key that encrypts all records
+in the secret store: *rewrapping* and *rekeying*.
+
+*Rewrapping* means changing the password on your wrapped key. Rewrapping **does not**
+modify the underlying key itself, which means that your individual records in the store
+**do not** change. Rewrapping is done with the [`kbs2 rewrap`](#kbs2-rewrap) command.
+
+You **should** rewrap under the following (non-exhaustive) conditions:
+
+* You're doing a routine update of your master password
+* You believe that your master password has been disclosed, but **not** the underlying wrapped key
+
+*Rekeying* means changing the wrapped key itself, and consequently re-encrypting every record
+with the new wrapped key. When rekeying you *can* choose the same master password as the old key.
+However, you *should* choose a new password. **Unlike** rewrapping, rekeying **does** change
+the individual records in your store, and makes them no longer decryptable with your previous
+key. Rekeying is done with the [`kbs2 rekey`](#kbs2-rekey) command.
+
+You **should** rekey under the following (non-exhaustive) conditions:
+
+* You believe that your underlying wrapped key has been disclosed
+* You're sharing a `kbs2` to a new device, and you'd like that device to have its own wrapped key
+
+Rekeying is a more drastic operation than rewrapping: it involves rewriting the keypair,
+the `kbs2` config, and every record in the store. This means it comes with some technical caveats:
+
+* `kbs2 rekey` does not preserve the layout of your config file, or any fields that aren't
+explicitly part of `kbs2`'s internal representation of the config (like external command configs).
+Users should be mindful of this when rekeying, and should perform the appropriate manual copies
+from the config backup made by `kbs2 rekey`.
+
+* `kbs2 rekey` makes a backup of the secret store by copying each record in the store to a
+backup folder. Anything in the secret store that is not a record
+(like a metadata or revision control directory, or a hidden file) is **not** copied during backup.
+Rekeying causes `kbs2` to write the newly encrypted records into the same store, so any non-record
+members of the store will remain unmodified.
 
 ## Why another password manager?
 
