@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use secrecy::SecretString;
 use serde::{de, Deserialize, Serialize};
 
+use std::collections::HashMap;
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
@@ -230,6 +231,9 @@ pub struct CommandConfigs {
 
     /// Settings for `kbs2 rm`.
     pub rm: RmConfig,
+
+    /// External command settings.
+    pub ext: HashMap<String, HashMap<String, toml::Value>>,
 }
 
 /// Configuration settings for `kbs2 new`.
