@@ -1039,10 +1039,8 @@ You **should** rekey under the following (non-exhaustive) conditions:
 Rekeying is a more drastic operation than rewrapping: it involves rewriting the keypair,
 the `kbs2` config, and every record in the store. This means it comes with some technical caveats:
 
-* `kbs2 rekey` does not preserve the layout of your config file, or any fields that aren't
-explicitly part of `kbs2`'s internal representation of the config (like external command configs).
-Users should be mindful of this when rekeying, and should perform the appropriate manual copies
-from the config backup made by `kbs2 rekey`.
+* `kbs2 rekey` does not preserve the layout of your config file. Users should be mindful of this
+when rekeying.
 
 * `kbs2 rekey` makes a backup of the secret store by copying each record in the store to a
 backup folder. Anything in the secret store that is not a record
