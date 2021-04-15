@@ -20,6 +20,8 @@ updating the user's config and related files for the new key.
 * Contrib: The `kbs2-dmenu-pass` and `kbs2-choose-pass` commands now understand the
 `notify-username` (`bool`) setting, which allows them to send a desktop notification
 for the copied record's username.
+* Config, Contrib: External commands now use the `[commands.ext.<command>]` namespace
+instead of `[commands.<command>]`.
 
 ## [0.2.6] - 2021-02-20
 

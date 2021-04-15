@@ -15,7 +15,7 @@ See the configuration options below for alternatives.
 
 ## Configuration
 
-`kbs2-snip` reads the `commands.snip.matcher` setting in the configuration
+`kbs2-snip` reads the `commands.ext.snip.matcher` setting in the configuration
 file to determine which fuzzy finder to use.
 
 For example:

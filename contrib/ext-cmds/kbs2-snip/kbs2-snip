@@ -27,7 +27,7 @@ config = begin
   Tomlrb.load_file config_file
 end
 
-matcher = config.dig("commands", "snip", "matcher") || "selecta"
+matcher = config.dig("commands", "ext", "snip", "matcher") || "selecta"
 
 unstructureds = `kbs2 list -k unstructured`.split
 snippets = unstructureds.filter_map do |label|

@@ -935,12 +935,7 @@ $ kbs2 frobulate --xyz
 ```
 
 will cause `kbs2` to run `kbs2-frobulate --xyz`. Custom commands are allowed to read from and
-write to the config file under the `[commands.<name>]` hierarchy.
-
-**IMPORTANT**: In a future version of `kbs2`, custom commands will be required to
-use the `[commands.ext.<name>]` hierarchy instead of `[commands.<name>]`. Failure to
-use this reserved hierarchy may result in loss of custom external command configuration
-when using `kbs2` commands that rewrite the config (like `kbs2 rekey`) .
+write to the config file under the `[commands.ext.<name>]` hierarchy.
 
 When run via `kbs2`, custom commands receive the following environment variables:
 
@@ -1044,10 +1039,8 @@ You **should** rekey under the following (non-exhaustive) conditions:
 Rekeying is a more drastic operation than rewrapping: it involves rewriting the keypair,
 the `kbs2` config, and every record in the store. This means it comes with some technical caveats:
 
-* `kbs2 rekey` does not preserve the layout of your config file, or any fields that aren't
-explicitly part of `kbs2`'s internal representation of the config (like external command configs).
-Users should be mindful of this when rekeying, and should perform the appropriate manual copies
-from the config backup made by `kbs2 rekey`.
+* `kbs2 rekey` does not preserve the layout of your config file. Users should be mindful of this
+when rekeying.
 
 * `kbs2 rekey` makes a backup of the secret store by copying each record in the store to a
 backup folder. Anything in the secret store that is not a record
