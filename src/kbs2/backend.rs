@@ -207,11 +207,7 @@ impl Backend for RageLib {
         let mut decrypted = String::new();
 
         decryptor
-            .decrypt(
-                self.identities
-                    .iter()
-                    .map(|i| i as &dyn age::Identity),
-            )
+            .decrypt(self.identities.iter().map(|i| i as &dyn age::Identity))
             .map_err(|e| anyhow!("unable to decrypt (backend reports: {:?})", e))
             .and_then(|mut r| {
                 r.read_to_string(&mut decrypted)
