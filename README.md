@@ -43,9 +43,16 @@ Quick links:
 
 ### Packages
 
+`kbs2` is available via a variety of official and community-supplied packages.
+
+**These packages are the recommended way to install `kbs2` if you are not developing it.**
+
+#### Debian/Ubuntu
+
+*This is an official package.*
+
 If you're running a Debian or Ubuntu distribution on AMD64, you can use the `.deb` packages
-attached to the [latest release](https://github.com/woodruffw/kbs2/releases/latest). **This is the
-recommended way to install `kbs2` if you are not developing it.**
+attached to the [latest release](https://github.com/woodruffw/kbs2/releases/latest).
 
 By way of example:
 
@@ -56,18 +63,32 @@ $ sudo dpkg -i kbs2_0.2.6_amd64.deb
 $ sudo apt-get -f install
 ```
 
-### Arch Linux
+#### Arch Linux
 
-`kbs2` can be installed from available [AUR packages](https://aur.archlinux.org/packages/?O=0&SeB=b&K=kbs2&outdated=&SB=n&SO=a&PP=50&do_Search=Go) using an [AUR helper](https://wiki.archlinux.org/index.php/AUR_helpers). For example,
+*This is a community-maintained package.*
+
+`kbs2` can be installed from available
+[AUR packages](https://aur.archlinux.org/packages/?O=0&SeB=b&K=kbs2&outdated=&SB=n&SO=a&PP=50&do_Search=Go)
+using an [AUR helper](https://wiki.archlinux.org/index.php/AUR_helpers). For example,
 
 ```bash
-yay -S kbs2
+$ yay -S kbs2
 ```
 
 Other distributions will be supported sooner or later. Help us by looking at the
 [open packaging issues](https://github.com/woodruffw/kbs2/labels/C%3Apackaging)!
 
-### Cargo
+#### Nix
+
+*This is a community-maintained package.*
+
+`kbs2` can be installed through Nix:
+
+```bash
+$ nix-env -iA nixpkgs.kbs2
+```
+
+#### Cargo
 
 If you're a Linux user, you'll need some X11 libraries. For Debian-based distributions:
 
