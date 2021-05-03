@@ -661,7 +661,7 @@ dependencies = [
 
 [[package]]
 name = "kbs2"
-version = "0.3.0-rc.1"
+version = "0.3.0"
 dependencies = [
  "age",
  "anyhow",
