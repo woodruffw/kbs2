@@ -206,18 +206,8 @@ impl Backend for RageLib {
 
         let mut decrypted = String::new();
 
-        // NOTE(ww): The age API changed here from `&[Identity]` to
-        // `impl Iterator<Item = Box<dyn Identity>>`, which changed the `decrypt`
-        // from a borrow to a stolen ownership of the identity list.
-        // So we do a funky box clone thing below.
         decryptor
-            .decrypt(
-                self.identities
-                    .iter()
-                    .cloned()
-                    .map(Box::new)
-                    .map(|i| i as Box<dyn age::Identity>),
-            )
+            .decrypt(self.identities.iter().map(|i| i as &dyn age::Identity))
             .map_err(|e| anyhow!("unable to decrypt (backend reports: {:?})", e))
             .and_then(|mut r| {
                 r.read_to_string(&mut decrypted)
