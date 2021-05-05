@@ -344,14 +344,14 @@ $ kbs2 rm foobar
 dump a record
 
 USAGE:
-    kbs2 dump [FLAGS] <label>
+    kbs2 dump [FLAGS] <label>...
 
 ARGS:
-    <label>    the record's label
+    <label>...    the label of the record(s) to dump
 
 FLAGS:
     -h, --help    Prints help information
-    -j, --json    dump in JSON format
+    -j, --json    dump in JSON format (JSONL when multiple)
 ```
 
 #### Examples
@@ -381,7 +381,14 @@ $ kbs2 dump -j pets.com | json_pp
       "kind" : "Login"
    }
 }
+```
 
+Dump multiple records, demonstrating JSONL:
+
+```bash
+$ kbs2 dump -j carthage roma
+{"timestamp":1590363392,"label":"bepis","body":{"kind":"Login","fields":{"username":"hamilcar","password":"ihatecato"}}}
+{"timestamp":1590363392,"label":"conk","body":{"kind":"Login","fields":{"username":"cato","password":"carthagodelendaest"}}}
 ```
 
 ### `kbs2 pass`
