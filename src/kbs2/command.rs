@@ -271,22 +271,25 @@ pub fn dump(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     let session: Session = config.try_into()?;
 
     #[allow(clippy::unwrap_used)]
-    let label = matches.value_of("label").unwrap();
-    let record = session.get_record(&label)?;
+    let labels: Vec<_> = matches.values_of("label").unwrap().collect();
 
-    if matches.is_present("json") {
-        println!("{}", serde_json::to_string(&record)?);
-    } else {
-        println!("Label {}\nKind {}", label, record.body);
+    for label in labels {
+        let record = session.get_record(&label)?;
 
-        match record.body {
-            RecordBody::Login(l) => {
-                println!("Username {}\nPassword {}", l.username, l.password)
+        if matches.is_present("json") {
+            println!("{}", serde_json::to_string(&record)?);
+        } else {
+            println!("Label {}\nKind {}", label, record.body);
+
+            match record.body {
+                RecordBody::Login(l) => {
+                    println!("Username {}\nPassword {}", l.username, l.password)
+                }
+                RecordBody::Environment(e) => {
+                    println!("Variable {}\nValue {}", e.variable, e.value)
+                }
+                RecordBody::Unstructured(u) => println!("Contents {}", u.contents),
             }
-            RecordBody::Environment(e) => {
-                println!("Variable {}\nValue {}", e.variable, e.value)
-            }
-            RecordBody::Unstructured(u) => println!("Contents {}", u.contents),
         }
     }
 

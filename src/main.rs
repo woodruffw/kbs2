@@ -161,7 +161,8 @@ fn app<'a, P: AsRef<OsStr>>(default_config_dir: &'a P, default_store_dir: &'a P)
                     Arg::new("label")
                         .about("the record's label")
                         .index(1)
-                        .required(true),
+                        .required(true)
+                        .multiple(true),
                 )
                 .arg(
                     Arg::new("json")
