@@ -159,14 +159,14 @@ fn app<'a, P: AsRef<OsStr>>(default_config_dir: &'a P, default_store_dir: &'a P)
                 .about("dump a record")
                 .arg(
                     Arg::new("label")
-                        .about("the record's label")
+                        .about("the label of the record(s) to dump")
                         .index(1)
                         .required(true)
                         .multiple(true),
                 )
                 .arg(
                     Arg::new("json")
-                        .about("dump in JSON format")
+                        .about("dump in JSON format (JSONL when multiple)")
                         .short('j')
                         .long("json"),
                 ),
