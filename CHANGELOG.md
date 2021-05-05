@@ -9,6 +9,10 @@ All versions prior to 0.2.1 are untracked.
 
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+* CLI: `kbs2 dump` can now dump multiple records in one invocation.
+
 ## [0.3.0] - 2021-05-02
 
 ### Added
