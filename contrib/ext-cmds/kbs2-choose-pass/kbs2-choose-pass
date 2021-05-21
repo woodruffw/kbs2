@@ -33,7 +33,7 @@ function maybe_notify_username() {
 }
 
 labels=$(kbs2 list -k login)
-label=$(choose <<< "${labels}")
+label=$(choose <<< "${labels}") || exit 0
 
 # NOTE(ww): Exit with a success if the user canceled, to avoid nagging
 # them with an error-hook.
