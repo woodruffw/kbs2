@@ -13,6 +13,11 @@ All versions prior to 0.2.1 are untracked.
 
 * CLI: `kbs2 dump` can now dump multiple records in one invocation.
 
+### Fixed
+
+* Contrib: `kbs2 choose-pass` no longer incorrectly nags the user when `choose`
+is canceled.
+
 ## [0.3.0] - 2021-05-02
 
 ### Added
