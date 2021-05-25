@@ -16,7 +16,9 @@ All versions prior to 0.2.1 are untracked.
 
 ### Changed
 
-* Agent: The agent's internal representation and protocol have been refactored
+* Agent: The agent's internal representation and protocol have been refactored.
+Releases earlier than this one use an incompatible protocol; users should
+run `kbs2 agent flush -q` after upgrading to kill their outdated agent
 ([#193](https://github.com/woodruffw/kbs2/pull/193))
 
 ### Fixed
