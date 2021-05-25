@@ -16,10 +16,20 @@ use std::time::Duration;
 
 use crate::kbs2::backend::{Backend, RageLib};
 
+/// The version of the agent protocol.
+const PROTOCOL_VERSION: u32 = 1;
+
+/// Represents the entire request message, including the protocol field.
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
+struct Request {
+    protocol: u32,
+    body: RequestBody,
+}
+
 /// Represents the kinds of requests understood by the `kbs2` authentication agent.
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "type", content = "body")]
-enum Request {
+enum RequestBody {
     /// Unwrap a particular keyfile (first element) with a password (second element).
     UnwrapKey(String, String),
 
@@ -63,11 +73,14 @@ enum FailureKind {
     /// The request failed because key unwrapping failed.
     Unwrap(String),
 
+    /// The request failed because the agent and client don't speak the same protocol version.
+    VersionMismatch(u32),
+
     /// The request failed because the requested query failed.
     Query,
 }
 
-/// A convenience trait for marshaling and unmarshaling `Request`s and `Response`s
+/// A convenience trait for marshaling and unmarshaling `RequestBody`s and `Response`s
 /// through Rust's `Read` and `Write` traits.
 trait Message {
     fn read<R: Read>(reader: R) -> Result<Self>
@@ -247,7 +260,7 @@ impl Agent {
                 }
             };
 
-            let req = match serde_json::from_str(&line) {
+            let req: Request = match serde_json::from_str(&line) {
                 Ok(req) => req,
                 Err(e) => {
                     log::error!("malformed req: {:?}", e);
@@ -258,8 +271,14 @@ impl Agent {
                 }
             };
 
-            let resp = match req {
-                Request::UnwrapKey(keyfile, password) => {
+            if req.protocol != PROTOCOL_VERSION {
+                let _ = Response::Failure(FailureKind::VersionMismatch(PROTOCOL_VERSION))
+                    .write(&mut writer);
+                return;
+            }
+
+            let resp = match req.body {
+                RequestBody::UnwrapKey(keyfile, password) => {
                     let password = Secret::new(password);
                     // If the running agent is already tracking an unwrapped key for this
                     // keyfile, return early with a success.
@@ -283,14 +302,14 @@ impl Agent {
                         }
                     }
                 }
-                Request::QueryUnwrappedKey(keyfile) => {
+                RequestBody::QueryUnwrappedKey(keyfile) => {
                     if self.unwrapped_keys.contains_key(&keyfile) {
                         Response::Success("OK".into())
                     } else {
                         Response::Failure(FailureKind::Query)
                     }
                 }
-                Request::GetUnwrappedKey(keyfile) => {
+                RequestBody::GetUnwrappedKey(keyfile) => {
                     if let Some(unwrapped_key) = self.unwrapped_keys.get(&keyfile) {
                         log::debug!("successful key request for keyfile: {}", keyfile);
                         Response::Success(unwrapped_key.expose_secret().into())
@@ -299,12 +318,12 @@ impl Agent {
                         Response::Failure(FailureKind::Query)
                     }
                 }
-                Request::FlushKeys => {
+                RequestBody::FlushKeys => {
                     self.unwrapped_keys.clear();
                     log::debug!("successfully flushed all unwrapped keys");
                     Response::Success("OK".into())
                 }
-                Request::Quit => {
+                RequestBody::Quit => {
                     self.quitting = true;
                     log::debug!("agent exit requested");
                     Response::Success("OK".into())
@@ -381,7 +400,11 @@ impl Client {
     }
 
     /// Issue the given request to the agent, returning the agent's `Response`.
-    fn request(&self, req: &Request) -> Result<Response> {
+    fn request(&self, req: RequestBody) -> Result<Response> {
+        let req = Request {
+            protocol: PROTOCOL_VERSION,
+            body: req,
+        };
         req.write(&self.stream)?;
         let resp = Response::read(&self.stream)?;
         Ok(resp)
@@ -391,8 +414,8 @@ impl Client {
     pub fn add_key(&self, keyfile: &str, password: SecretString) -> Result<()> {
         log::debug!("add_key: requesting that agent unwrap {}", keyfile);
 
-        let req = Request::UnwrapKey(keyfile.into(), password.expose_secret().into());
-        let resp = self.request(&req)?;
+        let req = RequestBody::UnwrapKey(keyfile.into(), password.expose_secret().into());
+        let resp = self.request(req)?;
 
         match resp {
             Response::Success(msg) => {
@@ -407,8 +430,8 @@ impl Client {
     pub fn query_key(&self, keyfile: &str) -> Result<bool> {
         log::debug!("query_key: asking whether agent has key for {}", keyfile);
 
-        let req = Request::QueryUnwrappedKey(keyfile.into());
-        let resp = self.request(&req)?;
+        let req = RequestBody::QueryUnwrappedKey(keyfile.into());
+        let resp = self.request(req)?;
 
         match resp {
             Response::Success(_) => Ok(true),
@@ -421,8 +444,8 @@ impl Client {
     pub fn get_key(&self, keyfile: &str) -> Result<String> {
         log::debug!("get_key: requesting unwrapped key for {}", keyfile);
 
-        let req = Request::GetUnwrappedKey(keyfile.into());
-        let resp = self.request(&req)?;
+        let req = RequestBody::GetUnwrappedKey(keyfile.into());
+        let resp = self.request(req)?;
 
         match resp {
             Response::Success(unwrapped_key) => Ok(unwrapped_key),
@@ -436,14 +459,14 @@ impl Client {
     /// Ask the agent to flush all of its unwrapped keys.
     pub fn flush_keys(&self) -> Result<()> {
         log::debug!("flush_keys: asking agent to forget all keys");
-        self.request(&Request::FlushKeys)?;
+        self.request(RequestBody::FlushKeys)?;
         Ok(())
     }
 
     /// Ask the agent to quit gracefully.
     pub fn quit_agent(self) -> Result<()> {
         log::debug!("quit_agent: asking agent to exit gracefully");
-        self.request(&Request::Quit)?;
+        self.request(RequestBody::Quit)?;
         Ok(())
     }
 }
