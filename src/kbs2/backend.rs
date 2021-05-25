@@ -68,12 +68,16 @@ impl RageLib {
 
             let client = agent::Client::new().with_context(|| "failed to connect to kbs2 agent")?;
 
-            if !client.query_key(&config.keyfile)? {
-                client.add_key(&config.keyfile, util::get_password(None, &config.pinentry)?)?;
+            if !client.query_key(&config.public_key)? {
+                client.add_key(
+                    &config.public_key,
+                    &config.keyfile,
+                    util::get_password(None, &config.pinentry)?,
+                )?;
             }
 
             let unwrapped_key = client
-                .get_key(&config.keyfile)
+                .get_key(&config.public_key)
                 .with_context(|| format!("agent has no unwrapped key for {}", config.keyfile))?;
 
             log::debug!("parsing unwrapped key");
