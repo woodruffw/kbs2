@@ -11,7 +11,13 @@ All versions prior to 0.2.1 are untracked.
 
 ### Added
 
-* CLI: `kbs2 dump` can now dump multiple records in one invocation.
+* CLI: `kbs2 dump` can now dump multiple records in one invocation
+([#191](https://github.com/woodruffw/kbs2/pull/191))
+
+### Changed
+
+* Agent: The agent's internal representation and protocol have been refactored
+([#193](https://github.com/woodruffw/kbs2/pull/193))
 
 ### Fixed
 

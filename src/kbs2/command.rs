@@ -94,13 +94,13 @@ fn agent_unwrap(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
     }
 
     let client = agent::Client::new()?;
-    if client.query_key(&config.keyfile)? {
+    if client.query_key(&config.public_key)? {
         println!("kbs2 agent already has this key; ignoring.");
         return Ok(());
     }
 
     let password = util::get_password(None, &config.pinentry)?;
-    client.add_key(&config.keyfile, password)?;
+    client.add_key(&config.public_key, &config.keyfile, password)?;
 
     Ok(())
 }
@@ -663,7 +663,7 @@ pub fn rekey(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     {
         let client = agent::Client::new()?;
         client.flush_keys()?;
-        client.add_key(&config.keyfile, new_password)?;
+        client.add_key(&config.public_key, &config.keyfile, new_password)?;
     }
 
     // Create a new session from the new config and use it to re-encrypt each record.
