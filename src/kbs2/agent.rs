@@ -402,6 +402,7 @@ impl Client {
 
     /// Issue the given request to the agent, returning the agent's `Response`.
     fn request(&self, body: RequestBody) -> Result<Response> {
+        #[allow(clippy::redundant_field_names)]
         let req = Request {
             protocol: PROTOCOL_VERSION,
             body: body,
