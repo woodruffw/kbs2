@@ -13,6 +13,8 @@ All versions prior to 0.2.1 are untracked.
 
 * CLI: `kbs2 dump` can now dump multiple records in one invocation
 ([#191](https://github.com/woodruffw/kbs2/pull/191))
+* CLI: `kbs2 rm` can now remove multiple records in one invocation
+([#195](https://github.com/woodruffw/kbs2/pull/195))
 
 ### Changed
 
