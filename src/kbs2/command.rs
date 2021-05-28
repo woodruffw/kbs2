@@ -253,12 +253,15 @@ pub fn rm(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     let session: Session = config.try_into()?;
 
     #[allow(clippy::unwrap_used)]
-    let label = matches.value_of("label").unwrap();
-    session.delete_record(label)?;
+    let labels: Vec<_> = matches.values_of("label").unwrap().collect();
+
+    for label in &labels {
+        session.delete_record(label)?;
+    }
 
     if let Some(post_hook) = &session.config.commands.rm.post_hook {
         log::debug!("post-hook: {}", post_hook);
-        session.config.call_hook(post_hook, &[&label])?;
+        session.config.call_hook(post_hook, &labels)?;
     }
 
     Ok(())

@@ -147,19 +147,20 @@ fn app<'a, P: AsRef<OsStr>>(default_config_dir: &'a P, default_store_dir: &'a P)
                 ),
         )
         .subcommand(
-            App::new("rm").about("remove a record").arg(
+            App::new("rm").about("remove one or more records").arg(
                 Arg::new("label")
-                    .about("the record's label")
+                    .about("the labels of the records to remove")
                     .index(1)
-                    .required(true),
+                    .required(true)
+                    .multiple(true),
             ),
         )
         .subcommand(
             App::new("dump")
-                .about("dump a record")
+                .about("dump one or more records")
                 .arg(
                     Arg::new("label")
-                        .about("the label of the record(s) to dump")
+                        .about("the labels of the records to dump")
                         .index(1)
                         .required(true)
                         .multiple(true),
