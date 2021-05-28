@@ -316,13 +316,13 @@ twitter-api
 #### Usage
 
 ```
-remove a record
+remove one or more records
 
 USAGE:
-    kbs2 rm <label>
+    kbs2 rm <label>...
 
 ARGS:
-    <label>    the record's label
+    <label>...    the labels of the records to remove
 
 FLAGS:
     -h, --help    Prints help information
@@ -341,13 +341,13 @@ $ kbs2 rm foobar
 #### Usage
 
 ```
-dump a record
+dump one or more records
 
 USAGE:
     kbs2 dump [FLAGS] <label>...
 
 ARGS:
-    <label>...    the label of the record(s) to dump
+    <label>...    the labels of the records to dump
 
 FLAGS:
     -h, --help    Prints help information
@@ -916,6 +916,9 @@ immediately after record editing during `kbs2 edit` (and **only** `kbs2 edit`).
 
 The `command.rm.post-hook` setting is like the global `post-hook` setting, except that it runs
 immediately after record removal during `kbs2 rm` (and **only** `kbs2 rm`).
+
+The label of each record removed by `kbs2 rm` is passed as a separate argument to
+the `post-hook`.
 
 ### Generators
 
