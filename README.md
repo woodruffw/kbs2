@@ -24,8 +24,8 @@ Quick links:
   * [`kbs2 edit`](#kbs2-edit)
   * [`kbs2 generate`](#kbs2-generate)
   * [`kbs2 agent`](#kbs2-agent)
-  * [`kbs2 agent flush`](#kbs2-agent)
-  * [`kbs2 agent unwrap`](#kbs2-agent)
+  * [`kbs2 agent flush`](#kbs2-agent-flush)
+  * [`kbs2 agent unwrap`](#kbs2-agent-unwrap)
   * [`kbs2 rewrap`](#kbs2-rewrap)
   * [`kbs2 rekey`](#kbs2-rekey)
 * [Configuration](#configuration)
@@ -579,6 +579,45 @@ Remove all keys from the current `kbs2` agent:
 
 ```bash
 $ kbs2 agent flush
+```
+
+### `kbs2 agent query`
+
+#### Usage
+
+```
+ask the current agent whether it has the current config's key
+
+USAGE:
+    kbs2 agent query
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+```
+
+`kbs2 agent query` exits with a few discrete codes to signal the query status:
+
+* `0`: query succeeded, agent is running and has a keypair for the config's public key
+* `1`: query failed, agent is running but does not have the queried keypair
+* `2`: query failed, agent is running but the keypair isn't managed by the agent
+(i.e., it's an unwrapped keypair)
+* `3`: query failed, agent is not running
+
+All other error codes should be treated as an unspecified error that prevented a query.
+
+#### Examples
+
+Query the agent for the current config:
+
+```bash
+$ kbs2 agent query && echo "success" || echo "failure"
+```
+
+Query the agent for another config's keypair:
+
+```bash
+$ kbs2 -c /some/other/config agent query
 ```
 
 ### `kbs2 agent unwrap`

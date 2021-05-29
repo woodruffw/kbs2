@@ -65,6 +65,7 @@ pub fn agent(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     // No subcommand: run the agent itself
     match matches.subcommand() {
         Some(("flush", matches)) => agent_flush(&matches),
+        Some(("query", matches)) => agent_query(&matches, &config),
         Some(("unwrap", matches)) => agent_unwrap(&matches, &config),
         _ => unreachable!(),
     }
@@ -79,6 +80,27 @@ fn agent_flush(matches: &ArgMatches) -> Result<()> {
 
     if matches.is_present("quit") {
         client.quit_agent()?;
+    }
+
+    Ok(())
+}
+
+/// Implements the `kbs2 agent query` subcommand.
+fn agent_query(_matches: &ArgMatches, config: &config::Config) -> Result<()> {
+    log::debug!("querying the agent for a key's existence");
+
+    // It doesn't make sense to query the agent for keypairs that the agent
+    // doesn't manage. Use a specific code to signal this case.
+    if !config.wrapped {
+        std::process::exit(2);
+    }
+
+    // Don't allow client creation to fail the normal way: if we can't create
+    // a client for whatever reason (e.g., the agent isn't running), exit
+    // with a specific code to signal our state to the user.
+    let client = agent::Client::new().unwrap_or_else(|_| std::process::exit(3));
+    if !client.query_key(&config.public_key)? {
+        std::process::exit(1);
     }
 
     Ok(())

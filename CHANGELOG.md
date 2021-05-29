@@ -15,6 +15,8 @@ All versions prior to 0.2.1 are untracked.
 ([#191](https://github.com/woodruffw/kbs2/pull/191))
 * CLI: `kbs2 rm` can now remove multiple records in one invocation
 ([#195](https://github.com/woodruffw/kbs2/pull/195))
+* CLI: `kbs2 agent query` enables users to query the agent for the status
+of a config's keypair ([#197](https://github.com/woodruffw/kbs2/pull/197))
 
 ### Changed
 
