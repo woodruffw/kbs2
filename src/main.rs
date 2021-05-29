@@ -55,6 +55,10 @@ fn app<'a, P: AsRef<OsStr>>(default_config_dir: &'a P, default_store_dir: &'a P)
                         ),
                 )
                 .subcommand(
+                    App::new("query")
+                        .about("ask the current agent whether it has the current config's key"),
+                )
+                .subcommand(
                     App::new("unwrap")
                         .about("unwrap the current config's key in the running agent"),
                 ),
