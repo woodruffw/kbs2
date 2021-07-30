@@ -1,13 +1,13 @@
-use anyhow::{anyhow, Result};
-use pinentry::PassphraseInput;
-use secrecy::SecretString;
-
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use anyhow::{anyhow, Result};
+use pinentry::PassphraseInput;
+use secrecy::SecretString;
 
 /// Given an input string formatted according to shell quoting rules,
 /// split it into its command and argument parts and return each.
@@ -116,9 +116,11 @@ pub fn read_guarded<P: AsRef<Path>>(path: P, limit: u64) -> Result<Vec<u8>> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::io::Write;
+
     use tempfile::NamedTempFile;
+
+    use super::*;
 
     #[test]
     fn test_parse_and_split_args() {

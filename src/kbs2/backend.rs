@@ -1,10 +1,10 @@
+use std::io::{Read, Write};
+use std::path::Path;
+
 use age::armor::{ArmoredReader, ArmoredWriter, Format};
 use age::Decryptor;
 use anyhow::{anyhow, Context, Result};
 use secrecy::{ExposeSecret, SecretString};
-
-use std::io::{Read, Write};
-use std::path::Path;
 
 use crate::kbs2::agent;
 use crate::kbs2::config;

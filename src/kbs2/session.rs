@@ -1,9 +1,9 @@
-use anyhow::{anyhow, Result};
-
 use std::convert::TryFrom;
 use std::fs;
 use std::io;
 use std::path::Path;
+
+use anyhow::{anyhow, Result};
 
 use crate::kbs2::agent::Agent;
 use crate::kbs2::backend::{Backend, RageLib};
@@ -31,8 +31,8 @@ impl<'a> Session<'a> {
 
         #[allow(clippy::redundant_field_names)]
         Ok(Session {
-            backend: RageLib::new(&config)?,
-            config: &config,
+            backend: RageLib::new(config)?,
+            config: config,
         })
     }
 
@@ -121,14 +121,15 @@ impl<'a> TryFrom<&'a config::Config> for Session<'a> {
     type Error = anyhow::Error;
 
     fn try_from(config: &'a config::Config) -> Result<Self> {
-        Self::new(&config)
+        Self::new(config)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tempfile::{tempdir, TempDir};
+
+    use super::*;
 
     // NOTE: We pass store in here instead of creating it for lifetime reasons:
     // the temp dir is unlinked when its TempDir object is destructed, so we need
