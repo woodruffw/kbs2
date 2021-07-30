@@ -1,11 +1,11 @@
-use anyhow::{anyhow, Context, Result};
-use clap::{App, AppSettings, Arg, ArgMatches};
-use clap_generate::{generate, generators};
-
 use std::ffi::OsStr;
 use std::io;
 use std::path::Path;
 use std::process::Command;
+
+use anyhow::{anyhow, Context, Result};
+use clap::{App, AppSettings, Arg, ArgMatches};
+use clap_generate::{generate, generators};
 
 mod kbs2;
 
@@ -278,7 +278,7 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
 
     // Special case: `kbs2 agent` does not receive pre- or post-hooks.
     if let Some(("agent", matches)) = matches.subcommand() {
-        return kbs2::command::agent(&matches, &config);
+        return kbs2::command::agent(matches, config);
     }
 
     if let Some(pre_hook) = &config.pre_hook {
@@ -287,16 +287,16 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
     }
 
     match matches.subcommand() {
-        Some(("new", matches)) => kbs2::command::new(&matches, &config)?,
-        Some(("list", matches)) => kbs2::command::list(&matches, &config)?,
-        Some(("rm", matches)) => kbs2::command::rm(&matches, &config)?,
-        Some(("dump", matches)) => kbs2::command::dump(&matches, &config)?,
-        Some(("pass", matches)) => kbs2::command::pass(&matches, &config)?,
-        Some(("env", matches)) => kbs2::command::env(&matches, &config)?,
-        Some(("edit", matches)) => kbs2::command::edit(&matches, &config)?,
-        Some(("generate", matches)) => kbs2::command::generate(&matches, &config)?,
-        Some(("rewrap", matches)) => kbs2::command::rewrap(&matches, &config)?,
-        Some(("rekey", matches)) => kbs2::command::rekey(&matches, &config)?,
+        Some(("new", matches)) => kbs2::command::new(matches, config)?,
+        Some(("list", matches)) => kbs2::command::list(matches, config)?,
+        Some(("rm", matches)) => kbs2::command::rm(matches, config)?,
+        Some(("dump", matches)) => kbs2::command::dump(matches, config)?,
+        Some(("pass", matches)) => kbs2::command::pass(matches, config)?,
+        Some(("env", matches)) => kbs2::command::env(matches, config)?,
+        Some(("edit", matches)) => kbs2::command::edit(matches, config)?,
+        Some(("generate", matches)) => kbs2::command::generate(matches, config)?,
+        Some(("rewrap", matches)) => kbs2::command::rewrap(matches, config)?,
+        Some(("rekey", matches)) => kbs2::command::rekey(matches, config)?,
         Some((cmd, matches)) => {
             let cmd = format!("kbs2-{}", cmd);
 
@@ -378,7 +378,7 @@ fn main() -> Result<()> {
             .print_long_help()
             .with_context(|| "failed to print help".to_string());
     } else if let Some(("init", matches)) = matches.subcommand() {
-        return kbs2::command::init(&matches, &config_dir);
+        return kbs2::command::init(matches, config_dir);
     }
 
     // Everything else (i.e., all other subcommands) go through here.

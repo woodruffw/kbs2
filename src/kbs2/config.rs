@@ -1,13 +1,13 @@
-use anyhow::{anyhow, Result};
-use secrecy::SecretString;
-use serde::{de, Deserialize, Serialize};
-
 use std::collections::HashMap;
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+
+use anyhow::{anyhow, Result};
+use secrecy::SecretString;
+use serde::{de, Deserialize, Serialize};
 
 use crate::kbs2::backend::{Backend, RageLib};
 use crate::kbs2::generator::Generator;
@@ -160,7 +160,7 @@ impl Default for Pinentry {
 
 impl AsRef<OsStr> for Pinentry {
     fn as_ref(&self) -> &OsStr {
-        &self.0.as_ref()
+        self.0.as_ref()
     }
 }
 
@@ -446,8 +446,9 @@ pub fn load<P: AsRef<Path>>(config_dir: P) -> Result<Config> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tempfile::tempdir;
+
+    use super::*;
 
     fn dummy_config_unwrapped_key() -> Config {
         Config {

@@ -1,9 +1,3 @@
-use anyhow::{anyhow, Context, Result};
-use nix::unistd::Uid;
-use secrecy::{ExposeSecret, Secret, SecretString};
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
-
 use std::collections::HashMap;
 use std::fs;
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
@@ -13,6 +7,12 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::thread;
 use std::time::Duration;
+
+use anyhow::{anyhow, Context, Result};
+use nix::unistd::Uid;
+use secrecy::{ExposeSecret, Secret, SecretString};
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 
 use crate::kbs2::backend::{Backend, RageLib};
 

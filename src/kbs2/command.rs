@@ -1,3 +1,9 @@
+use std::convert::TryInto;
+use std::env;
+use std::io::{Read, Seek, SeekFrom, Write};
+use std::path::{Path, PathBuf};
+use std::process;
+
 use anyhow::{anyhow, Result};
 use atty::Stream;
 use clap::ArgMatches;
@@ -6,12 +12,6 @@ use daemonize::Daemonize;
 use dialoguer::Confirm;
 use nix::unistd::{fork, ForkResult};
 use secrecy::{ExposeSecret, Secret};
-
-use std::convert::TryInto;
-use std::env;
-use std::io::{Read, Seek, SeekFrom, Write};
-use std::path::{Path, PathBuf};
-use std::process;
 
 use crate::kbs2::agent;
 use crate::kbs2::backend::{self, Backend};
@@ -64,9 +64,9 @@ pub fn agent(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     // No subcommand: run the agent itself
     match matches.subcommand() {
-        Some(("flush", matches)) => agent_flush(&matches),
-        Some(("query", matches)) => agent_query(&matches, &config),
-        Some(("unwrap", matches)) => agent_unwrap(&matches, &config),
+        Some(("flush", matches)) => agent_flush(matches),
+        Some(("query", matches)) => agent_query(matches, config),
+        Some(("unwrap", matches)) => agent_unwrap(matches, config),
         _ => unreachable!(),
     }
 }
@@ -171,7 +171,7 @@ pub fn new(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     if let Some(post_hook) = &session.config.commands.new.post_hook {
         log::debug!("post-hook: {}", post_hook);
-        session.config.call_hook(post_hook, &[&label])?;
+        session.config.call_hook(post_hook, &[label])?;
     }
 
     Ok(())
@@ -187,7 +187,7 @@ fn new_login(
     let fields = input::fields(
         &[Insensitive("Username"), Sensitive("Password")],
         terse,
-        &session.config,
+        session.config,
         generator,
     )?;
     let record = record::Record::login(label, &fields[0], &fields[1]);
@@ -205,7 +205,7 @@ fn new_environment(
     let fields = input::fields(
         &[Insensitive("Variable"), Sensitive("Value")],
         terse,
-        &session.config,
+        session.config,
         generator,
     )?;
     let record = record::Record::environment(label, &fields[0], &fields[1]);
@@ -220,12 +220,7 @@ fn new_unstructured(
     session: &Session,
     generator: Option<&dyn Generator>,
 ) -> Result<()> {
-    let fields = input::fields(
-        &[Insensitive("Contents")],
-        terse,
-        &session.config,
-        generator,
-    )?;
+    let fields = input::fields(&[Insensitive("Contents")], terse, session.config, generator)?;
     let record = record::Record::unstructured(label, &fields[0]);
 
     session.add_record(&record)
@@ -299,7 +294,7 @@ pub fn dump(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     let labels: Vec<_> = matches.values_of("label").unwrap().collect();
 
     for label in labels {
-        let record = session.get_record(&label)?;
+        let record = session.get_record(label)?;
 
         if matches.is_present("json") {
             println!("{}", serde_json::to_string(&record)?);
@@ -334,7 +329,7 @@ pub fn pass(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     #[allow(clippy::unwrap_used)]
     let label = matches.value_of("label").unwrap();
-    let record = session.get_record(&label)?;
+    let record = session.get_record(label)?;
 
     let login = match record.body {
         RecordBody::Login(l) => l,
@@ -450,7 +445,7 @@ pub fn env(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     #[allow(clippy::unwrap_used)]
     let label = matches.value_of("label").unwrap();
-    let record = session.get_record(&label)?;
+    let record = session.get_record(label)?;
 
     let environment = match record.body {
         RecordBody::Environment(e) => e,
@@ -493,7 +488,7 @@ pub fn edit(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     #[allow(clippy::unwrap_used)]
     let label = matches.value_of("label").unwrap();
-    let record = session.get_record(&label)?;
+    let record = session.get_record(label)?;
 
     let mut file = tempfile::NamedTempFile::new()?;
     file.write_all(&serde_json::to_vec_pretty(&record)?)?;
@@ -656,7 +651,7 @@ pub fn rekey(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         let records: Result<Vec<record::Record>> = session
             .record_labels()?
             .iter()
-            .map(|l| session.get_record(&l))
+            .map(|l| session.get_record(l))
             .collect();
 
         records?.into_iter().map(Secret::new).collect()

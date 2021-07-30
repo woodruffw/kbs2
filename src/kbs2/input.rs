@@ -1,7 +1,7 @@
+use std::io::{self, Read};
+
 use anyhow::{anyhow, Result};
 use dialoguer::{Input, Password};
-
-use std::io::{self, Read};
 
 use crate::kbs2::config::Config;
 use crate::kbs2::generator::Generator;
