@@ -14,7 +14,7 @@ fn app<'a, P: AsRef<OsStr>>(default_config_dir: &'a P, default_store_dir: &'a P)
     // The latter probably won't work with env!, though.
     App::new(env!("CARGO_PKG_NAME"))
         .setting(AppSettings::AllowExternalSubcommands)
-        .setting(AppSettings::VersionlessSubcommands)
+        .setting(AppSettings::DisableVersionForSubcommands)
         .version(env!("CARGO_PKG_VERSION"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
@@ -156,7 +156,7 @@ fn app<'a, P: AsRef<OsStr>>(default_config_dir: &'a P, default_store_dir: &'a P)
                     .about("the labels of the records to remove")
                     .index(1)
                     .required(true)
-                    .multiple(true),
+                    .multiple_values(true),
             ),
         )
         .subcommand(
@@ -167,7 +167,7 @@ fn app<'a, P: AsRef<OsStr>>(default_config_dir: &'a P, default_store_dir: &'a P)
                         .about("the labels of the records to dump")
                         .index(1)
                         .required(true)
-                        .multiple(true),
+                        .multiple_values(true),
                 )
                 .arg(
                     Arg::new("json")
