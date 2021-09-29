@@ -34,12 +34,12 @@ dependencies = [
  "i18n-embed",
  "i18n-embed-fl",
  "lazy_static",
- "nom",
+ "nom 6.1.2",
  "pin-project",
  "rand 0.7.3",
  "rust-embed",
  "scrypt",
- "secrecy",
+ "secrecy 0.7.0",
  "sha2",
  "subtle",
  "x25519-dalek",
@@ -57,9 +57,9 @@ dependencies = [
  "chacha20poly1305",
  "cookie-factory",
  "hkdf",
- "nom",
+ "nom 6.1.2",
  "rand 0.7.3",
- "secrecy",
+ "secrecy 0.7.0",
  "sha2",
 ]
 
@@ -701,7 +701,7 @@ dependencies = [
  "pinentry",
  "rand 0.8.4",
  "rpassword",
- "secrecy",
+ "secrecy 0.7.0",
  "serde",
  "serde_json",
  "shell-words",
@@ -766,6 +766,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "minimal-lexical"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c835948974f68e0bd58636fc6c5b1fbff7b297e3046f11b3b3c18bbac012c6d"
+
+[[package]]
 name = "nix"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -787,6 +793,17 @@ dependencies = [
  "bitvec",
  "funty",
  "memchr",
+ "version_check",
+]
+
+[[package]]
+name = "nom"
+version = "7.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ffd9d26838a953b4af82cbeb9f1592c6798916983959be223a7124e992742c1"
+dependencies = [
+ "memchr",
+ "minimal-lexical",
  "version_check",
 ]
 
@@ -932,14 +949,14 @@ dependencies = [
 
 [[package]]
 name = "pinentry"
-version = "0.3.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8266a6e77c40ef16f3d00bfe72ddb6e2fd29384d5b87e6bae1975099aa12921"
+checksum = "bfa5b8bc68be6a5e2ba84ee86db53f816cba1905b94fcb7c236e606221cc8fc8"
 dependencies = [
  "log",
- "nom",
+ "nom 7.0.0",
  "percent-encoding",
- "secrecy",
+ "secrecy 0.8.0",
  "which",
  "zeroize",
 ]
@@ -1231,6 +1248,15 @@ name = "secrecy"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0673d6a6449f5e7d12a1caf424fd9363e2af3a4953023ed455e3c4beef4597c0"
+dependencies = [
+ "zeroize",
+]
+
+[[package]]
+name = "secrecy"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bd1c54ea06cfd2f6b63219704de0b9b4f72dcc2b8fdef820be6cd799780e91e"
 dependencies = [
  "zeroize",
 ]
@@ -1683,9 +1709,9 @@ dependencies = [
 
 [[package]]
 name = "zeroize"
-version = "1.2.0"
+version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81a974bcdd357f0dca4d41677db03436324d45a4c9ed2d0b873a5a360ce41c36"
+checksum = "bf68b08513768deaa790264a7fac27a58cbf2705cfcdc9448362229217d7e970"
 dependencies = [
  "zeroize_derive",
 ]
