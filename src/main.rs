@@ -1,20 +1,18 @@
-use std::ffi::OsStr;
 use std::io;
 use std::path::Path;
 use std::process::Command;
 
 use anyhow::{anyhow, Context, Result};
 use clap::{App, AppSettings, Arg, ArgMatches};
-use clap_generate::{generate, generators};
+use clap_generate::{generate, Shell};
 
 mod kbs2;
 
-fn app<'a, P: AsRef<OsStr>>(default_config_dir: &'a P, default_store_dir: &'a P) -> App<'a> {
+fn app() -> App<'static> {
     // TODO(ww): Put this in a separate file, or switch to YAML.
     // The latter probably won't work with env!, though.
     App::new(env!("CARGO_PKG_NAME"))
         .setting(AppSettings::AllowExternalSubcommands)
-        .setting(AppSettings::DisableVersionForSubcommands)
         .version(env!("CARGO_PKG_VERSION"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
@@ -25,7 +23,7 @@ fn app<'a, P: AsRef<OsStr>>(default_config_dir: &'a P, default_store_dir: &'a P)
                 .value_name("DIR")
                 .takes_value(true)
                 .env("KBS2_CONFIG_DIR")
-                .default_value_os(default_config_dir.as_ref()),
+                .default_value_os(kbs2::config::DEFAULT_CONFIG_DIR.as_ref()),
         )
         .arg(
             Arg::new("completions")
@@ -33,7 +31,7 @@ fn app<'a, P: AsRef<OsStr>>(default_config_dir: &'a P, default_store_dir: &'a P)
                 .long("completions")
                 .value_name("SHELL")
                 .takes_value(true)
-                .possible_values(&["bash", "zsh", "fish"]),
+                .possible_values(Shell::arg_values()),
         )
         .subcommand(
             App::new("agent")
@@ -79,7 +77,7 @@ fn app<'a, P: AsRef<OsStr>>(default_config_dir: &'a P, default_store_dir: &'a P)
                         .long("store-dir")
                         .value_name("DIR")
                         .takes_value(true)
-                        .default_value_os(default_store_dir.as_ref()),
+                        .default_value_os(kbs2::config::DEFAULT_STORE_DIR.as_ref()),
                 )
                 .arg(
                     Arg::new("insecure-not-wrapped")
@@ -339,27 +337,13 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
 fn main() -> Result<()> {
     env_logger::init();
 
-    let default_config_dir = kbs2::config::find_default_config_dir()?;
-    let default_store_dir = kbs2::config::find_default_store_dir()?;
-
-    let mut app = app(&default_config_dir, &default_store_dir);
+    let mut app = app();
     let matches = app.clone().get_matches();
 
     // Shell completion generation is completely independent, so perform it before
     // any config or subcommand operations.
-    if let Some(shell) = matches.value_of("completions") {
-        match shell {
-            "bash" => {
-                generate::<generators::Bash, _>(&mut app, env!("CARGO_PKG_NAME"), &mut io::stdout())
-            }
-            "zsh" => {
-                generate::<generators::Zsh, _>(&mut app, env!("CARGO_PKG_NAME"), &mut io::stdout())
-            }
-            "fish" => {
-                generate::<generators::Fish, _>(&mut app, env!("CARGO_PKG_NAME"), &mut io::stdout())
-            }
-            _ => unreachable!(),
-        }
+    if let Ok(shell) = matches.value_of_t::<Shell>("completions") {
+        generate(shell, &mut app, env!("CARGO_PKG_NAME"), &mut io::stdout());
         return Ok(());
     }
 

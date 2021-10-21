@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use anyhow::{anyhow, Result};
+use lazy_static::lazy_static;
 use secrecy::SecretString;
 use serde::{de, Deserialize, Serialize};
 
@@ -28,6 +29,14 @@ pub static DEFAULT_KEY_BASENAME: &str = "key";
 /// The default base directory name for the secret store, placed relative to
 /// the user's data directory by default.
 pub static STORE_BASEDIR: &str = "kbs2";
+
+lazy_static! {
+    static ref HOME: PathBuf = util::home_dir();
+
+    // TODO(ww): Respect XDG on appropriate platforms.
+    pub static ref DEFAULT_CONFIG_DIR: PathBuf = HOME.join(".config").join(CONFIG_BASEDIR);
+    pub static ref DEFAULT_STORE_DIR: PathBuf = HOME.join(".local/share").join(STORE_BASEDIR);
+}
 
 /// The main kbs2 configuration structure.
 /// The fields of this structure correspond directly to the fields
@@ -343,24 +352,6 @@ fn default_as_true() -> bool {
     true
 }
 
-/// Returns a suitable default configuration directory path for `kbs2`.
-///
-/// NOTE: This function always chooses `$HOME/.config/kbs2`, across all platforms.
-pub fn find_default_config_dir() -> Result<PathBuf> {
-    // TODO(ww): This should respect XDG on Linux.
-    let home = util::home_dir()?;
-    Ok(home.join(".config").join(CONFIG_BASEDIR))
-}
-
-/// Returns a suitable default record store directory path for `kbs2`.
-///
-/// NOTE: This function always chooses `$HOME/.local/share/kbs2`, across all platforms.
-pub fn find_default_store_dir() -> Result<PathBuf> {
-    // TODO(ww): This should respect XDG on Linux.
-    let home = util::home_dir()?;
-    Ok(home.join(".local/share").join(STORE_BASEDIR))
-}
-
 /// Given a path to a `kbs2` configuration directory, initializes a configuration
 /// file and keypair within it.
 ///
@@ -475,10 +466,9 @@ mod tests {
 
     #[test]
     fn test_find_default_config_dir() {
-        let dir = find_default_config_dir().unwrap();
         // NOTE: We can't check whether the main config dir exists since we create it if it
         // doesn't; instead, we just check that it isn't something weird like a regular file.
-        assert!(!dir.is_file());
+        assert!(!DEFAULT_CONFIG_DIR.is_file());
 
         // The default config dir's parents aren't guaranteed to exist; we create them
         // if they don't.
@@ -486,9 +476,8 @@ mod tests {
 
     #[test]
     fn test_find_default_store_dir() {
-        let dir = find_default_store_dir().unwrap();
         // NOTE: Like above: just make sure it isn't something weird like a regular file.
-        assert!(!dir.is_file());
+        assert!(!DEFAULT_STORE_DIR.is_file());
 
         // The default store dir's parents aren't guaranteed to exist; we create them
         // if they don't.
