@@ -209,7 +209,7 @@ mod tests {
 
     #[test]
     fn test_home_dir() {
-        let dir = home_dir().unwrap();
+        let dir = home_dir();
 
         assert!(dir.exists());
         assert!(dir.is_dir());
