@@ -92,11 +92,10 @@ pub fn warn(msg: &str) {
 }
 
 /// Retrieve the current user's home directory.
-pub fn home_dir() -> Result<PathBuf> {
-    match home::home_dir() {
-        Some(dir) => Ok(dir),
-        None => Err(anyhow!("couldn't find the user's home directory")),
-    }
+pub fn home_dir() -> PathBuf {
+    // Expect: This program is functionally useless without a $HOME.
+    #[allow(clippy::expect_used)]
+    home::home_dir().expect("Fatal: can't continue without $HOME.")
 }
 
 /// Read the entire given file into a `Vec<u8>`, or fail if its on-disk size exceeds

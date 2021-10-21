@@ -31,9 +31,7 @@ pub static DEFAULT_KEY_BASENAME: &str = "key";
 pub static STORE_BASEDIR: &str = "kbs2";
 
 lazy_static! {
-    // Expect: This program is functionally useless without a $HOME.
-    #[allow(clippy::expect_used)]
-    static ref HOME: PathBuf = util::home_dir().expect("Fatal: can't continue without $HOME.");
+    static ref HOME: PathBuf = util::home_dir();
 
     // TODO(ww): Respect XDG on appropriate platforms.
     pub static ref DEFAULT_CONFIG_DIR: PathBuf = HOME.join(".config").join(CONFIG_BASEDIR);
