@@ -17,6 +17,8 @@ All versions prior to 0.2.1 are untracked.
 ([#195](https://github.com/woodruffw/kbs2/pull/195))
 * CLI: `kbs2 agent query` enables users to query the agent for the status
 of a config's keypair ([#197](https://github.com/woodruffw/kbs2/pull/197))
+* CLI: `kbs2 --completions` now supports more shells (`bash`, `elvish`, `fish`,
+`powershell`, and `zsh`) ([#235](https://github.com/woodruffw/kbs2/pull/235))
 
 ### Changed
 
@@ -24,6 +26,7 @@ of a config's keypair ([#197](https://github.com/woodruffw/kbs2/pull/197))
 Releases earlier than this one use an incompatible protocol; users should
 run `kbs2 agent flush -q` after upgrading to kill their outdated agent
 ([#193](https://github.com/woodruffw/kbs2/pull/193))
+* Deps: `kbs2` now uses `age` 0.7 ([#237](https://github.com/woodruffw/kbs2/pull/237))
 
 ### Fixed
 
