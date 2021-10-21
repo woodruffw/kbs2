@@ -468,10 +468,9 @@ mod tests {
 
     #[test]
     fn test_find_default_config_dir() {
-        let dir = find_default_config_dir().unwrap();
         // NOTE: We can't check whether the main config dir exists since we create it if it
         // doesn't; instead, we just check that it isn't something weird like a regular file.
-        assert!(!dir.is_file());
+        assert!(!DEFAULT_CONFIG_DIR.is_file());
 
         // The default config dir's parents aren't guaranteed to exist; we create them
         // if they don't.
@@ -479,9 +478,8 @@ mod tests {
 
     #[test]
     fn test_find_default_store_dir() {
-        let dir = find_default_store_dir().unwrap();
         // NOTE: Like above: just make sure it isn't something weird like a regular file.
-        assert!(!dir.is_file());
+        assert!(!DEFAULT_STORE_DIR.is_file());
 
         // The default store dir's parents aren't guaranteed to exist; we create them
         // if they don't.
