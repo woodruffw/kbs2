@@ -33,7 +33,7 @@ dependencies = [
  "i18n-embed",
  "i18n-embed-fl",
  "lazy_static",
- "nom 7.0.0",
+ "nom",
  "pin-project",
  "rand 0.7.3",
  "rand 0.8.4",
@@ -55,9 +55,9 @@ dependencies = [
  "chacha20poly1305",
  "cookie-factory",
  "hkdf",
- "nom 7.0.0",
+ "nom",
  "rand 0.8.4",
- "secrecy 0.8.0",
+ "secrecy",
  "sha2",
 ]
 
@@ -678,7 +678,7 @@ dependencies = [
  "pinentry",
  "rand 0.8.4",
  "rpassword",
- "secrecy 0.7.0",
+ "secrecy",
  "serde",
  "serde_json",
  "shell-words",
@@ -759,16 +759,6 @@ dependencies = [
  "cfg-if",
  "libc",
  "memoffset",
-]
-
-[[package]]
-name = "nom"
-version = "6.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7413f999671bd4745a7b624bd370a569fb6bc574b23c83a3c5ed2e453f3d5e2"
-dependencies = [
- "memchr",
- "version_check",
 ]
 
 [[package]]
@@ -924,14 +914,14 @@ dependencies = [
 
 [[package]]
 name = "pinentry"
-version = "0.3.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8266a6e77c40ef16f3d00bfe72ddb6e2fd29384d5b87e6bae1975099aa12921"
+checksum = "bfa5b8bc68be6a5e2ba84ee86db53f816cba1905b94fcb7c236e606221cc8fc8"
 dependencies = [
  "log",
- "nom 6.1.2",
+ "nom",
  "percent-encoding",
- "secrecy 0.7.0",
+ "secrecy",
  "which",
  "zeroize",
 ]
@@ -1212,15 +1202,6 @@ dependencies = [
  "pbkdf2",
  "salsa20",
  "sha2",
-]
-
-[[package]]
-name = "secrecy"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0673d6a6449f5e7d12a1caf424fd9363e2af3a4953023ed455e3c4beef4597c0"
-dependencies = [
- "zeroize",
 ]
 
 [[package]]

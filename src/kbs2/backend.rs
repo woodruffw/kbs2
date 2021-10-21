@@ -2,7 +2,7 @@ use std::io::{Read, Write};
 use std::path::Path;
 
 use age::armor::{ArmoredReader, ArmoredWriter, Format};
-use age::Decryptor;
+use age::{Decryptor, IdentityFileEntry};
 use anyhow::{anyhow, Context, Result};
 use secrecy::{ExposeSecret, SecretString};
 
@@ -94,6 +94,15 @@ impl RageLib {
                 identities.len()
             ));
         }
+
+        let identities = identities
+            .into_iter()
+            .map(|i| match i {
+                // NOTE(ww): We're not using the plugin feature of the `age` crate,
+                // so this is the only variant.
+                IdentityFileEntry::Native(i) => i,
+            })
+            .collect();
 
         Ok(RageLib { pubkey, identities })
     }
