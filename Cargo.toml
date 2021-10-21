@@ -12,8 +12,9 @@ keywords = ["cli", "password-manager", "crypto"]
 categories = ["command-line-utilities", "cryptography"]
 
 [package.metadata.release]
-no-dev-version = true
-disable-publish = true # handled by GitHub Actions
+dev-version = false
+publish = false # handled by GitHub Actions
+push = true
 
 [[package.metadata.release.pre-release-replacements]]
 file = "README.md"
