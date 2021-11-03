@@ -319,7 +319,7 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
             if !status.success() {
                 return Err(match status.code() {
                     Some(code) => anyhow!("{} failed: exited with {}", cmd, code),
-                    None => anyhow!("{} failed: terminated by signal"),
+                    None => anyhow!("{} failed: terminated by signal", cmd),
                 });
             }
         }
