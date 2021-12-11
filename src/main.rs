@@ -17,7 +17,7 @@ fn app() -> App<'static> {
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
             Arg::new("config-dir")
-                .about("use the specified config directory")
+                .help("use the specified config directory")
                 .short('c')
                 .long("config-dir")
                 .value_name("DIR")
@@ -27,18 +27,18 @@ fn app() -> App<'static> {
         )
         .arg(
             Arg::new("completions")
-                .about("emit shell tab completions")
+                .help("emit shell tab completions")
                 .long("completions")
                 .value_name("SHELL")
                 .takes_value(true)
-                .possible_values(Shell::arg_values()),
+                .possible_values(Shell::possible_values()),
         )
         .subcommand(
             App::new("agent")
                 .about("run the kbs2 authentication agent")
                 .arg(
                     Arg::new("foreground")
-                        .about("run the agent in the foreground")
+                        .help("run the agent in the foreground")
                         .short('F')
                         .long("foreground"),
                 )
@@ -47,7 +47,7 @@ fn app() -> App<'static> {
                         .about("remove all unwrapped keys from the running agent")
                         .arg(
                             Arg::new("quit")
-                                .about("quit the agent after flushing")
+                                .help("quit the agent after flushing")
                                 .short('q')
                                 .long("quit"),
                         ),
@@ -66,13 +66,13 @@ fn app() -> App<'static> {
                 .about("initialize kbs2 with a new config and keypair")
                 .arg(
                     Arg::new("force")
-                        .about("overwrite the config and keyfile, if already present")
+                        .help("overwrite the config and keyfile, if already present")
                         .short('f')
                         .long("force"),
                 )
                 .arg(
                     Arg::new("store-dir")
-                        .about("the directory to store encrypted kbs2 records in")
+                        .help("the directory to store encrypted kbs2 records in")
                         .short('s')
                         .long("store-dir")
                         .value_name("DIR")
@@ -81,7 +81,7 @@ fn app() -> App<'static> {
                 )
                 .arg(
                     Arg::new("insecure-not-wrapped")
-                        .about("don't wrap the keypair with a master password")
+                        .help("don't wrap the keypair with a master password")
                         .long("insecure-not-wrapped"),
                 ),
         )
@@ -90,13 +90,13 @@ fn app() -> App<'static> {
                 .about("create a new record")
                 .arg(
                     Arg::new("label")
-                        .about("the record's label")
+                        .help("the record's label")
                         .index(1)
                         .required(true),
                 )
                 .arg(
                     Arg::new("kind")
-                        .about("the kind of record to create")
+                        .help("the kind of record to create")
                         .short('k')
                         .long("kind")
                         .takes_value(true)
@@ -105,25 +105,25 @@ fn app() -> App<'static> {
                 )
                 .arg(
                     Arg::new("force")
-                        .about("overwrite, if already present")
+                        .help("overwrite, if already present")
                         .short('f')
                         .long("force"),
                 )
                 .arg(
                     Arg::new("terse")
-                        .about("read fields in a terse format, even when connected to a tty")
+                        .help("read fields in a terse format, even when connected to a tty")
                         .short('t')
                         .long("terse"),
                 )
                 .arg(
                     Arg::new("generate")
-                        .about("generate sensitive fields instead of prompting for them")
+                        .help("generate sensitive fields instead of prompting for them")
                         .short('g')
                         .long("generate"),
                 )
                 .arg(
                     Arg::new("generator")
-                        .about("use the given generator to generate sensitive fields")
+                        .help("use the given generator to generate sensitive fields")
                         .short('G')
                         .long("generator")
                         .takes_value(true)
@@ -135,13 +135,13 @@ fn app() -> App<'static> {
                 .about("list records")
                 .arg(
                     Arg::new("details")
-                        .about("print (non-field) details for each record")
+                        .help("print (non-field) details for each record")
                         .short('d')
                         .long("details"),
                 )
                 .arg(
                     Arg::new("kind")
-                        .about("list only records of this kind")
+                        .help("list only records of this kind")
                         .short('k')
                         .long("kind")
                         .takes_value(true)
@@ -151,7 +151,7 @@ fn app() -> App<'static> {
         .subcommand(
             App::new("rm").about("remove one or more records").arg(
                 Arg::new("label")
-                    .about("the labels of the records to remove")
+                    .help("the labels of the records to remove")
                     .index(1)
                     .required(true)
                     .multiple_values(true),
@@ -162,14 +162,14 @@ fn app() -> App<'static> {
                 .about("dump one or more records")
                 .arg(
                     Arg::new("label")
-                        .about("the labels of the records to dump")
+                        .help("the labels of the records to dump")
                         .index(1)
                         .required(true)
                         .multiple_values(true),
                 )
                 .arg(
                     Arg::new("json")
-                        .about("dump in JSON format (JSONL when multiple)")
+                        .help("dump in JSON format (JSONL when multiple)")
                         .short('j')
                         .long("json"),
                 ),
@@ -179,13 +179,13 @@ fn app() -> App<'static> {
                 .about("get the password in a login record")
                 .arg(
                     Arg::new("label")
-                        .about("the record's label")
+                        .help("the record's label")
                         .index(1)
                         .required(true),
                 )
                 .arg(
                     Arg::new("clipboard")
-                        .about("copy the password to the clipboard")
+                        .help("copy the password to the clipboard")
                         .short('c')
                         .long("clipboard"),
                 ),
@@ -195,19 +195,19 @@ fn app() -> App<'static> {
                 .about("get an environment record")
                 .arg(
                     Arg::new("label")
-                        .about("the record's label")
+                        .help("the record's label")
                         .index(1)
                         .required(true),
                 )
                 .arg(
                     Arg::new("value-only")
-                        .about("print only the environment variable value, not the variable name")
+                        .help("print only the environment variable value, not the variable name")
                         .short('v')
                         .long("value-only"),
                 )
                 .arg(
                     Arg::new("no-export")
-                        .about("print only VAR=val without `export`")
+                        .help("print only VAR=val without `export`")
                         .short('n')
                         .long("no-export"),
                 ),
@@ -217,13 +217,13 @@ fn app() -> App<'static> {
                 .about("modify a record with a text editor")
                 .arg(
                     Arg::new("label")
-                        .about("the record's label")
+                        .help("the record's label")
                         .index(1)
                         .required(true),
                 )
                 .arg(
                     Arg::new("preserve-timestamp")
-                        .about("don't update the record's timestamp")
+                        .help("don't update the record's timestamp")
                         .short('p')
                         .long("preserve-timestamp"),
                 ),
@@ -233,7 +233,7 @@ fn app() -> App<'static> {
                 .about("generate secret values using a generator")
                 .arg(
                     Arg::new("generator")
-                        .about("the generator to use")
+                        .help("the generator to use")
                         .index(1)
                         .default_value("default"),
                 ),
@@ -243,13 +243,13 @@ fn app() -> App<'static> {
                 .about("change the master password on a wrapped key")
                 .arg(
                     Arg::new("no-backup")
-                        .about("don't make a backup of the old wrapped key")
+                        .help("don't make a backup of the old wrapped key")
                         .short('n')
                         .long("no-backup"),
                 )
                 .arg(
                     Arg::new("force")
-                        .about("overwrite a previous backup, if one exists")
+                        .help("overwrite a previous backup, if one exists")
                         .short('f')
                         .long("force"),
                 ),
@@ -260,7 +260,7 @@ fn app() -> App<'static> {
                 .about("re-encrypt the entire store with a new keypair and master password")
                 .arg(
                     Arg::new("no-backup")
-                        .about("don't make a backup of the old wrapped key, config, or store")
+                        .help("don't make a backup of the old wrapped key, config, or store")
                         .short('n')
                         .long("no-backup"),
                 ),
@@ -377,5 +377,15 @@ fn main() -> Result<()> {
 
             Err(e)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_app() {
+        app().debug_assert();
     }
 }
