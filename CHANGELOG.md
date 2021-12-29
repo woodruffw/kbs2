@@ -14,6 +14,11 @@ All versions prior to 0.2.1 are untracked.
 * Meta: `kbs2` is now built with the 2021 edition of Rust
 ([#239](https://github.com/woodruffw/kbs2/pull/239))
 
+* Config: `kbs2` now checks for a `config.toml` file for its configuration.
+The legacy behavior (`kbs2.conf`) is preserved for backwards compatibility, but
+will be removed in an upcoming stable release.
+([#268](https://github.com/woodruffw/kbs2/pull/268))
+
 ## [0.4.0] - 2021-10-20
 
 ### Added

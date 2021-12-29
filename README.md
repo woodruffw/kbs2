@@ -721,10 +721,14 @@ $ kbs2 -c /some/other/kbs2/conf/dir rekey
 
 ## Configuration
 
-`kbs2` stores its configuration in `<config dir>/kbs2/kbs2.conf`, where `<config dir>` is determined
+`kbs2` stores its configuration in `<config dir>/kbs2/config.toml`, where `<config dir>` is determined
 by your host system. On Linux, for example, it's `~/.config`.
 
-`kbs2.conf` is TOML-formatted, and might look something like this after a clean start with `kbs2 init`:
+**NOTE**: If `config.toml` isn't found in a configuration directory, `kbs2` attempts to use
+`kbs2.conf` in the same directory. This is for backwards compatibility, and will be removed
+once `kbs2` has its first stable release.
+
+`config.toml` is TOML-formatted, and might look something like this after a clean start with `kbs2 init`:
 
 ```toml
 public-key = "age1elujxyndwy0n9j2e2elmk9ns8vtltg69q620dr0sz4nu5fgj95xsl2peea"
