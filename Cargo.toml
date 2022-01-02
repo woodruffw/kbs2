@@ -64,8 +64,8 @@ age = { version = "0.7.1", features = ["armor"] }
 anyhow = "1.0"
 atty = "0.2.14"
 dialoguer = "0.9.0"
-clap = { version = "3.0.0-rc.4", features = ["env"] }
-clap_generate = "3.0.0-rc.4"
+clap = { version = "3.0.0", features = ["env"] }
+clap_complete = "3.0.0"
 clipboard = "0.5.0"
 daemonize = "0.4"
 env_logger = "0.9"

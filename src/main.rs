@@ -3,8 +3,8 @@ use std::path::Path;
 use std::process::Command;
 
 use anyhow::{anyhow, Context, Result};
-use clap::{App, AppSettings, Arg, ArgMatches};
-use clap_generate::{generate, Shell};
+use clap::{App, AppSettings, Arg, ArgMatches, ValueHint};
+use clap_complete::{generate, Shell};
 
 mod kbs2;
 
@@ -23,7 +23,8 @@ fn app() -> App<'static> {
                 .value_name("DIR")
                 .takes_value(true)
                 .env("KBS2_CONFIG_DIR")
-                .default_value_os(kbs2::config::DEFAULT_CONFIG_DIR.as_ref()),
+                .default_value_os(kbs2::config::DEFAULT_CONFIG_DIR.as_ref())
+                .value_hint(ValueHint::DirPath),
         )
         .arg(
             Arg::new("completions")
@@ -77,7 +78,8 @@ fn app() -> App<'static> {
                         .long("store-dir")
                         .value_name("DIR")
                         .takes_value(true)
-                        .default_value_os(kbs2::config::DEFAULT_STORE_DIR.as_ref()),
+                        .default_value_os(kbs2::config::DEFAULT_STORE_DIR.as_ref())
+                        .value_hint(ValueHint::DirPath),
                 )
                 .arg(
                     Arg::new("insecure-not-wrapped")
