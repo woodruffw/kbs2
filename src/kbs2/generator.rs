@@ -61,6 +61,8 @@ impl Generator for config::InternalGeneratorConfig {
                 ));
             }
 
+            // Safe unwrap: alphabet.chars() is always nonempty.
+            #[allow(clippy::unwrap_used)]
             secret.push(alphabet.chars().choose(&mut rng).unwrap());
         }
 
