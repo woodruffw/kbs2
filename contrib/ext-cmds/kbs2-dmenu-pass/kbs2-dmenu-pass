@@ -16,13 +16,11 @@ function installed() {
 
 function maybe_notify_username() {
   label="${1}"
-  config="${KBS2_CONFIG_DIR}/kbs2.conf"
 
-  [[ -f "${config}" ]] || return
-  installed jq && installed toml2json || return
+  installed jq || return
 
   setting=$(
-    toml2json < "${config}" \
+    kbs2 config dump \
       | jq --raw-output '.commands.ext."dmenu-pass"."notify-username" or false'
   )
 

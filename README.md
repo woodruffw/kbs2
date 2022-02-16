@@ -24,10 +24,12 @@ Quick links:
   * [`kbs2 edit`](#kbs2-edit)
   * [`kbs2 generate`](#kbs2-generate)
   * [`kbs2 agent`](#kbs2-agent)
-  * [`kbs2 agent flush`](#kbs2-agent-flush)
-  * [`kbs2 agent unwrap`](#kbs2-agent-unwrap)
+    * [`kbs2 agent flush`](#kbs2-agent-flush)
+    * [`kbs2 agent unwrap`](#kbs2-agent-unwrap)
   * [`kbs2 rewrap`](#kbs2-rewrap)
   * [`kbs2 rekey`](#kbs2-rekey)
+  * [`kbs2 config`](#kbs2-config)
+    * [`kbs2 config dump`](#kbs2-config-dump)
 * [Configuration](#configuration)
   * [Generators](#generators)
 * [Customization](#customization)
@@ -719,6 +721,50 @@ Re-key a different configuration and store:
 $ kbs2 -c /some/other/kbs2/conf/dir rekey
 ```
 
+### `kbs2 config`
+
+#### Usage
+
+```
+interact with kbs2's configuration file
+
+USAGE:
+    kbs2 config <SUBCOMMAND>
+
+OPTIONS:
+    -h, --help    Print help information
+
+SUBCOMMANDS:
+    dump    dump the active configuration file as JSON
+    help    Print this message or the help of the given subcommand(s)
+```
+
+### `kbs2 config dump`
+
+#### Usage
+
+```
+dump the active configuration file as JSON
+
+USAGE:
+    kbs2 config dump [OPTIONS]
+
+OPTIONS:
+    -h, --help      Print help information
+    -p, --pretty    pretty-print the JSON
+```
+
+#### Examples
+
+Dump the current configuration as JSON:
+
+```bash
+$ kbs2 config dump
+
+# pretty-print the dumped JSON
+$ kbs2 config dump --pretty
+```
+
 ## Configuration
 
 `kbs2` stores its configuration in `<config dir>/kbs2/config.toml`, where `<config dir>` is determined
@@ -1036,6 +1082,8 @@ When run via `kbs2`, custom commands receive the following environment variables
 * `KBS2_CONFIG_DIR`: The path to the configuration directory that `kbs2` itself was loaded with.
 Subcommands can use this path to read the current configuration file or any other content stored
 in the configuration directory.
+    * **NOTE**: Subcommands are encouraged to use `kbs2 config dump` to read the configuration
+    state instead of attempting to find the correct file manually.
 * `KBS2_STORE`: The path to the secret store.
 * `KBS2_SUBCOMMAND`: Always set to `1`. This can be used to determine whether a subcommand was run
 via `kbs2` (e.g. `kbs2 foo`) versus directly (e.g. `kbs2-foo`).
