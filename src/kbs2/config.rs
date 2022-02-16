@@ -461,13 +461,23 @@ pub fn load<P: AsRef<Path>>(config_dir: P) -> Result<Config> {
         fs::read_to_string(config_dir.join(LEGACY_CONFIG_BASENAME))?
     };
 
-    Ok(Config {
+    let config = Config {
         config_dir: config_dir
             .to_str()
             .ok_or_else(|| anyhow!("unrepresentable config dir path: {:?}", config_dir))?
             .into(),
         ..toml::from_str(&contents).map_err(|e| anyhow!("config loading error: {}", e))?
-    })
+    };
+
+    // Warn if the user has any old-style generators.
+    for gen in config.generators.iter() {
+        if matches!(gen, GeneratorConfig::InternalLegacy(_)) {
+            util::warn(&format!("loaded legacy generator: {}", gen.as_dyn().name()));
+            util::warn("note: this behavior will be removed in a future stable release");
+        }
+    }
+
+    Ok(config)
 }
 
 #[cfg(test)]
