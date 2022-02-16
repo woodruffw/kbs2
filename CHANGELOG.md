@@ -9,6 +9,15 @@ All versions prior to 0.2.1 are untracked.
 
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+* CLI: The `kbs2 config` and `kbs2 config dump` subcommands have been added,
+allowing for easy access to the active configuration state in JSON
+([#304](https://github.com/woodruffw/kbs2/pull/304))
+
+* Contrib: All contrib scripts have been refactored to take advantage of
+`kbs2 config dump` ([#304](https://github.com/woodruffw/kbs2/pull/304))
+
 ## [0.5.0] - 2022-02-15
 
 ### Changed
