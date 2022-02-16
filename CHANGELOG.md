@@ -15,6 +15,8 @@ All versions prior to 0.2.1 are untracked.
 allowing for easy access to the active configuration state in JSON
 ([#304](https://github.com/woodruffw/kbs2/pull/304))
 
+### Changed
+
 * Contrib: All contrib scripts have been refactored to take advantage of
 `kbs2 config dump` ([#304](https://github.com/woodruffw/kbs2/pull/304))
 
