@@ -7,7 +7,6 @@
 require "open3"
 require "optparse"
 require "json"
-require "tomlrb"
 
 abort "Fatal: Not being run as a subcommand?" unless ENV.key? "KBS2_SUBCOMMAND"
 
@@ -22,10 +21,7 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-config = begin
-  config_file = File.join ENV["KBS2_CONFIG_DIR"], "kbs2.conf"
-  Tomlrb.load_file config_file
-end
+config = JSON.parse `kbs2 config dump`
 
 matcher = config.dig("commands", "ext", "snip", "matcher") || "selecta"
 
