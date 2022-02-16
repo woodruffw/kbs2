@@ -9,6 +9,8 @@ All versions prior to 0.2.1 are untracked.
 
 ## [Unreleased] - ReleaseDate
 
+## [0.5.0] - 2022-02-15
+
 ### Changed
 
 * Generators, Config: `kbs2` generators now support multiple input
@@ -141,7 +143,8 @@ cause `kbs2` to exit with 1, instead of 2.
 * CLI: `kbs2 lock` and `kbs2 unlock` were removed entirely as part of the `kbs2 agent` refactor.
 
 <!-- @next-url@ -->
-[Unreleased]: https://github.com/woodruffw/kbs2/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/woodruffw/kbs2/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/woodruffw/kbs2/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/woodruffw/kbs2/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/woodruffw/kbs2/compare/v0.2.6...v0.3.0
 [0.2.6]: https://github.com/woodruffw/kbs2/compare/v0.2.5...v0.2.6
