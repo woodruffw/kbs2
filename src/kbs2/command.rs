@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 use std::env;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::process;
 
@@ -53,6 +53,7 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
 pub fn agent(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("agent subcommand dispatch");
 
+    // No subcommand: run the agent itself
     if matches.subcommand().is_none() {
         let mut agent = agent::Agent::new()?;
         if !matches.is_present("foreground") {
@@ -62,7 +63,6 @@ pub fn agent(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         return Ok(());
     }
 
-    // No subcommand: run the agent itself
     match matches.subcommand() {
         Some(("flush", matches)) => agent_flush(matches),
         Some(("query", matches)) => agent_query(matches, config),
@@ -695,6 +695,25 @@ pub fn rekey(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     }
 
     println!("All done.");
+
+    Ok(())
+}
+
+/// Implements the `kbs2 config` command.
+pub fn config(matches: &ArgMatches, config: &config::Config) -> Result<()> {
+    log::debug!("config subcommand dispatch");
+
+    match matches.subcommand() {
+        Some(("dump", matches)) => {
+            if matches.is_present("pretty") {
+                serde_json::to_writer_pretty(io::stdout(), &config)?;
+            } else {
+                serde_json::to_writer(io::stdout(), &config)?;
+            }
+        }
+        Some((_, _)) => unreachable!(),
+        None => unreachable!(),
+    }
 
     Ok(())
 }

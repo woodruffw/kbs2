@@ -267,6 +267,21 @@ fn app() -> App<'static> {
                         .long("no-backup"),
                 ),
         )
+        .subcommand(
+            App::new("config")
+                .setting(AppSettings::SubcommandRequired)
+                .about("interact with kbs2's configuration file")
+                .subcommand(
+                    App::new("dump")
+                        .about("dump the active configuration file as JSON")
+                        .arg(
+                            Arg::new("pretty")
+                                .help("pretty-print the JSON")
+                                .short('p')
+                                .long("pretty"),
+                        ),
+                ),
+        )
 }
 
 fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
@@ -297,6 +312,7 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
         Some(("generate", matches)) => kbs2::command::generate(matches, config)?,
         Some(("rewrap", matches)) => kbs2::command::rewrap(matches, config)?,
         Some(("rekey", matches)) => kbs2::command::rekey(matches, config)?,
+        Some(("config", matches)) => kbs2::command::config(matches, config)?,
         Some((cmd, matches)) => {
             let cmd = format!("kbs2-{}", cmd);
 
