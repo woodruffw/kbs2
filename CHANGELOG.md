@@ -11,6 +11,10 @@ All versions prior to 0.2.1 are untracked.
 
 ### Changed
 
+* Generators, Config: `kbs2` generators now support multiple input
+alphabets, making it easier to enforce character requirements
+([#303](https://github.com/woodruffw/kbs2/pull/303))
+
 * Meta: `kbs2` is now built with the 2021 edition of Rust
 ([#239](https://github.com/woodruffw/kbs2/pull/239))
 

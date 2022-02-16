@@ -180,8 +180,9 @@ impl AsRef<OsStr> for Pinentry {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum GeneratorConfig {
-    Command(GeneratorCommandConfig),
-    Internal(GeneratorInternalConfig),
+    Command(ExternalGeneratorConfig),
+    Internal(InternalGeneratorConfig),
+    InternalLegacy(LegacyInternalGeneratorConfig),
 }
 
 impl GeneratorConfig {
@@ -189,13 +190,14 @@ impl GeneratorConfig {
         match self {
             GeneratorConfig::Command(g) => g as &dyn Generator,
             GeneratorConfig::Internal(g) => g as &dyn Generator,
+            GeneratorConfig::InternalLegacy(g) => g as &dyn Generator,
         }
     }
 }
 
-/// The configuration settings for a "command" generator.
+/// The configuration settings for an external (i.e., separate command) generator.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GeneratorCommandConfig {
+pub struct ExternalGeneratorConfig {
     /// The name of the generator.
     pub name: String,
 
@@ -203,29 +205,48 @@ pub struct GeneratorCommandConfig {
     pub command: String,
 }
 
-/// The configuration settings for an "internal" generator.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GeneratorInternalConfig {
+pub struct InternalGeneratorConfig {
+    /// The name of the generator.
+    pub name: String,
+
+    /// The alphabets used by the generator.
+    pub alphabets: Vec<String>,
+
+    /// The length of the secrets generated.
+    pub length: usize,
+}
+
+impl Default for InternalGeneratorConfig {
+    fn default() -> Self {
+        InternalGeneratorConfig {
+            name: "default".into(),
+            alphabets: vec![
+                "abcdefghijklmnopqrstuvwxyz".into(),
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ".into(),
+                "0123456789".into(),
+                "(){}[]-_+=".into(),
+            ],
+            length: 16,
+        }
+    }
+}
+
+/// The configuration settings for a legacy "internal" generator.
+///
+/// This is a **legacy** generator that will be removed in an upcoming release.
+///
+/// Users should prefer `InternalGeneratorConfig`.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct LegacyInternalGeneratorConfig {
     /// The name of the generator.
     pub name: String,
 
     /// The alphabet to sample from when generating a secret.
     pub alphabet: String,
 
-    /// The number of characters to sample from the alphabet.
+    /// The length of the secrets generated.
     pub length: u32,
-}
-
-impl Default for GeneratorInternalConfig {
-    fn default() -> Self {
-        GeneratorInternalConfig {
-            name: "default".into(),
-            // NOTE(ww): This alphabet should be a decent default, as it contains
-            // symbols but not commonly blacklisted ones (e.g. %, $).
-            alphabet: "abcdefghijklmnopqrstuvwxyz0123456789(){}[]-_+=".into(),
-            length: 16,
-        }
-    }
 }
 
 /// The per-command configuration settings known to `kbs2`.
@@ -440,13 +461,23 @@ pub fn load<P: AsRef<Path>>(config_dir: P) -> Result<Config> {
         fs::read_to_string(config_dir.join(LEGACY_CONFIG_BASENAME))?
     };
 
-    Ok(Config {
+    let config = Config {
         config_dir: config_dir
             .to_str()
             .ok_or_else(|| anyhow!("unrepresentable config dir path: {:?}", config_dir))?
             .into(),
         ..toml::from_str(&contents).map_err(|e| anyhow!("config loading error: {}", e))?
-    })
+    };
+
+    // Warn if the user has any old-style generators.
+    for gen in config.generators.iter() {
+        if matches!(gen, GeneratorConfig::InternalLegacy(_)) {
+            util::warn(&format!("loaded legacy generator: {}", gen.as_dyn().name()));
+            util::warn("note: this behavior will be removed in a future stable release");
+        }
+    }
+
+    Ok(config)
 }
 
 #[cfg(test)]
