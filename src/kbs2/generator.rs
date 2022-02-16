@@ -55,7 +55,7 @@ impl Generator for config::InternalGeneratorConfig {
             }
 
             // NOTE(ww): Disallow non-ASCII, to prevent gibberish indexing below.
-            if alphabet.is_ascii() {
+            if !alphabet.is_ascii() {
                 return Err(anyhow!(
                     "generator alphabet(s) contain non-ascii characters"
                 ));
@@ -118,10 +118,18 @@ mod tests {
         })
     }
 
-    fn dummy_internal_generator(alphabet: &str) -> Box<dyn Generator> {
+    fn dummy_legacy_internal_generator(alphabet: &str) -> Box<dyn Generator> {
         Box::new(config::LegacyInternalGeneratorConfig {
             name: "dummy-internal".into(),
             alphabet: alphabet.into(),
+            length: 5,
+        })
+    }
+
+    fn dummy_internal_generator(alphabets: &[&str]) -> Box<dyn Generator> {
+        Box::new(config::InternalGeneratorConfig {
+            name: "dummy-internal".into(),
+            alphabets: alphabets.iter().map(|a| (*a).into()).collect(),
             length: 5,
         })
     }
@@ -134,7 +142,7 @@ mod tests {
         }
 
         {
-            let gen = dummy_internal_generator("abc");
+            let gen = dummy_legacy_internal_generator("abc");
             assert_eq!(gen.name(), "dummy-internal");
         }
     }
@@ -147,7 +155,7 @@ mod tests {
         }
 
         {
-            let gen = dummy_internal_generator("abc");
+            let gen = dummy_legacy_internal_generator("abc");
             assert_eq!(gen.secret().unwrap().len(), 5);
         }
 
@@ -161,12 +169,98 @@ mod tests {
         }
 
         {
-            let gen = dummy_internal_generator("ⓓⓔⓕⓘⓝⓘⓣⓔⓛⓨ ⓝⓞⓣ ⓐⓢⓒⓘⓘ");
+            let gen = dummy_legacy_internal_generator("ⓓⓔⓕⓘⓝⓘⓣⓔⓛⓨ ⓝⓞⓣ ⓐⓢⓒⓘⓘ");
             let err = gen.secret().unwrap_err();
             assert_eq!(
                 err.to_string(),
                 "generator alphabet contains non-ascii characters"
             );
+        }
+    }
+
+    #[test]
+    fn test_internal_generator_invariants() {
+        // Fails with no alphabets.
+        {
+            let gen = config::InternalGeneratorConfig {
+                name: "dummy-internal".into(),
+                alphabets: vec![],
+                length: 10,
+            };
+
+            assert_eq!(
+                gen.secret().unwrap_err().to_string(),
+                "generator must have at least one alphabet"
+            );
+        }
+
+        // Fails with a length of 0.
+        {
+            let gen = config::InternalGeneratorConfig {
+                name: "dummy-internal".into(),
+                alphabets: vec!["abcd".into()],
+                length: 0,
+            };
+
+            assert_eq!(
+                gen.secret().unwrap_err().to_string(),
+                "generator length is invalid (must be nonzero)"
+            );
+        }
+
+        // Fails if an alphabet is non-ASCII.
+        {
+            let gen = dummy_internal_generator(&["ⓓⓔⓕⓘⓝⓘⓣⓔⓛⓨ ⓝⓞⓣ ⓐⓢⓒⓘⓘ"]);
+            let err = gen.secret().unwrap_err();
+            assert_eq!(
+                err.to_string(),
+                "generator alphabet(s) contain non-ascii characters"
+            );
+        }
+
+        // Fails if any individual alphabet is empty.
+        {
+            let gen = dummy_internal_generator(&[""]);
+            let err = gen.secret().unwrap_err();
+            assert_eq!(err.to_string(), "generator alphabet(s) must not be empty");
+        }
+
+        // Fails if there are more alphabets than available length.
+        {
+            let gen = config::InternalGeneratorConfig {
+                name: "dummy-internal".into(),
+                alphabets: vec!["abc", "def", "ghi"]
+                    .into_iter()
+                    .map(Into::into)
+                    .collect(),
+                length: 2,
+            };
+
+            assert_eq!(
+                gen.secret().unwrap_err().to_string(),
+                "generator invariant failure (too many separate alphabets for length?)"
+            );
+        }
+
+        // Succeeds and upholds length and inclusion invariants.
+        {
+            let alphabets = ["abcd", "1234", "!@#$"];
+
+            let gen = config::InternalGeneratorConfig {
+                name: "dummy-internal".into(),
+                alphabets: alphabets.into_iter().map(Into::into).collect(),
+                length: 10,
+            };
+
+            for secret in (0..100).map(|_| gen.secret()) {
+                assert!(secret.is_ok());
+
+                let secret = secret.unwrap();
+                assert_eq!(secret.len(), 10);
+                assert!(alphabets
+                    .iter()
+                    .all(|a| a.chars().any(|c| secret.contains(c))));
+            }
         }
     }
 }

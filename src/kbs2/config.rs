@@ -489,7 +489,7 @@ mod tests {
             post_hook: Some("false".into()),
             error_hook: Some("true".into()),
             reentrant_hooks: false,
-            generators: vec![GeneratorConfig::InternalLegacy(Default::default())],
+            generators: vec![GeneratorConfig::Internal(Default::default())],
             commands: CommandConfigs {
                 rm: RmConfig {
                     post_hook: Some("this-command-does-not-exist".into()),
