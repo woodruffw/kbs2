@@ -234,6 +234,17 @@ impl Backend for RageLib {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::kbs2::record::{LoginFields, RecordBody};
+
+    fn dummy_login() -> Record {
+        Record::new(
+            "dummy",
+            RecordBody::Login(LoginFields {
+                username: "foobar".into(),
+                password: "bazqux".into(),
+            }),
+        )
+    }
 
     fn ragelib_backend() -> RageLib {
         let key = age::x25519::Identity::generate();
@@ -315,7 +326,7 @@ mod tests {
     fn test_ragelib_encrypt() {
         {
             let backend = ragelib_backend();
-            let record = Record::login("foo", "username", "password");
+            let record = dummy_login();
             assert!(backend.encrypt(&record).is_ok());
         }
 
@@ -326,7 +337,7 @@ mod tests {
     fn test_ragelib_decrypt() {
         {
             let backend = ragelib_backend();
-            let record = Record::login("foo", "username", "password");
+            let record = dummy_login();
 
             let encrypted = backend.encrypt(&record).unwrap();
             let decrypted = backend.decrypt(&encrypted).unwrap();
@@ -336,7 +347,7 @@ mod tests {
 
         {
             let backend = ragelib_backend_bad_keypair();
-            let record = Record::login("foo", "username", "password");
+            let record = dummy_login();
 
             let encrypted = backend.encrypt(&record).unwrap();
             let err = backend.decrypt(&encrypted).unwrap_err();
