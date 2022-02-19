@@ -1,18 +1,18 @@
 use std::io;
 use std::path::Path;
-use std::process::Command;
+use std::process;
 
 use anyhow::{anyhow, Context, Result};
-use clap::{App, AppSettings, Arg, ArgMatches, ValueHint};
+use clap::{Arg, ArgMatches, Command, ValueHint};
 use clap_complete::{generate, Shell};
 
 mod kbs2;
 
-fn app() -> App<'static> {
+fn app() -> Command<'static> {
     // TODO(ww): Put this in a separate file, or switch to YAML.
     // The latter probably won't work with env!, though.
-    App::new(env!("CARGO_PKG_NAME"))
-        .setting(AppSettings::AllowExternalSubcommands)
+    Command::new(env!("CARGO_PKG_NAME"))
+        .allow_external_subcommands(true)
         .version(env!("CARGO_PKG_VERSION"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
@@ -35,7 +35,7 @@ fn app() -> App<'static> {
                 .possible_values(Shell::possible_values()),
         )
         .subcommand(
-            App::new("agent")
+            Command::new("agent")
                 .about("run the kbs2 authentication agent")
                 .arg(
                     Arg::new("foreground")
@@ -44,7 +44,7 @@ fn app() -> App<'static> {
                         .long("foreground"),
                 )
                 .subcommand(
-                    App::new("flush")
+                    Command::new("flush")
                         .about("remove all unwrapped keys from the running agent")
                         .arg(
                             Arg::new("quit")
@@ -54,16 +54,16 @@ fn app() -> App<'static> {
                         ),
                 )
                 .subcommand(
-                    App::new("query")
+                    Command::new("query")
                         .about("ask the current agent whether it has the current config's key"),
                 )
                 .subcommand(
-                    App::new("unwrap")
+                    Command::new("unwrap")
                         .about("unwrap the current config's key in the running agent"),
                 ),
         )
         .subcommand(
-            App::new("init")
+            Command::new("init")
                 .about("initialize kbs2 with a new config and keypair")
                 .arg(
                     Arg::new("force")
@@ -88,7 +88,7 @@ fn app() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("new")
+            Command::new("new")
                 .about("create a new record")
                 .arg(
                     Arg::new("label")
@@ -133,7 +133,7 @@ fn app() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("list")
+            Command::new("list")
                 .about("list records")
                 .arg(
                     Arg::new("details")
@@ -151,7 +151,7 @@ fn app() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("rm").about("remove one or more records").arg(
+            Command::new("rm").about("remove one or more records").arg(
                 Arg::new("label")
                     .help("the labels of the records to remove")
                     .index(1)
@@ -160,7 +160,7 @@ fn app() -> App<'static> {
             ),
         )
         .subcommand(
-            App::new("dump")
+            Command::new("dump")
                 .about("dump one or more records")
                 .arg(
                     Arg::new("label")
@@ -177,7 +177,7 @@ fn app() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("pass")
+            Command::new("pass")
                 .about("get the password in a login record")
                 .arg(
                     Arg::new("label")
@@ -193,7 +193,7 @@ fn app() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("env")
+            Command::new("env")
                 .about("get an environment record")
                 .arg(
                     Arg::new("label")
@@ -215,7 +215,7 @@ fn app() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("edit")
+            Command::new("edit")
                 .about("modify a record with a text editor")
                 .arg(
                     Arg::new("label")
@@ -231,7 +231,7 @@ fn app() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("generate")
+            Command::new("generate")
                 .about("generate secret values using a generator")
                 .arg(
                     Arg::new("generator")
@@ -241,7 +241,7 @@ fn app() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("rewrap")
+            Command::new("rewrap")
                 .about("change the master password on a wrapped key")
                 .arg(
                     Arg::new("no-backup")
@@ -258,7 +258,7 @@ fn app() -> App<'static> {
         )
         .subcommand(
             // NOTE: The absence of a --force option here is intentional.
-            App::new("rekey")
+            Command::new("rekey")
                 .about("re-encrypt the entire store with a new keypair and master password")
                 .arg(
                     Arg::new("no-backup")
@@ -268,11 +268,11 @@ fn app() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("config")
-                .setting(AppSettings::SubcommandRequired)
+            Command::new("config")
+                .subcommand_required(true)
                 .about("interact with kbs2's configuration file")
                 .subcommand(
-                    App::new("dump")
+                    Command::new("dump")
                         .about("dump the active configuration file as JSON")
                         .arg(
                             Arg::new("pretty")
@@ -323,7 +323,7 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
 
             log::debug!("external command requested: {} (args: {:?})", cmd, ext_args);
 
-            let status = Command::new(&cmd)
+            let status = process::Command::new(&cmd)
                 .args(&ext_args)
                 .env("KBS2_CONFIG_DIR", &config.config_dir)
                 .env("KBS2_STORE", &config.store)
