@@ -7,16 +7,6 @@ use crate::kbs2::util;
 /// The stringified names of record kinds known to `kbs2`.
 pub static RECORD_KINDS: &[&str] = &["login", "environment", "unstructured"];
 
-/// The kinds of fields known to `kbs2`.
-///
-/// * "Insensitive" fields are accessed with terminal echo and cannot be generated.
-/// * "Sensitive" fields are accessed without terminal echo and can be generated.
-#[derive(Debug)]
-pub enum FieldKind {
-    Insensitive(&'static str),
-    Sensitive(&'static str),
-}
-
 /// Represents the envelope of a `kbs2` record.
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct Record {
@@ -115,38 +105,11 @@ impl Zeroize for UnstructuredFields {
 }
 
 impl Record {
-    /// Creates and returns a new login record with the given label, username, and password.
-    pub fn login(label: &str, username: &str, password: &str) -> Record {
+    pub fn new(label: &str, body: RecordBody) -> Record {
         Record {
             timestamp: util::current_timestamp(),
-            label: label.to_owned(),
-            body: RecordBody::Login(LoginFields {
-                username: username.to_owned(),
-                password: password.to_owned(),
-            }),
-        }
-    }
-
-    /// Creates and returns a new environment record with the given label, variable, and value.
-    pub fn environment(label: &str, variable: &str, value: &str) -> Record {
-        Record {
-            timestamp: util::current_timestamp(),
-            label: label.to_owned(),
-            body: RecordBody::Environment(EnvironmentFields {
-                variable: variable.to_owned(),
-                value: value.to_owned(),
-            }),
-        }
-    }
-
-    /// Creates and returns a new unstructured record with the given label and contents.
-    pub fn unstructured(label: &str, contents: &str) -> Record {
-        Record {
-            timestamp: util::current_timestamp(),
-            label: label.to_owned(),
-            body: RecordBody::Unstructured(UnstructuredFields {
-                contents: contents.to_owned(),
-            }),
+            label: label.into(),
+            body,
         }
     }
 }

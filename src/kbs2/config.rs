@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use anyhow::{anyhow, Result};
+use clap::ArgMatches;
 use lazy_static::lazy_static;
 use secrecy::SecretString;
 use serde::{de, Deserialize, Serialize};
@@ -148,7 +149,7 @@ impl Config {
 
     /// Given the `name` of a configured generator, return that generator
     /// if it exists.
-    pub fn get_generator(&self, name: &str) -> Option<&dyn Generator> {
+    pub fn generator(&self, name: &str) -> Option<&dyn Generator> {
         for generator_config in self.generators.iter() {
             let generator = generator_config.as_dyn();
             if generator.name() == name {
@@ -157,6 +158,14 @@ impl Config {
         }
 
         None
+    }
+
+    /// Create a `RuntimeConfig` from this config and the given `matches`.
+    pub fn with_matches<'a>(&'a self, matches: &'a ArgMatches) -> RuntimeConfig<'a> {
+        RuntimeConfig {
+            config: self,
+            matches,
+        }
     }
 }
 
@@ -192,6 +201,12 @@ impl GeneratorConfig {
             GeneratorConfig::Internal(g) => g as &dyn Generator,
             GeneratorConfig::InternalLegacy(g) => g as &dyn Generator,
         }
+    }
+}
+
+impl Default for GeneratorConfig {
+    fn default() -> Self {
+        GeneratorConfig::Internal(Default::default())
     }
 }
 
@@ -273,8 +288,6 @@ pub struct CommandConfigs {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct NewConfig {
-    #[serde(rename = "generate-on-empty")]
-    pub generate_on_empty: bool,
     // TODO(ww): This deserialize_with is ugly. There's probably a better way to do this.
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]
     #[serde(rename = "pre-hook")]
@@ -341,6 +354,34 @@ pub struct RmConfig {
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]
     #[serde(rename = "post-hook")]
     pub post_hook: Option<String>,
+}
+
+/// A "view" for an active configuration, composed with some set of argument matches
+/// from the command line.
+pub struct RuntimeConfig<'a> {
+    pub config: &'a Config,
+    pub matches: &'a ArgMatches,
+}
+
+impl<'a> RuntimeConfig<'a> {
+    pub fn generator(&self) -> Result<&dyn Generator> {
+        // If the user explicitly requests a specific generator, use it.
+        // Otherwise, use the default generator, which is always present.
+        if let Some(generator) = self.matches.value_of("generator") {
+            self.config
+                .generator(generator)
+                .ok_or_else(|| anyhow!("no generator named {generator}"))
+        } else {
+            // Failure here indicates a bug, since we should always have a default.
+            self.config
+                .generator("default")
+                .ok_or_else(|| anyhow!("missing default generator?"))
+        }
+    }
+
+    pub fn terse(&self) -> bool {
+        atty::isnt(atty::Stream::Stdin) || self.matches.is_present("terse")
+    }
 }
 
 #[doc(hidden)]
@@ -461,13 +502,18 @@ pub fn load<P: AsRef<Path>>(config_dir: P) -> Result<Config> {
         fs::read_to_string(config_dir.join(LEGACY_CONFIG_BASENAME))?
     };
 
-    let config = Config {
+    let mut config = Config {
         config_dir: config_dir
             .to_str()
             .ok_or_else(|| anyhow!("unrepresentable config dir path: {:?}", config_dir))?
             .into(),
         ..toml::from_str(&contents).map_err(|e| anyhow!("config loading error: {}", e))?
     };
+
+    // Always put a default generator in the generator list.
+    if config.generators.is_empty() {
+        config.generators.push(Default::default());
+    }
 
     // Warn if the user has any old-style generators.
     for gen in config.generators.iter() {
@@ -638,7 +684,7 @@ mod tests {
     fn test_get_generator() {
         let config = dummy_config_unwrapped_key();
 
-        assert!(config.get_generator("default").is_some());
-        assert!(config.get_generator("nonexistent-generator").is_none());
+        assert!(config.generator("default").is_some());
+        assert!(config.generator("nonexistent-generator").is_none());
     }
 }
