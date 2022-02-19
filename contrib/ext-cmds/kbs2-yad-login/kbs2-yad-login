@@ -7,6 +7,8 @@ set -eo pipefail
 [[ -n "${KBS2_SUBCOMMAND}" ]] \
   || { >&2 echo "Fatal: Not being run as a subcommand?"; exit 1; }
 
+default_username=$(kbs2 config dump | jq --raw-output '.commands.new."default-username"')
+
 record=$(
   yad \
     --form \
@@ -19,7 +21,7 @@ record=$(
     --field="Username" \
     --field="Password:H" \
     "" \
-    "" \
+    "${default_username}" \
     "$(kbs2 generate)"
 )
 
