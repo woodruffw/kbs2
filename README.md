@@ -58,7 +58,7 @@ attached to the [latest release](https://github.com/woodruffw/kbs2/releases/late
 
 By way of example:
 
-```bash
+```console
 $ wget https://github.com/woodruffw/kbs2/releases/download/v0.5.1/kbs2_0.5.1_amd64.deb
 $ sudo dpkg -i kbs2_0.5.1_amd64.deb
 # don't forget to request kbs2's dependencies
@@ -73,7 +73,7 @@ $ sudo apt-get -f install
 [AUR packages](https://aur.archlinux.org/packages/?O=0&SeB=b&K=kbs2&outdated=&SB=n&SO=a&PP=50&do_Search=Go)
 using an [AUR helper](https://wiki.archlinux.org/index.php/AUR_helpers). For example,
 
-```bash
+```console
 $ yay -S kbs2
 ```
 
@@ -86,7 +86,7 @@ Other distributions will be supported sooner or later. Help us by looking at the
 
 `kbs2` can be installed through Nix:
 
-```bash
+```console
 $ nix-env -iA nixpkgs.kbs2
 ```
 
@@ -94,13 +94,13 @@ $ nix-env -iA nixpkgs.kbs2
 
 If you're a Linux user, you'll need some X11 libraries. For Debian-based distributions:
 
-```bash
+```console
 $ sudo apt install -y libxcb-shape0-dev libxcb-xfixes0-dev
 ```
 
 `kbs2` itself is most easily installed via `cargo`:
 
-```bash
+```console
 $ cargo install kbs2
 ```
 
@@ -112,7 +112,7 @@ make.
 
 Initialize a new `kbs2` configuration:
 
-```bash
+```console
 $ kbs2 init
 ```
 
@@ -128,15 +128,15 @@ in the background if it isn't already running.
 
 Create a new (login) record:
 
-```bash
+```console
 $ kbs2 new amazon
-Username: jonf-bonzo
-Password: [hidden]
+? Username? jonf-bonzo
+? Password? [hidden]
 ```
 
 List available records:
 
-```bash
+```console
 $ kbs2 list
 amazon
 facebook
@@ -144,7 +144,7 @@ facebook
 
 Pull the password from a record:
 
-```bash
+```console
 $ kbs2 pass -c amazon
 # alternatively, pipeline it
 $ kbs2 pass facebook | pbcopy
@@ -152,7 +152,7 @@ $ kbs2 pass facebook | pbcopy
 
 Remove a record:
 
-```bash
+```console
 $ kbs2 rm facebook
 ```
 
@@ -185,25 +185,25 @@ OPTIONS:
 
 Create a new config and keypair, prompting the user for a master password:
 
-```bash
+```console
 $ kbs2 init
 ```
 
 Create a new config and keypair **without** a master password:
 
-```bash
+```console
 $ kbs2 init --insecure-not-wrapped
 ```
 
 Create a new config and keypair in a different location:
 
-```bash
+```console
 $ kbs2 -c /some/config/dir init
 ```
 
 Create a new config keypair in a different location and specify a non-default store:
 
-```bash
+```console
 $ kbs2 -c /home/config/dir init --store-dir /some/store/dir
 ```
 
@@ -222,7 +222,6 @@ ARGS:
 
 FLAGS:
     -f, --force       overwrite, if already present
-    -g, --generate    generate sensitive fields instead of prompting for them
     -h, --help        Prints help information
     -t, --terse       read fields in a terse format, even when connected to a tty
 
@@ -237,32 +236,42 @@ OPTIONS:
 
 Create a new `login` record named `foobar`:
 
-```bash
+```console
 $ kbs2 new foobar
-Username: hasdrubal
-Password: [hidden]
+? Username? hasdrubal
+? Password? **********
 ```
 
 Create a new `environment` record named `twitter-api`, overwriting it if it already exists:
 
-```bash
+```console
 $ kbs2 new -f -k environment twitter-api
-Variable: TWITTER_API
-Value: [hidden]
+? Variable? TWITTER_API
+? Value? [hidden]
+[Press [enter] to auto-generate]
 ```
 
 Create a new `login` record named `pets.com`, generating the password with the default generator:
 
-```bash
-$ kbs2 new -g pets.com
-Username: hasdrubal
+```console
+$ kbs2 new pets.com
+? Username? catlover1312
+? Password?
+[Press [enter] to auto-generate]
 ```
+
+Entering nothing in the password prompt will cause `kbs2` to generate a password
+using the `"default"` generator. You can use the `--generator` option to specify
+a different generator, if you have another one configured.
 
 Create a new `login` record named `email`, getting the fields in a terse format:
 
-```bash
+```console
 $ kbs2 new -t email < <(echo -e "bill@microsoft.com\x01hunter2")
 ```
+
+When in "terse" mode, `kbs2` expects fields to be separated by `\x01` (ASCII SOH)
+characters.
 
 ### `kbs2 list`
 
@@ -287,7 +296,7 @@ OPTIONS:
 
 List all records, one per line:
 
-```bash
+```console
 $ kbs2 list
 foobar
 twitter-api
@@ -298,7 +307,7 @@ email
 List (non-sensitive) details for each record. The format of the detailed listing is
 `{record} {kind} {timestamp}`.
 
-```bash
+```console
 $ kbs2 list -d
 foobar login 1590277900
 twitter-api environment 1590277907
@@ -308,7 +317,7 @@ email login 1590277953
 
 List only environment records:
 
-```bash
+```console
 $ kbs2 list -k environment
 twitter-api
 ```
@@ -334,7 +343,7 @@ FLAGS:
 
 Remove the `foobar` record:
 
-```bash
+```console
 $ kbs2 rm foobar
 ```
 
@@ -360,7 +369,7 @@ FLAGS:
 
 Dump the `twitter-api` record:
 
-```bash
+```console
 $ kbs2 dump twitter-api
 Label twitter-api
 Kind environment
@@ -370,7 +379,7 @@ Value 92h2890fn83fb2378fbf283bf73fbxkfnso90
 
 Dump the `pets.com` record in JSON format:
 
-```bash
+```console
 $ kbs2 dump -j pets.com | json_pp
 {
    "timestamp" : 1590363392,
@@ -387,7 +396,7 @@ $ kbs2 dump -j pets.com | json_pp
 
 Dump multiple records, demonstrating JSONL:
 
-```bash
+```console
 $ kbs2 dump -j carthage roma
 {"timestamp":1590363392,"label":"bepis","body":{"kind":"Login","fields":{"username":"hamilcar","password":"ihatecato"}}}
 {"timestamp":1590363392,"label":"conk","body":{"kind":"Login","fields":{"username":"cato","password":"carthagodelendaest"}}}
@@ -415,14 +424,14 @@ FLAGS:
 
 Get the password for the `pets.com` record:
 
-```bash
+```console
 $ kbs2 pass pets.com
 hunter2
 ```
 
 Copy the password for the `pets.com` record into the clipboard:
 
-```bash
+```console
 $ kbs2 pass -c pets.com
 ```
 
@@ -449,14 +458,14 @@ FLAGS:
 
 Get an environment record in `export`-able form:
 
-```bash
+```console
 $ kbs2 env twitter-api
 export TWITTER_API=92h2890fn83fb2378fbf283bf73fbxkfnso90
 ```
 
 Get just the value in an environment record:
 
-```bash
+```console
 $ kbs2 env -v twitter-api
 92h2890fn83fb2378fbf283bf73fbxkfnso90
 ```
@@ -483,13 +492,13 @@ FLAGS:
 
 Open the `email` record for editing:
 
-```bash
+```console
 $ kbs2 edit email
 ```
 
 Open the `email` record for editing with a custom `$EDITOR`:
 
-```bash
+```console
 $ EDITOR=vim kbs2 edit email
 ```
 
@@ -514,14 +523,14 @@ FLAGS:
 
 Generate a secret using the default generator:
 
-```bash
+```console
 $ kbs2 generate
 rrayxfky-81x=h6i
 ```
 
 Generate a secret using a generator named `pwgen`:
 
-```bash
+```console
 $ kbs2 generate pwgen
 iit4wie6faeL4aiyupheec5Xochosero
 ```
@@ -550,13 +559,13 @@ SUBCOMMANDS:
 
 Run the `kbs2` agent in the background, prompting the user to unwrap the current config's key:
 
-```bash
+```console
 $ kbs2 agent
 ```
 
 Run the `kbs2` agent in the foreground, for debugging purposes:
 
-```bash
+```console
 $ RUST_LOG=debug kbs2 agent --foreground
 ```
 
@@ -579,7 +588,7 @@ FLAGS:
 
 Remove all keys from the current `kbs2` agent:
 
-```bash
+```console
 $ kbs2 agent flush
 ```
 
@@ -612,13 +621,13 @@ All other error codes should be treated as an unspecified error that prevented a
 
 Query the agent for the current config:
 
-```bash
+```console
 $ kbs2 agent query && echo "success" || echo "failure"
 ```
 
 Query the agent for another config's keypair:
 
-```bash
+```console
 $ kbs2 -c /some/other/config agent query
 ```
 
@@ -640,13 +649,13 @@ FLAGS:
 
 Add the current config's key to the `kbs2` agent:
 
-```bash
+```console
 $ kbs2 agent unwrap
 ```
 
 Add a custom config's key to the `kbs2` agent:
 
-```bash
+```console
 $ kbs2 -c /path/to/config/dir agent unwrap
 ```
 
@@ -670,19 +679,19 @@ FLAGS:
 
 Change the password on the wrapped key in the default config:
 
-```bash
+```console
 $ kbs2 rewrap
 ```
 
 Change the password on a wrapped key in another config:
 
-```bash
+```console
 $ kbs2 -c /path/to/config/dir rewrap
 ```
 
 Change the password on a wrapped key without making a backup of the old wrapped key:
 
-```bash
+```console
 $ kbs2 rewrap -n
 ```
 
@@ -705,19 +714,19 @@ FLAGS:
 
 Re-key the default config and its store:
 
-```bash
+```console
 $ kbs2 rekey
 ```
 
 Re-key without making backups of the original keyfile, config, and store (**not** recommended):
 
-```bash
+```console
 $ kbs2 rekey --no-backup
 ```
 
 Re-key a different configuration and store:
 
-```bash
+```console
 $ kbs2 -c /some/other/kbs2/conf/dir rekey
 ```
 
@@ -758,7 +767,7 @@ OPTIONS:
 
 Dump the current configuration as JSON:
 
-```bash
+```console
 $ kbs2 config dump
 
 # pretty-print the dumped JSON
@@ -887,36 +896,6 @@ runs `kbs2`. By default, hooks are run only for the initial `kbs2` invocation.
 
 Read the [Reentrancy section](#reentrancy) of the [Hooks](#hooks) documentation for more details.
 
-### `commands.new.generate-on-empty` (default: `false`)
-
-The `commands.new.generate-on-empty` setting determines whether or not uses the `default` generator
-when the user supplies an empty input for a sensitive field (e.g., a password).
-
-By default, supplying an empty field causes `kbs2` to re-prompt for that field. For example:
-
-```bash
-$ kbs2 new top-secret-login
-Username: foobar
-Password: [empty]
-Password:
-```
-
-with `generate-on-empty = true`:
-
-```bash
-$ kbs2 new top-secret-login
-Username: foobar
-Password: [empty]
-
-$ kbs2 dump top-secret-login
-Label: top-secret-login
-  Kind: login
-  Username: foobar
-  Password: 17tlza7b_4}f(m6)
-```
-
-This can be used as a lazy default for when the user forgets to pass `--generate` to `kbs2 new`.
-
 ### `commands.new.pre-hook` (default: `None`)
 
 The `commands.new.pre-hook` setting is like the global `pre-hook` setting, except that it runs
@@ -943,10 +922,10 @@ post-hook = "~/.config/kbs2/hooks/post-new.sh"
 
 would produce:
 
-```bash
+```console
 $ kbs2 new foo
-Username: bar
-Password: [hidden]
+? Username? bar
+? Password? **********
 [+] created foo
 ```
 
@@ -1052,12 +1031,15 @@ length = 16
 instead of `alphabets`. This configuration is deprecated and will be removed in
 an upcoming release.
 
-These generators can be used with `kbs2 new`:
+These generators can be used with `kbs2 new`. For example, the following will
+use the `hexonly` generator when the user presses `[enter]` instead of manually
+entering a password.
 
-```bash
-# Notice: the user is not prompted for a password
-$ kbs2 new -gG hexonly pets.com
-Username: catlover2000
+```console
+$ kbs2 new -G hexonly pets.com
+? Username? catlover2000
+? Password?
+[Press [enter] to auto-generate]
 ```
 
 ## Customization
@@ -1131,7 +1113,7 @@ kbs2 some-other-command
 
 and then:
 
-```bash
+```console
 $ kbs2 list
 ```
 
@@ -1244,7 +1226,7 @@ unwrapped keys to their running agent by invoking [`kbs2 agent unwrap`](#kbs2-ag
 Hacking on `kbs2` is relatively straightforward. To build a fully functional development copy,
 just use `cargo build` in the repository root:
 
-```bash
+```console
 $ cargo build
 $ ./target/debug/kbs2 --help
 ```
@@ -1254,7 +1236,7 @@ In particular, decryption and key unwrapping are known to be particularly slow.
 
 To avoid this, use a release build:
 
-```bash
+```console
 $ cargo build --release
 $ ./target/release/kbs2 --help
 ```
@@ -1264,7 +1246,7 @@ $ ./target/release/kbs2 --help
 `kbs2` uses `log` and `env_logger` for logging. You can past `RUST_LOG=debug` in your environment
 to enable debug logging:
 
-```bash
+```console
 $ RUST_LOG=debug ./target/release/kbs2 list -k login
 ```
 

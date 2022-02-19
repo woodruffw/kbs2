@@ -65,7 +65,8 @@ impl Input for LoginFields {
     }
 
     fn from_terse(config: &RuntimeConfig) -> Result<RecordBody> {
-        let (username, mut password) = {
+        // NOTE: Backwards order here because we're popping from the vector.
+        let (mut password, username) = {
             let mut fields = Self::take_terse_fields()?;
 
             (fields.pop().unwrap(), fields.pop().unwrap())
@@ -84,7 +85,9 @@ impl Input for EnvironmentFields {
 
     fn from_prompt(config: &RuntimeConfig) -> Result<RecordBody> {
         let variable = Text::new("Variable?").prompt()?;
-        let mut value = Pass::new("Value?").prompt()?;
+        let mut value = Pass::new("Value?")
+            .with_help_message("Press [enter] to auto-generate")
+            .prompt()?;
 
         if value.is_empty() {
             value = config.generator()?.secret()?;
@@ -97,7 +100,8 @@ impl Input for EnvironmentFields {
     }
 
     fn from_terse(config: &RuntimeConfig) -> Result<RecordBody> {
-        let (variable, mut value) = {
+        // NOTE: Backwards order here because we're popping from the vector.
+        let (mut value, variable) = {
             let mut fields = Self::take_terse_fields()?;
 
             (fields.pop().unwrap(), fields.pop().unwrap())
