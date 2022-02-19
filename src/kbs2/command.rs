@@ -9,16 +9,17 @@ use atty::Stream;
 use clap::ArgMatches;
 use clipboard::{ClipboardContext, ClipboardProvider};
 use daemonize::Daemonize;
-use dialoguer::Confirm;
+use inquire::Confirm;
 use nix::unistd::{fork, ForkResult};
 use secrecy::{ExposeSecret, Secret};
 
 use crate::kbs2::agent;
 use crate::kbs2::backend::{self, Backend};
 use crate::kbs2::config::{self, Pinentry};
-use crate::kbs2::generator::Generator;
-use crate::kbs2::input;
-use crate::kbs2::record::{self, FieldKind::*, RecordBody};
+use crate::kbs2::input::Input;
+use crate::kbs2::record::{
+    self, EnvironmentFields, LoginFields, Record, RecordBody, UnstructuredFields,
+};
 use crate::kbs2::session::Session;
 use crate::kbs2::util;
 
@@ -144,30 +145,17 @@ pub fn new(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         return Err(anyhow!("refusing to overwrite a record without --force"));
     }
 
-    let terse = atty::isnt(Stream::Stdin) || matches.is_present("terse");
+    let config = session.config.with_matches(matches);
 
-    let generator = if matches.is_present("generate") {
-        #[allow(clippy::unwrap_used)]
-        let generator_name = matches.value_of("generator").unwrap();
-
-        Some(
-            session
-                .config
-                .get_generator(generator_name)
-                .ok_or_else(|| anyhow!("couldn't find a generator named {}", generator_name))?,
-        )
-    } else {
-        None
+    #[allow(clippy::unwrap_used)]
+    let record = match matches.value_of("kind").unwrap() {
+        "login" => Record::new(label, LoginFields::input(&config)?),
+        "environment" => Record::new(label, EnvironmentFields::input(&config)?),
+        "unstructured" => Record::new(label, UnstructuredFields::input(&config)?),
+        _ => unreachable!(),
     };
 
-    // TODO: new_* below is a little silly. This should be de-duped.
-    #[allow(clippy::unwrap_used)]
-    match matches.value_of("kind").unwrap() {
-        "login" => new_login(label, terse, &session, generator)?,
-        "environment" => new_environment(label, terse, &session, generator)?,
-        "unstructured" => new_unstructured(label, terse, &session, generator)?,
-        _ => unreachable!(),
-    }
+    session.add_record(&record)?;
 
     if let Some(post_hook) = &session.config.commands.new.post_hook {
         log::debug!("post-hook: {}", post_hook);
@@ -175,55 +163,6 @@ pub fn new(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     }
 
     Ok(())
-}
-
-#[doc(hidden)]
-fn new_login(
-    label: &str,
-    terse: bool,
-    session: &Session,
-    generator: Option<&dyn Generator>,
-) -> Result<()> {
-    let fields = input::fields(
-        &[Insensitive("Username"), Sensitive("Password")],
-        terse,
-        session.config,
-        generator,
-    )?;
-    let record = record::Record::login(label, &fields[0], &fields[1]);
-
-    session.add_record(&record)
-}
-
-#[doc(hidden)]
-fn new_environment(
-    label: &str,
-    terse: bool,
-    session: &Session,
-    generator: Option<&dyn Generator>,
-) -> Result<()> {
-    let fields = input::fields(
-        &[Insensitive("Variable"), Sensitive("Value")],
-        terse,
-        session.config,
-        generator,
-    )?;
-    let record = record::Record::environment(label, &fields[0], &fields[1]);
-
-    session.add_record(&record)
-}
-
-#[doc(hidden)]
-fn new_unstructured(
-    label: &str,
-    terse: bool,
-    session: &Session,
-    generator: Option<&dyn Generator>,
-) -> Result<()> {
-    let fields = input::fields(&[Insensitive("Contents")], terse, session.config, generator)?;
-    let record = record::Record::unstructured(label, &fields[0]);
-
-    session.add_record(&record)
 }
 
 /// Implements the `kbs2 list` command.
@@ -528,7 +467,7 @@ pub fn generate(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     let generator = {
         #[allow(clippy::unwrap_used)]
         let generator_name = matches.value_of("generator").unwrap();
-        match config.get_generator(generator_name) {
+        match config.generator(generator_name) {
             Some(generator) => generator,
             None => {
                 return Err(anyhow!(
@@ -590,10 +529,10 @@ pub fn rekey(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         session.config.store
     );
 
-    if !Confirm::new()
-        .default(false)
-        .with_prompt("Are you SURE you want to continue?")
-        .interact()?
+    if !Confirm::new("Are you SURE you want to continue?")
+        .with_default(false)
+        .with_help_message("Be certain! If you are not certain, press [enter] to do nothing.")
+        .prompt()?
     {
         return Ok(());
     }

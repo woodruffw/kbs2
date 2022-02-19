@@ -9,6 +9,22 @@ All versions prior to 0.2.1 are untracked.
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+* CLI: The CLI now uses [inquire](https://github.com/mikaelmello/inquire) for
+all prompts and dialogs. All functionality should be the same, but the prompts
+themselves have changed ([#306](https://github.com/woodruffw/kbs2/pull/306))
+
+### Removed
+
+* The `-g`, `--generate` flag has been removed from `kbs2 new`. Generation
+is now done "intelligently" with the behavior that was previously controlled
+by the `commands.new.generate-on-empty` configuration option
+([#306](https://github.com/woodruffw/kbs2/pull/306))
+
+* The `commands.new.generate-on-empty` option has been removed, as its behavior
+is now the default ([#306](https://github.com/woodruffw/kbs2/pull/306))
+
 ## [0.5.1] - 2022-02-15
 
 ### Added

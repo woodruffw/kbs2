@@ -130,6 +130,17 @@ mod tests {
     use tempfile::{tempdir, TempDir};
 
     use super::*;
+    use crate::kbs2::record::{LoginFields, Record, RecordBody};
+
+    fn dummy_login(label: &str, username: &str, password: &str) -> Record {
+        Record::new(
+            label,
+            RecordBody::Login(LoginFields {
+                username: username.into(),
+                password: password.into(),
+            }),
+        )
+    }
 
     // NOTE: We pass store in here instead of creating it for lifetime reasons:
     // the temp dir is unlinked when its TempDir object is destructed, so we need
@@ -188,7 +199,7 @@ mod tests {
             let store = tempdir().unwrap();
             let config = dummy_config(&store);
             let session = dummy_session(&config);
-            let record = record::Record::login("foo", "bar", "baz");
+            let record = dummy_login("foo", "bar", "baz");
 
             session.add_record(&record).unwrap();
             assert_eq!(session.record_labels().unwrap(), vec!["foo"]);
@@ -201,7 +212,7 @@ mod tests {
             let store = tempdir().unwrap();
             let config = dummy_config(&store);
             let session = dummy_session(&config);
-            let record = record::Record::login("foo", "bar", "baz");
+            let record = dummy_login("foo", "bar", "baz");
 
             session.add_record(&record).unwrap();
             assert!(session.has_record("foo"));
@@ -222,7 +233,7 @@ mod tests {
             let store = tempdir().unwrap();
             let config = dummy_config(&store);
             let session = dummy_session(&config);
-            let record = record::Record::login("foo", "bar", "baz");
+            let record = dummy_login("foo", "bar", "baz");
 
             session.add_record(&record).unwrap();
 
@@ -248,10 +259,10 @@ mod tests {
             let config = dummy_config(&store);
             let session = dummy_session(&config);
 
-            let record1 = record::Record::login("foo", "bar", "baz");
+            let record1 = dummy_login("foo", "bar", "baz");
             session.add_record(&record1).unwrap();
 
-            let record2 = record::Record::login("a", "b", "c");
+            let record2 = dummy_login("a", "b", "c");
             session.add_record(&record2).unwrap();
 
             // NOTE: record_labels() returns labels in a platform dependent order,
@@ -261,7 +272,7 @@ mod tests {
             assert!(session.record_labels().unwrap().contains(&"a".into()));
 
             // Overwrite foo; still only two records.
-            let record3 = record::Record::login("foo", "quux", "zap");
+            let record3 = dummy_login("foo", "quux", "zap");
             session.add_record(&record3).unwrap();
 
             assert_eq!(session.record_labels().unwrap().len(), 2);
@@ -276,7 +287,7 @@ mod tests {
             let store = tempdir().unwrap();
             let config = dummy_config(&store);
             let session = dummy_session(&config);
-            let record = record::Record::login("foo", "bar", "baz");
+            let record = dummy_login("foo", "bar", "baz");
 
             session.add_record(&record).unwrap();
 
@@ -290,10 +301,10 @@ mod tests {
             let config = dummy_config(&store);
             let session = dummy_session(&config);
 
-            let record1 = record::Record::login("foo", "bar", "baz");
+            let record1 = dummy_login("foo", "bar", "baz");
             session.add_record(&record1).unwrap();
 
-            let record2 = record::Record::login("a", "b", "c");
+            let record2 = dummy_login("a", "b", "c");
             session.add_record(&record2).unwrap();
 
             assert!(session.delete_record("foo").is_ok());

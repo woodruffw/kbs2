@@ -118,12 +118,6 @@ fn app() -> Command<'static> {
                         .long("terse"),
                 )
                 .arg(
-                    Arg::new("generate")
-                        .help("generate sensitive fields instead of prompting for them")
-                        .short('g')
-                        .long("generate"),
-                )
-                .arg(
                     Arg::new("generator")
                         .help("use the given generator to generate sensitive fields")
                         .short('G')
