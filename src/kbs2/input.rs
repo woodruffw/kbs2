@@ -55,7 +55,7 @@ impl Input for LoginFields {
         let username = if let Some(default_username) = &config.config.commands.new.default_username
         {
             Text::new("Username?")
-                .with_default(&default_username)
+                .with_default(default_username)
                 .prompt()?
         } else {
             Text::new("Username?").prompt()?
