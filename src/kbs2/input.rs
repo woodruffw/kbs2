@@ -69,6 +69,8 @@ impl Input for LoginFields {
         let (mut password, username) = {
             let mut fields = Self::take_terse_fields()?;
 
+            // Unwrap safety: take_terse_fields checks FIELD_COUNT to ensure sufficient elements.
+            #[allow(clippy::unwrap_used)]
             (fields.pop().unwrap(), fields.pop().unwrap())
         };
 
@@ -104,6 +106,8 @@ impl Input for EnvironmentFields {
         let (mut value, variable) = {
             let mut fields = Self::take_terse_fields()?;
 
+            // Unwrap safety: take_terse_fields checks FIELD_COUNT to ensure sufficient elements.
+            #[allow(clippy::unwrap_used)]
             (fields.pop().unwrap(), fields.pop().unwrap())
         };
 
@@ -119,7 +123,7 @@ impl Input for EnvironmentFields {
 }
 
 impl Input for UnstructuredFields {
-    const FIELD_COUNT: usize = 2;
+    const FIELD_COUNT: usize = 1;
 
     fn from_prompt(_config: &RuntimeConfig) -> Result<RecordBody> {
         let contents = Text::new("Contents?").prompt()?;
@@ -128,6 +132,8 @@ impl Input for UnstructuredFields {
     }
 
     fn from_terse(_config: &RuntimeConfig) -> Result<RecordBody> {
+        // Unwrap safety: take_terse_fields checks FIELD_COUNT to ensure sufficient elements.
+        #[allow(clippy::unwrap_used)]
         let contents = Self::take_terse_fields()?.pop().unwrap();
 
         Ok(RecordBody::Unstructured(UnstructuredFields { contents }))

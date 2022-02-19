@@ -147,6 +147,7 @@ pub fn new(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     let config = session.config.with_matches(matches);
 
+    #[allow(clippy::unwrap_used)]
     let record = match matches.value_of("kind").unwrap() {
         "login" => Record::new(label, LoginFields::input(&config)?),
         "environment" => Record::new(label, EnvironmentFields::input(&config)?),
