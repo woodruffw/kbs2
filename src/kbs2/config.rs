@@ -288,6 +288,8 @@ pub struct CommandConfigs {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct NewConfig {
+    #[serde(rename = "default-username")]
+    pub default_username: Option<String>,
     // TODO(ww): This deserialize_with is ugly. There's probably a better way to do this.
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]
     #[serde(rename = "pre-hook")]
