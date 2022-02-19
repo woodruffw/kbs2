@@ -896,6 +896,14 @@ runs `kbs2`. By default, hooks are run only for the initial `kbs2` invocation.
 
 Read the [Reentrancy section](#reentrancy) of the [Hooks](#hooks) documentation for more details.
 
+### `commands.new.default-username` (default: `None`)
+
+The `commands.new.default-username` setting allows the user to specify a default
+username for logins created with `kbs2 new`.
+
+When specified, `kbs2 new`'s username prompt will fill in the default when the user presses
+only `[enter]`.
+
 ### `commands.new.pre-hook` (default: `None`)
 
 The `commands.new.pre-hook` setting is like the global `pre-hook` setting, except that it runs

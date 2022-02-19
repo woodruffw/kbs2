@@ -9,6 +9,12 @@ All versions prior to 0.2.1 are untracked.
 
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+* Config: The `commands.new.default-username` field allows the user to specify
+a default username when creating logins with `kbs2 new`
+([#307](https://github.com/woodruffw/kbs2/pull/307))
+
 ### Changed
 
 * CLI: The CLI now uses [inquire](https://github.com/mikaelmello/inquire) for
@@ -17,13 +23,13 @@ themselves have changed ([#306](https://github.com/woodruffw/kbs2/pull/306))
 
 ### Removed
 
-* The `-g`, `--generate` flag has been removed from `kbs2 new`. Generation
+* CLI: The `-g`, `--generate` flag has been removed from `kbs2 new`. Generation
 is now done "intelligently" with the behavior that was previously controlled
 by the `commands.new.generate-on-empty` configuration option
 ([#306](https://github.com/woodruffw/kbs2/pull/306))
 
-* The `commands.new.generate-on-empty` option has been removed, as its behavior
-is now the default ([#306](https://github.com/woodruffw/kbs2/pull/306))
+* Config: The `commands.new.generate-on-empty` option has been removed, as its
+behavior is now the default ([#306](https://github.com/woodruffw/kbs2/pull/306))
 
 ## [0.5.1] - 2022-02-15
 
