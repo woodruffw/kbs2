@@ -52,7 +52,15 @@ impl Input for LoginFields {
     const FIELD_COUNT: usize = 2;
 
     fn from_prompt(config: &RuntimeConfig) -> Result<RecordBody> {
-        let username = Text::new("Username?").prompt()?;
+        let username = if let Some(default_username) = &config.config.commands.new.default_username
+        {
+            Text::new("Username?")
+                .with_default(&default_username)
+                .prompt()?
+        } else {
+            Text::new("Username?").prompt()?
+        };
+
         let mut password = Pass::new("Password?")
             .with_help_message("Press [enter] to auto-generate")
             .prompt()?;
