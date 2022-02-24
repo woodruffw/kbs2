@@ -7,6 +7,8 @@ set -eo pipefail
 [[ -n "${KBS2_SUBCOMMAND}" ]] \
   || { >&2 echo "Fatal: Not being run as a subcommand?"; exit 1; }
 
+config="$(kbs2 config dump)"
+
 function installed() {
   cmd=$(command -v "${1}")
 
@@ -19,10 +21,7 @@ function maybe_notify_username() {
 
   installed jq || return
 
-  setting=$(
-    kbs2 config dump \
-      | jq --raw-output '.commands.ext."dmenu-pass"."notify-username" or false'
-  )
+  setting=$(jq --raw-output '.commands.ext."dmenu-pass"."notify-username" or false' <<< "${config}")
 
   if [[ "${setting}" == "true" ]]; then
     username=$(kbs2 dump -j "${label}" | jq -r '.body.fields.username')
@@ -30,11 +29,13 @@ function maybe_notify_username() {
   fi
 }
 
+chooser=$(jq --raw-output '.commands.ext."dmenu-pass".chooser // "dmenu -p kbs2"' <<< "${config}")
+
 labels=$(kbs2 list -k login)
 
-# NOTE(ww): dmenu exits with 1 when canceled; use `|| exit 0` here to ignore
+# NOTE(ww): dmenu and similar tools exit with 1 when canceled; use `|| exit 0` here to ignore
 # `set -e` so that we can check whether label is empty immediately below.
-label=$(dmenu -p kbs2 <<< "${labels}" || exit 0)
+label=$(${chooser} <<< "${labels}" || exit 0)
 
 # NOTE(ww): Exit with a success if the user canceled, to avoid nagging
 # them with an error-hook.

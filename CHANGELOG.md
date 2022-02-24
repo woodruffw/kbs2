@@ -11,6 +11,11 @@ All versions prior to 0.2.1 are untracked.
 
 ### Added
 
+* Contrib: The `kbs2-dmenu-pass` command now reads the
+`commands.ext.dmenu-pass.chooser` setting for a user-specified `dmenu`
+replacement. `dmenu` remains the default
+([#313](https://github.com/woodruffw/kbs2/pull/313))
+
 * Config: The `commands.new.default-username` field allows the user to specify
 a default username when creating logins with `kbs2 new`
 ([#307](https://github.com/woodruffw/kbs2/pull/307))
