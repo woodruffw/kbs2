@@ -9,20 +9,29 @@ to the clipboard.
 
 ## Setup
 
-`kbs2-dmenu-pass` requires [`dmenu`](https://tools.suckless.org/dmenu/).
-Your package manager should supply it.
+`kbs2-dmenu-pass` requires [`dmenu`](https://tools.suckless.org/dmenu/) by
+default. Your package manager should supply it.
 
-[`toml2json`](https://github.com/woodruffw/toml2json) and `jq` are optional
-dependencies. See the configuration section for details.
+[`jq`](https://stedolan.github.io/jq/) is required for config handling.
+Your package manager should supply it.
 
 ## Configuration
 
-`kbs2 dmenu-pass` reads the `commands.ext.dmenu-pass.notify-username` setting. If `true`,
-a desktop notification is emitted containing the username of the record that
-the user has selected (and is currently in the clipboard).
+### `commands.ext.dmenu-pass.notify-username` (boolean)
 
-To read the configuration, `kbs2 dmenu-pass` requires both `toml2json` and `jq`.
-If either is missing, the configuration will be silently ignored.
+If `true`, a desktop notification is emitted containing the username of the
+record that the user has selected (and is currently in the clipboard).
+
+### `commands.ext.dmenu-pass.chooser` (string)
+
+If set, `kbs2-dmenu-pass` will execute this string as a `dmenu`-compatible chooser.
+
+For example, to use [`rofi`](https://github.com/davatorium/rofi):
+
+```toml
+[commands.ext.dmenu-pass]
+chooser = "rofi -dmenu -p kbs2"
+```
 
 ## Usage
 
