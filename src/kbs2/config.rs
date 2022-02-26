@@ -30,9 +30,11 @@ pub static DEFAULT_KEY_BASENAME: &str = "key";
 lazy_static! {
     // We're completely hosed if we can't find a reasonable set of base directories,
     // so there isn't much point in trying to avoid this `expect`.
-    static ref XDG_DIRS: BaseDirectories =
+    static ref XDG_DIRS: BaseDirectories = {
+        #[allow(clippy::expect_used)]
         BaseDirectories::with_prefix(env!("CARGO_PKG_NAME"))
-            .expect("Fatal: XDG: couldn't determine reasonable base directories");
+            .expect("Fatal: XDG: couldn't determine reasonable base directories")
+    };
 
     pub static ref DEFAULT_CONFIG_DIR: PathBuf = XDG_DIRS.get_config_home();
     pub static ref DEFAULT_STORE_DIR: PathBuf = XDG_DIRS.get_data_home();
