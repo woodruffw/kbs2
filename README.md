@@ -777,7 +777,8 @@ $ kbs2 config dump --pretty
 ## Configuration
 
 `kbs2` stores its configuration in `<config dir>/kbs2/config.toml`, where `<config dir>` is determined
-by your host system. On Linux, for example, it's `~/.config`.
+by the the [XDG basedir specification](https://wiki.freedesktop.org/www/Specifications/basedir-spec/).
+On Linux, it's probably `~/.config/kbs2`.
 
 **NOTE**: If `config.toml` isn't found in a configuration directory, `kbs2` attempts to use
 `kbs2.conf` in the same directory. This is for backwards compatibility, and will be removed

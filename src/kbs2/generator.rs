@@ -74,7 +74,7 @@ impl Generator for config::InternalGeneratorConfig {
         }
 
         // Pad out with the combined alphabet.
-        let combined_alphabet = self.alphabets.iter().map(|a| a.chars()).flatten();
+        let combined_alphabet = self.alphabets.iter().flat_map(|a| a.chars());
         let remainder = combined_alphabet.choose_multiple(&mut rng, self.length - secret.len());
         secret.extend(remainder.into_iter());
 
