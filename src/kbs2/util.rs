@@ -1,7 +1,7 @@
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -89,13 +89,6 @@ pub fn current_timestamp() -> u64 {
 /// Print the given message on `stderr` with a warning prefix.
 pub fn warn(msg: &str) {
     eprintln!("Warn: {}", msg);
-}
-
-/// Retrieve the current user's home directory.
-pub fn home_dir() -> PathBuf {
-    // Expect: This program is functionally useless without a $HOME.
-    #[allow(clippy::expect_used)]
-    home::home_dir().expect("Fatal: can't continue without $HOME.")
 }
 
 /// Read the entire given file into a `Vec<u8>`, or fail if its on-disk size exceeds
@@ -206,14 +199,6 @@ mod tests {
     }
 
     // TODO: Figure out a good way to test util::warn.
-
-    #[test]
-    fn test_home_dir() {
-        let dir = home_dir();
-
-        assert!(dir.exists());
-        assert!(dir.is_dir());
-    }
 
     #[test]
     fn test_read_guarded() {

@@ -10,14 +10,11 @@ use clap::ArgMatches;
 use lazy_static::lazy_static;
 use secrecy::SecretString;
 use serde::{de, Deserialize, Serialize};
+use xdg::BaseDirectories;
 
 use crate::kbs2::backend::{Backend, RageLib};
 use crate::kbs2::generator::Generator;
 use crate::kbs2::util;
-
-/// The default base config directory name, placed relative to the user's config
-/// directory by default.
-pub static CONFIG_BASEDIR: &str = "kbs2";
 
 /// The default basename for the main config file, relative to the configuration
 /// directory.
@@ -30,16 +27,15 @@ pub static LEGACY_CONFIG_BASENAME: &str = "kbs2.conf";
 /// the configuration directory.
 pub static DEFAULT_KEY_BASENAME: &str = "key";
 
-/// The default base directory name for the secret store, placed relative to
-/// the user's data directory by default.
-pub static STORE_BASEDIR: &str = "kbs2";
-
 lazy_static! {
-    static ref HOME: PathBuf = util::home_dir();
+    // We're completely hosed if we can't find a reasonable set of base directories,
+    // so there isn't much point in trying to avoid this `expect`.
+    static ref XDG_DIRS: BaseDirectories =
+        BaseDirectories::with_prefix(env!("CARGO_PKG_NAME"))
+            .expect("Fatal: XDG: couldn't determine reasonable base directories");
 
-    // TODO(ww): Respect XDG on appropriate platforms.
-    pub static ref DEFAULT_CONFIG_DIR: PathBuf = HOME.join(".config").join(CONFIG_BASEDIR);
-    pub static ref DEFAULT_STORE_DIR: PathBuf = HOME.join(".local/share").join(STORE_BASEDIR);
+    pub static ref DEFAULT_CONFIG_DIR: PathBuf = XDG_DIRS.get_config_home();
+    pub static ref DEFAULT_STORE_DIR: PathBuf = XDG_DIRS.get_data_home();
 }
 
 /// The main kbs2 configuration structure.
