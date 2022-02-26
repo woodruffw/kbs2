@@ -26,6 +26,12 @@ a default username when creating logins with `kbs2 new`
 all prompts and dialogs. All functionality should be the same, but the prompts
 themselves have changed ([#306](https://github.com/woodruffw/kbs2/pull/306))
 
+* Config: `kbs2` now respects XDG for loading the config and store directories.
+Most users should not observe a change, but some may have to migrate their
+configuration and/or store directories to the directories listed in their
+`$XDG_CONFIG_HOME` and `$XDG_DATA_HOME` directories for config and store data,
+respectively ([#315](https://github.com/woodruffw/kbs2/pull/315))
+
 ### Removed
 
 * CLI: The `-g`, `--generate` flag has been removed from `kbs2 new`. Generation
