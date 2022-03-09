@@ -13,7 +13,7 @@ fn app() -> Command<'static> {
     // The latter probably won't work with env!, though.
     Command::new(env!("CARGO_PKG_NAME"))
         .allow_external_subcommands(true)
-        .version(env!("CARGO_PKG_VERSION"))
+        .version(env!("KBS2_BUILD_VERSION"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
             Arg::new("config-dir")
