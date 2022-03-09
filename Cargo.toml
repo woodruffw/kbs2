@@ -89,3 +89,4 @@ xdg = "2.4"
 
 [dev-dependencies]
 assert_cmd = "2"
+delegate = "0.6"

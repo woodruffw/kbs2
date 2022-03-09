@@ -359,6 +359,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "delegate"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35c47a31748d9cfa641f6cccb3608385fafe261ba36054f3d40d5a3ca11eb1af"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "difflib"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -761,6 +772,7 @@ dependencies = [
  "clap_complete",
  "clipboard",
  "daemonize",
+ "delegate",
  "env_logger",
  "home",
  "inquire",

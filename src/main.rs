@@ -22,6 +22,7 @@ fn app() -> Command<'static> {
                 .long("config-dir")
                 .value_name("DIR")
                 .takes_value(true)
+                .allow_invalid_utf8(true)
                 .env("KBS2_CONFIG_DIR")
                 .default_value_os(kbs2::config::DEFAULT_CONFIG_DIR.as_ref())
                 .value_hint(ValueHint::DirPath),
@@ -78,6 +79,7 @@ fn app() -> Command<'static> {
                         .long("store-dir")
                         .value_name("DIR")
                         .takes_value(true)
+                        .allow_invalid_utf8(true)
                         .default_value_os(kbs2::config::DEFAULT_STORE_DIR.as_ref())
                         .value_hint(ValueHint::DirPath),
                 )
