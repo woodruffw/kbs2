@@ -4,11 +4,10 @@ use common::CliSession;
 
 #[test]
 fn test_kbs2_init() {
-    let mut kbs2 = CliSession::new();
-    kbs2.assert();
+    let session = CliSession::new();
 
-    let config_dir = kbs2.config_dir.as_ref().unwrap().path();
-    let store_dir = kbs2.store_dir.as_ref().unwrap().path();
+    let config_dir = session.config_dir.path();
+    let store_dir = session.store_dir.path();
 
     // Our config dir, etc. all exist; the store dir is empty.
     assert!(config_dir.is_dir());
