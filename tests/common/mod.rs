@@ -2,7 +2,10 @@
 // https://github.com/rust-lang/rust/issues/46379
 #![allow(dead_code)]
 
+use std::process::Output;
+
 use assert_cmd::Command;
+use serde_json::Value;
 use tempfile::TempDir;
 
 #[derive(Debug)]
@@ -30,8 +33,8 @@ impl CliSession {
         }
 
         Self {
-            config_dir: config_dir,
-            store_dir: store_dir,
+            config_dir,
+            store_dir,
         }
     }
 
@@ -46,4 +49,14 @@ impl CliSession {
 
 pub fn kbs2() -> Command {
     Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap()
+}
+
+pub trait ToJson {
+    fn json(&self) -> Value;
+}
+
+impl ToJson for Output {
+    fn json(&self) -> Value {
+        serde_json::from_slice(&self.stdout).unwrap()
+    }
 }
