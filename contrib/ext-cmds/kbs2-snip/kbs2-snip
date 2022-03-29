@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# kbs2-snip: quickly select and run a code snippet stored in kbs2 using a fuzzy matcher
-# By default, selecta is used as the fuzzy matcher.
+# kbs2-snip: quickly select and run a code snippet stored in kbs2 using a fuzzy selector
+# By default, selecta is used as the fuzzy selector.
 
 require "open3"
 require "optparse"
@@ -23,7 +23,7 @@ end.parse!
 
 config = JSON.parse `kbs2 config dump`
 
-matcher = config.dig("commands", "ext", "snip", "matcher") || "selecta"
+chooser = config.dig("commands", "ext", "snip", "chooser") || "selecta"
 
 unstructureds = `kbs2 list -k unstructured`.split
 snippets = unstructureds.filter_map do |label|
@@ -33,7 +33,7 @@ snippets = unstructureds.filter_map do |label|
   ["#{label} - #{contents[8..]}", contents[8..]] if contents.start_with? "snippet:"
 end.to_h
 
-output, = Open3.capture2 matcher, stdin_data: snippets.keys.join("\n")
+output, = Open3.capture2 chooser, stdin_data: snippets.keys.join("\n")
 selection = output.chomp
 code = snippets[selection]
 
