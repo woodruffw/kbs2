@@ -33,7 +33,7 @@ configuration and/or store directories to the directories listed in their
 respectively ([#315](https://github.com/woodruffw/kbs2/pull/315))
 
 * Contrib: `kbs2 snip` now checks `commands.ext.snip.chooser` instead of
-`commands.ext.snip.matcher`
+`commands.ext.snip.matcher` ([#329](https://github.com/woodruffw/kbs2/pull/329))
 
 ### Removed
 
