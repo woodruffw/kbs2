@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# kbs2-snip: quickly select and run a code snippet stored in kbs2 using a fuzzy matcher
-# By default, selecta is used as the fuzzy matcher.
+# kbs2-snip: quickly select and run a code snippet stored in kbs2 using a fuzzy selector
+# By default, selecta is used as the fuzzy selector.
 
 require "open3"
 require "optparse"
