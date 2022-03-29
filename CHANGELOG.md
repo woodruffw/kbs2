@@ -32,6 +32,9 @@ configuration and/or store directories to the directories listed in their
 `$XDG_CONFIG_HOME` and `$XDG_DATA_HOME` directories for config and store data,
 respectively ([#315](https://github.com/woodruffw/kbs2/pull/315))
 
+* Contrib: `kbs2 snip` now checks `commands.ext.snip.chooser` instead of
+`commands.ext.snip.matcher` ([#329](https://github.com/woodruffw/kbs2/pull/329))
+
 ### Removed
 
 * CLI: The `-g`, `--generate` flag has been removed from `kbs2 new`. Generation
