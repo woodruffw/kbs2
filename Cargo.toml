@@ -60,11 +60,11 @@ depends = "$auto, libxcb-shape0-dev, libxcb-xfixes0-dev"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-age = { version = "0.7.1", features = ["armor"] }
+age = { version = "0.8.0", features = ["armor"] }
 anyhow = "1.0"
 atty = "0.2.14"
-clap = { version = "3.1.6", features = ["env"] }
-clap_complete = "3.1.1"
+clap = { version = "3.1.18", features = ["env"] }
+clap_complete = "3.1.4"
 clipboard = "0.5.0"
 daemonize = "0.4"
 env_logger = "0.9"
@@ -73,7 +73,7 @@ inquire = "0.2"
 lazy_static = "1.4.0"
 libc = "0.2"
 log = "0.4"
-nix = "0.23.1"
+nix = "0.24.1"
 pinentry = "0.5"
 rand = "0.8"
 rpassword = "6.0"
@@ -83,7 +83,7 @@ serde_json = "1.0"
 shellexpand = "2.1.0"
 shell-words = "1.1.0"
 tempfile = "3"
-toml = "0.5.8"
+toml = "0.5.9"
 whoami = "1.2"
 xdg = "2.4"
 
