@@ -86,3 +86,6 @@ tempfile = "3"
 toml = "0.5.9"
 whoami = "1.2"
 xdg = "2.4"
+
+[dev-dependencies]
+assert_cmd = "2"
