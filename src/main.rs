@@ -3,7 +3,7 @@ use std::path::Path;
 use std::process;
 
 use anyhow::{anyhow, Context, Result};
-use clap::{Arg, ArgMatches, Command, ValueHint};
+use clap::{Arg, ArgEnum, ArgMatches, Command, ValueHint};
 use clap_complete::{generate, Shell};
 
 mod kbs2;
@@ -33,7 +33,11 @@ fn app() -> Command<'static> {
                 .long("completions")
                 .value_name("SHELL")
                 .takes_value(true)
-                .possible_values(Shell::possible_values()),
+                .possible_values(
+                    Shell::value_variants()
+                        .iter()
+                        .filter_map(ArgEnum::to_possible_value),
+                ),
         )
         .subcommand(
             Command::new("agent")
