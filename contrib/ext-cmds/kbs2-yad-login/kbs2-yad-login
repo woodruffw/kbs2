@@ -20,13 +20,21 @@ record=$(
     --field="Label" \
     --field="Username" \
     --field="Password:H" \
+    --field="Overwrite?:CHK" \
     "" \
     "${default_username}" \
-    "$(kbs2 generate)"
+    "$(kbs2 generate)" \
+    "FALSE"
 )
 
 label=$(awk -F $'\x01' '{ print $1 }' <<< "${record}")
 username=$(awk -F $'\x01' '{ print $2 }' <<< "${record}")
 password=$(awk -F $'\x01' '{ print $3 }' <<< "${record}")
+force=$(awk -F $'\x01' '{ print $4 }' <<< "${record}")
 
-kbs2 new "${label}" <<< "${username}"$'\x01'"${password}"
+if [[ "${force}" == "TRUE" ]]; then
+  force_arg="--force"
+fi
+
+# NOTE: Intentional lack of quoting around `force_arg`, to allow empty expansion.
+kbs2 new ${force_arg} "${label}" <<< "${username}"$'\x01'"${password}"
