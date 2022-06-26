@@ -27,6 +27,7 @@ use crate::kbs2::util;
 pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
     log::debug!("initializing a new config");
 
+    #[allow(clippy::unwrap_used)]
     if config_dir.join(config::CONFIG_BASENAME).exists()
         && !*matches.get_one::<bool>("force").unwrap()
     {
@@ -43,6 +44,7 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
         util::warn("Requested store directory already exists");
     }
 
+    #[allow(clippy::unwrap_used)]
     let password = if !*matches.get_one::<bool>("insecure-not-wrapped").unwrap() {
         Some(util::get_password(None, &Pinentry::default())?)
     } else {
@@ -59,6 +61,7 @@ pub fn agent(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     // No subcommand: run the agent itself
     if matches.subcommand().is_none() {
         let mut agent = agent::Agent::new()?;
+        #[allow(clippy::unwrap_used)]
         if !matches.get_one::<bool>("foreground").unwrap() {
             Daemonize::new().start()?;
         }
@@ -81,6 +84,7 @@ fn agent_flush(matches: &ArgMatches) -> Result<()> {
     let client = agent::Client::new()?;
     client.flush_keys()?;
 
+    #[allow(clippy::unwrap_used)]
     if *matches.get_one::<bool>("quit").unwrap() {
         client.quit_agent()?;
     }
@@ -143,6 +147,8 @@ pub fn new(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     #[allow(clippy::unwrap_used)]
     let label = matches.get_one::<String>("label").unwrap();
+
+    #[allow(clippy::unwrap_used)]
     if session.has_record(label) && !matches.get_one::<bool>("force").unwrap() {
         return Err(anyhow!("refusing to overwrite a record without --force"));
     }
@@ -177,6 +183,7 @@ pub fn list(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     let session: Session = config.try_into()?;
 
+    #[allow(clippy::unwrap_used)]
     let (details, filter_kind) = (
         *matches.get_one::<bool>("details").unwrap(),
         matches.contains_id("kind"),
@@ -248,6 +255,7 @@ pub fn dump(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     for label in labels {
         let record = session.get_record(label)?;
 
+        #[allow(clippy::unwrap_used)]
         if *matches.get_one::<bool>("json").unwrap() {
             println!("{}", serde_json::to_string(&record)?);
         } else {
@@ -289,6 +297,8 @@ pub fn pass(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     };
 
     let password = login.password;
+
+    #[allow(clippy::unwrap_used)]
     if *matches.get_one::<bool>("clipboard").unwrap() {
         // NOTE(ww): fork() is unsafe in multithreaded programs where the child calls
         // non async-signal-safe functions. kbs2 is single threaded, so this usage is fine.
@@ -404,6 +414,7 @@ pub fn env(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         _ => return Err(anyhow!("not an environment record: {}", label)),
     };
 
+    #[allow(clippy::unwrap_used)]
     if *matches.get_one::<bool>("value-only").unwrap() {
         println!("{}", environment.value);
     } else if *matches.get_one::<bool>("no-export").unwrap() {
@@ -504,8 +515,11 @@ pub fn rewrap(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         return Err(anyhow!("config specifies a bare key; nothing to rewrap"));
     }
 
+    #[allow(clippy::unwrap_used)]
     if !*matches.get_one::<bool>("no-backup").unwrap() {
         let keyfile_backup: PathBuf = format!("{}.old", &config.keyfile).into();
+
+        #[allow(clippy::unwrap_used)]
         if keyfile_backup.exists() && !*matches.get_one::<bool>("force").unwrap() {
             return Err(anyhow!(
                 "refusing to overwrite a previous key backup without --force"
@@ -550,6 +564,7 @@ pub fn rekey(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         return Ok(());
     }
 
+    #[allow(clippy::unwrap_used)]
     if !*matches.get_one::<bool>("no-backup").unwrap() {
         // First, back up the keyfile.
         let keyfile_backup: PathBuf = format!("{}.old", &config.keyfile).into();
@@ -656,7 +671,9 @@ pub fn config(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("config subcommand dispatch");
 
     match matches.subcommand() {
-        Some(("dump", matches)) => {
+        Some(("dump", matches)) =>
+        {
+            #[allow(clippy::unwrap_used)]
             if *matches.get_one::<bool>("pretty").unwrap() {
                 serde_json::to_writer_pretty(io::stdout(), &config)?;
             } else {
