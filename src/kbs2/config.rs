@@ -367,7 +367,7 @@ impl<'a> RuntimeConfig<'a> {
     pub fn generator(&self) -> Result<&dyn Generator> {
         // If the user explicitly requests a specific generator, use it.
         // Otherwise, use the default generator, which is always present.
-        if let Some(generator) = self.matches.value_of("generator") {
+        if let Some(generator) = self.matches.get_one::<String>("generator") {
             self.config
                 .generator(generator)
                 .ok_or_else(|| anyhow!("no generator named {generator}"))
@@ -380,7 +380,7 @@ impl<'a> RuntimeConfig<'a> {
     }
 
     pub fn terse(&self) -> bool {
-        atty::isnt(atty::Stream::Stdin) || self.matches.is_present("terse")
+        atty::isnt(atty::Stream::Stdin) || *self.matches.get_one::<bool>("terse").unwrap()
     }
 }
 

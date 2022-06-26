@@ -1,9 +1,9 @@
-use std::io;
-use std::path::Path;
 use std::process;
+use std::{io, path::PathBuf};
 
 use anyhow::{anyhow, Context, Result};
-use clap::{Arg, ArgEnum, ArgMatches, Command, ValueHint};
+use clap::builder::{EnumValueParser, PossibleValuesParser, ValueParser};
+use clap::{Arg, ArgAction, ArgMatches, Command, ValueHint};
 use clap_complete::{generate, Shell};
 
 mod kbs2;
@@ -21,8 +21,7 @@ fn app() -> Command<'static> {
                 .short('c')
                 .long("config-dir")
                 .value_name("DIR")
-                .takes_value(true)
-                .allow_invalid_utf8(true)
+                .value_parser(ValueParser::path_buf())
                 .env("KBS2_CONFIG_DIR")
                 .default_value_os(kbs2::config::DEFAULT_CONFIG_DIR.as_ref())
                 .value_hint(ValueHint::DirPath),
@@ -32,12 +31,7 @@ fn app() -> Command<'static> {
                 .help("emit shell tab completions")
                 .long("completions")
                 .value_name("SHELL")
-                .takes_value(true)
-                .possible_values(
-                    Shell::value_variants()
-                        .iter()
-                        .filter_map(ArgEnum::to_possible_value),
-                ),
+                .value_parser(EnumValueParser::<Shell>::new()),
         )
         .subcommand(
             Command::new("agent")
@@ -46,7 +40,8 @@ fn app() -> Command<'static> {
                     Arg::new("foreground")
                         .help("run the agent in the foreground")
                         .short('F')
-                        .long("foreground"),
+                        .long("foreground")
+                        .action(ArgAction::SetTrue),
                 )
                 .subcommand(
                     Command::new("flush")
@@ -55,7 +50,8 @@ fn app() -> Command<'static> {
                             Arg::new("quit")
                                 .help("quit the agent after flushing")
                                 .short('q')
-                                .long("quit"),
+                                .long("quit")
+                                .action(ArgAction::SetTrue),
                         ),
                 )
                 .subcommand(
@@ -74,7 +70,8 @@ fn app() -> Command<'static> {
                     Arg::new("force")
                         .help("overwrite the config and keyfile, if already present")
                         .short('f')
-                        .long("force"),
+                        .long("force")
+                        .action(ArgAction::SetTrue),
                 )
                 .arg(
                     Arg::new("store-dir")
@@ -82,15 +79,15 @@ fn app() -> Command<'static> {
                         .short('s')
                         .long("store-dir")
                         .value_name("DIR")
-                        .takes_value(true)
-                        .allow_invalid_utf8(true)
+                        .value_parser(ValueParser::path_buf())
                         .default_value_os(kbs2::config::DEFAULT_STORE_DIR.as_ref())
                         .value_hint(ValueHint::DirPath),
                 )
                 .arg(
                     Arg::new("insecure-not-wrapped")
                         .help("don't wrap the keypair with a master password")
-                        .long("insecure-not-wrapped"),
+                        .long("insecure-not-wrapped")
+                        .action(ArgAction::SetTrue),
                 ),
         )
         .subcommand(
@@ -108,20 +105,22 @@ fn app() -> Command<'static> {
                         .short('k')
                         .long("kind")
                         .takes_value(true)
-                        .possible_values(kbs2::record::RECORD_KINDS)
+                        .value_parser(PossibleValuesParser::new(kbs2::record::RECORD_KINDS))
                         .default_value("login"),
                 )
                 .arg(
                     Arg::new("force")
                         .help("overwrite, if already present")
                         .short('f')
-                        .long("force"),
+                        .long("force")
+                        .action(ArgAction::SetTrue),
                 )
                 .arg(
                     Arg::new("terse")
                         .help("read fields in a terse format, even when connected to a tty")
                         .short('t')
-                        .long("terse"),
+                        .long("terse")
+                        .action(ArgAction::SetTrue),
                 )
                 .arg(
                     Arg::new("generator")
@@ -139,7 +138,8 @@ fn app() -> Command<'static> {
                     Arg::new("details")
                         .help("print (non-field) details for each record")
                         .short('d')
-                        .long("details"),
+                        .long("details")
+                        .action(ArgAction::SetTrue),
                 )
                 .arg(
                     Arg::new("kind")
@@ -147,7 +147,7 @@ fn app() -> Command<'static> {
                         .short('k')
                         .long("kind")
                         .takes_value(true)
-                        .possible_values(kbs2::record::RECORD_KINDS),
+                        .value_parser(PossibleValuesParser::new(kbs2::record::RECORD_KINDS)),
                 ),
         )
         .subcommand(
@@ -173,7 +173,8 @@ fn app() -> Command<'static> {
                     Arg::new("json")
                         .help("dump in JSON format (JSONL when multiple)")
                         .short('j')
-                        .long("json"),
+                        .long("json")
+                        .action(ArgAction::SetTrue),
                 ),
         )
         .subcommand(
@@ -189,7 +190,8 @@ fn app() -> Command<'static> {
                     Arg::new("clipboard")
                         .help("copy the password to the clipboard")
                         .short('c')
-                        .long("clipboard"),
+                        .long("clipboard")
+                        .action(ArgAction::SetTrue),
                 ),
         )
         .subcommand(
@@ -205,13 +207,15 @@ fn app() -> Command<'static> {
                     Arg::new("value-only")
                         .help("print only the environment variable value, not the variable name")
                         .short('v')
-                        .long("value-only"),
+                        .long("value-only")
+                        .action(ArgAction::SetTrue),
                 )
                 .arg(
                     Arg::new("no-export")
                         .help("print only VAR=val without `export`")
                         .short('n')
-                        .long("no-export"),
+                        .long("no-export")
+                        .action(ArgAction::SetTrue),
                 ),
         )
         .subcommand(
@@ -247,13 +251,15 @@ fn app() -> Command<'static> {
                     Arg::new("no-backup")
                         .help("don't make a backup of the old wrapped key")
                         .short('n')
-                        .long("no-backup"),
+                        .long("no-backup")
+                        .action(ArgAction::SetTrue),
                 )
                 .arg(
                     Arg::new("force")
                         .help("overwrite a previous backup, if one exists")
                         .short('f')
-                        .long("force"),
+                        .long("force")
+                        .action(ArgAction::SetTrue),
                 ),
         )
         .subcommand(
@@ -264,7 +270,8 @@ fn app() -> Command<'static> {
                     Arg::new("no-backup")
                         .help("don't make a backup of the old wrapped key, config, or store")
                         .short('n')
-                        .long("no-backup"),
+                        .long("no-backup")
+                        .action(ArgAction::SetTrue),
                 ),
         )
         .subcommand(
@@ -278,7 +285,8 @@ fn app() -> Command<'static> {
                             Arg::new("pretty")
                                 .help("pretty-print the JSON")
                                 .short('p')
-                                .long("pretty"),
+                                .long("pretty")
+                                .action(ArgAction::SetTrue),
                         ),
                 ),
         )
@@ -316,8 +324,8 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
         Some((cmd, matches)) => {
             let cmd = format!("kbs2-{}", cmd);
 
-            let ext_args: Vec<&str> = match matches.values_of("") {
-                Some(values) => values.collect(),
+            let ext_args: Vec<&str> = match matches.get_many::<String>("") {
+                Some(values) => values.map(AsRef::as_ref).collect(),
                 None => vec![],
             };
 
@@ -360,13 +368,13 @@ fn main() -> Result<()> {
 
     // Shell completion generation is completely independent, so perform it before
     // any config or subcommand operations.
-    if let Ok(shell) = matches.value_of_t::<Shell>("completions") {
-        generate(shell, &mut app, env!("CARGO_PKG_NAME"), &mut io::stdout());
+    if let Some(shell) = matches.get_one::<Shell>("completions") {
+        generate(*shell, &mut app, env!("CARGO_PKG_NAME"), &mut io::stdout());
         return Ok(());
     }
 
     #[allow(clippy::unwrap_used)]
-    let config_dir = Path::new(matches.value_of_os("config-dir").unwrap());
+    let config_dir = matches.get_one::<PathBuf>("config-dir").unwrap();
     log::debug!("config dir: {:?}", config_dir);
     std::fs::create_dir_all(&config_dir)?;
 
