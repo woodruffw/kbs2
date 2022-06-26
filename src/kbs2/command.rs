@@ -27,21 +27,25 @@ use crate::kbs2::util;
 pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
     log::debug!("initializing a new config");
 
-    if config_dir.join(config::CONFIG_BASENAME).exists() && !matches.is_present("force") {
+    #[allow(clippy::unwrap_used)]
+    if config_dir.join(config::CONFIG_BASENAME).exists()
+        && !*matches.get_one::<bool>("force").unwrap()
+    {
         return Err(anyhow!(
             "refusing to overwrite your current config without --force"
         ));
     }
 
     #[allow(clippy::unwrap_used)]
-    let store_dir = Path::new(matches.value_of_os("store-dir").unwrap());
+    let store_dir = matches.get_one::<PathBuf>("store-dir").unwrap().as_path();
 
     // Warn, but don't fail, if the store directory is already present.
     if store_dir.exists() {
         util::warn("Requested store directory already exists");
     }
 
-    let password = if !matches.is_present("insecure-not-wrapped") {
+    #[allow(clippy::unwrap_used)]
+    let password = if !*matches.get_one::<bool>("insecure-not-wrapped").unwrap() {
         Some(util::get_password(None, &Pinentry::default())?)
     } else {
         None
@@ -57,7 +61,8 @@ pub fn agent(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     // No subcommand: run the agent itself
     if matches.subcommand().is_none() {
         let mut agent = agent::Agent::new()?;
-        if !matches.is_present("foreground") {
+        #[allow(clippy::unwrap_used)]
+        if !matches.get_one::<bool>("foreground").unwrap() {
             Daemonize::new().start()?;
         }
         agent.run()?;
@@ -79,7 +84,8 @@ fn agent_flush(matches: &ArgMatches) -> Result<()> {
     let client = agent::Client::new()?;
     client.flush_keys()?;
 
-    if matches.is_present("quit") {
+    #[allow(clippy::unwrap_used)]
+    if *matches.get_one::<bool>("quit").unwrap() {
         client.quit_agent()?;
     }
 
@@ -140,15 +146,21 @@ pub fn new(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     }
 
     #[allow(clippy::unwrap_used)]
-    let label = matches.value_of("label").unwrap();
-    if session.has_record(label) && !matches.is_present("force") {
+    let label = matches.get_one::<String>("label").unwrap();
+
+    #[allow(clippy::unwrap_used)]
+    if session.has_record(label) && !matches.get_one::<bool>("force").unwrap() {
         return Err(anyhow!("refusing to overwrite a record without --force"));
     }
 
     let config = session.config.with_matches(matches);
 
     #[allow(clippy::unwrap_used)]
-    let record = match matches.value_of("kind").unwrap() {
+    let record = match matches
+        .get_one::<String>("kind")
+        .map(AsRef::as_ref)
+        .unwrap()
+    {
         "login" => Record::new(label, LoginFields::input(&config)?),
         "environment" => Record::new(label, EnvironmentFields::input(&config)?),
         "unstructured" => Record::new(label, UnstructuredFields::input(&config)?),
@@ -171,7 +183,11 @@ pub fn list(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     let session: Session = config.try_into()?;
 
-    let (details, filter_kind) = (matches.is_present("details"), matches.is_present("kind"));
+    #[allow(clippy::unwrap_used)]
+    let (details, filter_kind) = (
+        *matches.get_one::<bool>("details").unwrap(),
+        matches.contains_id("kind"),
+    );
 
     for label in session.record_labels()? {
         let mut display = String::new();
@@ -181,8 +197,8 @@ pub fn list(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
             if filter_kind {
                 #[allow(clippy::unwrap_used)]
-                let kind = matches.value_of("kind").unwrap();
-                if record.body.to_string() != kind {
+                let kind = matches.get_one::<String>("kind").unwrap();
+                if &record.body.to_string() != kind {
                     continue;
                 }
             }
@@ -209,7 +225,11 @@ pub fn rm(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     let session: Session = config.try_into()?;
 
     #[allow(clippy::unwrap_used)]
-    let labels: Vec<_> = matches.values_of("label").unwrap().collect();
+    let labels: Vec<_> = matches
+        .get_many::<String>("label")
+        .unwrap()
+        .map(AsRef::as_ref)
+        .collect();
 
     for label in &labels {
         session.delete_record(label)?;
@@ -230,12 +250,13 @@ pub fn dump(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     let session: Session = config.try_into()?;
 
     #[allow(clippy::unwrap_used)]
-    let labels: Vec<_> = matches.values_of("label").unwrap().collect();
+    let labels: Vec<_> = matches.get_many::<String>("label").unwrap().collect();
 
     for label in labels {
         let record = session.get_record(label)?;
 
-        if matches.is_present("json") {
+        #[allow(clippy::unwrap_used)]
+        if *matches.get_one::<bool>("json").unwrap() {
             println!("{}", serde_json::to_string(&record)?);
         } else {
             println!("Label {}\nKind {}", label, record.body);
@@ -267,7 +288,7 @@ pub fn pass(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     }
 
     #[allow(clippy::unwrap_used)]
-    let label = matches.value_of("label").unwrap();
+    let label = matches.get_one::<String>("label").unwrap();
     let record = session.get_record(label)?;
 
     let login = match record.body {
@@ -276,7 +297,9 @@ pub fn pass(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     };
 
     let password = login.password;
-    if matches.is_present("clipboard") {
+
+    #[allow(clippy::unwrap_used)]
+    if *matches.get_one::<bool>("clipboard").unwrap() {
         // NOTE(ww): fork() is unsafe in multithreaded programs where the child calls
         // non async-signal-safe functions. kbs2 is single threaded, so this usage is fine.
         unsafe {
@@ -383,7 +406,7 @@ pub fn env(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     let session: Session = config.try_into()?;
 
     #[allow(clippy::unwrap_used)]
-    let label = matches.value_of("label").unwrap();
+    let label = matches.get_one::<String>("label").unwrap();
     let record = session.get_record(label)?;
 
     let environment = match record.body {
@@ -391,9 +414,10 @@ pub fn env(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         _ => return Err(anyhow!("not an environment record: {}", label)),
     };
 
-    if matches.is_present("value-only") {
+    #[allow(clippy::unwrap_used)]
+    if *matches.get_one::<bool>("value-only").unwrap() {
         println!("{}", environment.value);
-    } else if matches.is_present("no-export") {
+    } else if *matches.get_one::<bool>("no-export").unwrap() {
         println!("{}={}", environment.variable, environment.value);
     } else {
         println!("export {}={}", environment.variable, environment.value);
@@ -426,7 +450,7 @@ pub fn edit(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("editor: {}, args: {:?}", editor, editor_args);
 
     #[allow(clippy::unwrap_used)]
-    let label = matches.value_of("label").unwrap();
+    let label = matches.get_one::<String>("label").unwrap();
     let record = session.get_record(label)?;
 
     let mut file = tempfile::NamedTempFile::new()?;
@@ -466,7 +490,7 @@ pub fn edit(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 pub fn generate(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     let generator = {
         #[allow(clippy::unwrap_used)]
-        let generator_name = matches.value_of("generator").unwrap();
+        let generator_name = matches.get_one::<String>("generator").unwrap();
         match config.generator(generator_name) {
             Some(generator) => generator,
             None => {
@@ -491,9 +515,12 @@ pub fn rewrap(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         return Err(anyhow!("config specifies a bare key; nothing to rewrap"));
     }
 
-    if !matches.is_present("no-backup") {
+    #[allow(clippy::unwrap_used)]
+    if !*matches.get_one::<bool>("no-backup").unwrap() {
         let keyfile_backup: PathBuf = format!("{}.old", &config.keyfile).into();
-        if keyfile_backup.exists() && !matches.is_present("force") {
+
+        #[allow(clippy::unwrap_used)]
+        if keyfile_backup.exists() && !*matches.get_one::<bool>("force").unwrap() {
             return Err(anyhow!(
                 "refusing to overwrite a previous key backup without --force"
             ));
@@ -537,7 +564,8 @@ pub fn rekey(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         return Ok(());
     }
 
-    if !matches.is_present("no-backup") {
+    #[allow(clippy::unwrap_used)]
+    if !*matches.get_one::<bool>("no-backup").unwrap() {
         // First, back up the keyfile.
         let keyfile_backup: PathBuf = format!("{}.old", &config.keyfile).into();
         if keyfile_backup.exists() {
@@ -643,8 +671,10 @@ pub fn config(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("config subcommand dispatch");
 
     match matches.subcommand() {
-        Some(("dump", matches)) => {
-            if matches.is_present("pretty") {
+        Some(("dump", matches)) =>
+        {
+            #[allow(clippy::unwrap_used)]
+            if *matches.get_one::<bool>("pretty").unwrap() {
                 serde_json::to_writer_pretty(io::stdout(), &config)?;
             } else {
                 serde_json::to_writer(io::stdout(), &config)?;
