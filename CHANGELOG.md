@@ -9,6 +9,8 @@ All versions prior to 0.2.1 are untracked.
 
 ## [Unreleased] - ReleaseDate
 
+## [0.6.0] - 2022-06-28
+
 ### Added
 
 * Contrib: The `kbs2-dmenu-pass` command now reads the
@@ -194,7 +196,8 @@ cause `kbs2` to exit with 1, instead of 2.
 * CLI: `kbs2 lock` and `kbs2 unlock` were removed entirely as part of the `kbs2 agent` refactor.
 
 <!-- @next-url@ -->
-[Unreleased]: https://github.com/woodruffw/kbs2/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/woodruffw/kbs2/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/woodruffw/kbs2/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/woodruffw/kbs2/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/woodruffw/kbs2/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/woodruffw/kbs2/compare/v0.3.0...v0.4.0

@@ -59,8 +59,8 @@ attached to the [latest release](https://github.com/woodruffw/kbs2/releases/late
 By way of example:
 
 ```console
-$ wget https://github.com/woodruffw/kbs2/releases/download/v0.5.1/kbs2_0.5.1_amd64.deb
-$ sudo dpkg -i kbs2_0.5.1_amd64.deb
+$ wget https://github.com/woodruffw/kbs2/releases/download/v0.6.0/kbs2_0.6.0_amd64.deb
+$ sudo dpkg -i kbs2_0.6.0_amd64.deb
 # don't forget to request kbs2's dependencies
 $ sudo apt-get -f install
 ```
