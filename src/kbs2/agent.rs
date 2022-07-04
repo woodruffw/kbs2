@@ -396,7 +396,10 @@ pub struct Client {
 impl Client {
     /// Create and return a new client, failing if connection to the agent fails.
     pub fn new() -> Result<Self> {
-        let stream = UnixStream::connect(Agent::path())?;
+        log::debug!("creating a new agent client");
+
+        let stream = UnixStream::connect(Agent::path())
+            .with_context(|| "failed to connect to agent; is it running?")?;
         Ok(Self { stream })
     }
 
