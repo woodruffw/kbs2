@@ -1,5 +1,6 @@
 use std::convert::TryInto;
 use std::env;
+use std::fmt::Write as _;
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::process;
@@ -206,7 +207,7 @@ pub fn list(matches: &ArgMatches, config: &config::Config) -> Result<()> {
             display.push_str(&label);
 
             if details {
-                display.push_str(&format!(" {} {}", record.body, record.timestamp));
+                write!(display, " {} {}", record.body, record.timestamp)?;
             }
         } else {
             display.push_str(&label);
