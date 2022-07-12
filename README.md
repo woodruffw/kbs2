@@ -3,6 +3,7 @@ kbs2
 
 [![Build Status](https://img.shields.io/github/workflow/status/woodruffw/kbs2/CI/master)](https://github.com/woodruffw/kbs2/actions?query=workflow%3ACI)
 [![Crates.io](https://img.shields.io/crates/v/kbs2)](https://crates.io/crates/kbs2)
+[![Packaging status](https://repology.org/badge/tiny-repos/kbs2.svg)](https://repology.org/project/kbs2/versions)
 
 **Warning! `kbs2` is beta-quality software! Using `kbs2` means accepting that your secrets may be
 lost or compromised at any time!**
@@ -46,6 +47,10 @@ Quick links:
 ### Packages
 
 `kbs2` is available via a variety of official and community-supplied packages.
+
+See the matrix below for a list of repositories containing `kbs2`.
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/kbs2.svg)](https://repology.org/project/kbs2/versions)
 
 **These packages are the recommended way to install `kbs2` if you are not developing it.**
 
