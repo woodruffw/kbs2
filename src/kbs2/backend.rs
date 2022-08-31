@@ -251,7 +251,7 @@ mod tests {
 
         RageLib {
             pubkey: key.to_public(),
-            identities: vec![key.into()],
+            identities: vec![key],
         }
     }
 
@@ -261,7 +261,7 @@ mod tests {
 
         RageLib {
             pubkey: key1.to_public(),
-            identities: vec![key2.into()],
+            identities: vec![key2],
         }
     }
 

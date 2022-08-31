@@ -171,13 +171,13 @@ mod tests {
 
             RageLib {
                 pubkey: key.to_public(),
-                identities: vec![key.into()],
+                identities: vec![key],
             }
         };
 
         Session {
             backend,
-            config: &config,
+            config: config,
         }
     }
 

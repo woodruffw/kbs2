@@ -318,7 +318,7 @@ pub struct PassConfig {
     pub clear_hook: Option<String>,
 }
 
-#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub enum X11Clipboard {
     Clipboard,
     Primary,

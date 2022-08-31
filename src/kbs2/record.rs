@@ -8,7 +8,7 @@ use crate::kbs2::util;
 pub static RECORD_KINDS: &[&str] = &["login", "environment", "unstructured"];
 
 /// Represents the envelope of a `kbs2` record.
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct Record {
     /// When the record was created, as seconds since the Unix epoch.
     pub timestamp: u64,
@@ -29,7 +29,7 @@ impl Zeroize for Record {
 }
 
 /// Represents the core contents of a `kbs2` record.
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", content = "fields")]
 pub enum RecordBody {
     Login(LoginFields),
@@ -58,7 +58,7 @@ impl std::fmt::Display for RecordBody {
 }
 
 /// Represents the fields of a login record.
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct LoginFields {
     /// The username associated with the login.
     pub username: String,
@@ -75,7 +75,7 @@ impl Zeroize for LoginFields {
 }
 
 /// Represents the fields of an environment record.
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct EnvironmentFields {
     /// The variable associated with the environment.
     pub variable: String,
@@ -92,7 +92,7 @@ impl Zeroize for EnvironmentFields {
 }
 
 /// Represents the fields of an unstructured record.
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct UnstructuredFields {
     /// The contents associated with the record.
     pub contents: String,
