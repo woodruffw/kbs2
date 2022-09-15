@@ -9,6 +9,11 @@ All versions prior to 0.2.1 are untracked.
 
 ## [Unreleased] - ReleaseDate
 
+### Removed
+
+* Support for the deprecated `kbs2.conf` config file has been fully removed
+([#418](https://github.com/woodruffw/kbs2/pull/418))
+
 ## [0.6.0] - 2022-06-28
 
 ### Added
