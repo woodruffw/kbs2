@@ -186,7 +186,6 @@ impl AsRef<OsStr> for Pinentry {
 pub enum GeneratorConfig {
     Command(ExternalGeneratorConfig),
     Internal(InternalGeneratorConfig),
-    InternalLegacy(LegacyInternalGeneratorConfig),
 }
 
 impl GeneratorConfig {
@@ -194,7 +193,6 @@ impl GeneratorConfig {
         match self {
             GeneratorConfig::Command(g) => g as &dyn Generator,
             GeneratorConfig::Internal(g) => g as &dyn Generator,
-            GeneratorConfig::InternalLegacy(g) => g as &dyn Generator,
         }
     }
 }
@@ -240,23 +238,6 @@ impl Default for InternalGeneratorConfig {
             length: 16,
         }
     }
-}
-
-/// The configuration settings for a legacy "internal" generator.
-///
-/// This is a **legacy** generator that will be removed in an upcoming release.
-///
-/// Users should prefer `InternalGeneratorConfig`.
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct LegacyInternalGeneratorConfig {
-    /// The name of the generator.
-    pub name: String,
-
-    /// The alphabet to sample from when generating a secret.
-    pub alphabet: String,
-
-    /// The length of the secrets generated.
-    pub length: u32,
 }
 
 /// The per-command configuration settings known to `kbs2`.
@@ -500,14 +481,6 @@ pub fn load<P: AsRef<Path>>(config_dir: P) -> Result<Config> {
     // Always put a default generator in the generator list.
     if config.generators.is_empty() {
         config.generators.push(Default::default());
-    }
-
-    // Warn if the user has any old-style generators.
-    for gen in config.generators.iter() {
-        if matches!(gen, GeneratorConfig::InternalLegacy(_)) {
-            util::warn(&format!("loaded legacy generator: {}", gen.as_dyn().name()));
-            util::warn("note: this behavior will be removed in a future stable release");
-        }
     }
 
     Ok(config)
