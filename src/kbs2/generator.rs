@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Result};
 use rand::seq::{IteratorRandom, SliceRandom};
-use rand::Rng;
 
 use crate::kbs2::config;
 use crate::kbs2::util;
@@ -84,31 +83,6 @@ impl Generator for config::InternalGeneratorConfig {
     }
 }
 
-impl Generator for config::LegacyInternalGeneratorConfig {
-    fn name(&self) -> &str {
-        &self.name
-    }
-
-    fn secret(&self) -> Result<String> {
-        if self.length == 0 {
-            return Err(anyhow!("generator length is invalid (must be nonzero)"));
-        }
-
-        // NOTE(ww): Disallow non-ASCII, to prevent gibberish indexing below.
-        if !self.alphabet.is_ascii() {
-            return Err(anyhow!("generator alphabet contains non-ascii characters"));
-        }
-
-        let mut rng = rand::thread_rng();
-        let alphabet = self.alphabet.as_bytes();
-        let secret = (0..self.length)
-            .map(|_| alphabet[rng.gen_range(0..alphabet.len())] as char)
-            .collect::<String>();
-
-        Ok(secret)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -117,14 +91,6 @@ mod tests {
         Box::new(config::ExternalGeneratorConfig {
             name: "dummy-command".into(),
             command: command.into(),
-        })
-    }
-
-    fn dummy_legacy_internal_generator(alphabet: &str) -> Box<dyn Generator> {
-        Box::new(config::LegacyInternalGeneratorConfig {
-            name: "dummy-internal".into(),
-            alphabet: alphabet.into(),
-            length: 5,
         })
     }
 
@@ -142,11 +108,6 @@ mod tests {
             let gen = dummy_command_generator("true");
             assert_eq!(gen.name(), "dummy-command");
         }
-
-        {
-            let gen = dummy_legacy_internal_generator("abc");
-            assert_eq!(gen.name(), "dummy-internal");
-        }
     }
 
     #[test]
@@ -157,25 +118,11 @@ mod tests {
         }
 
         {
-            let gen = dummy_legacy_internal_generator("abc");
-            assert_eq!(gen.secret().unwrap().len(), 5);
-        }
-
-        {
             let gen = dummy_command_generator("false");
             let err = gen.secret().unwrap_err();
             assert_eq!(
                 err.to_string(),
                 "expected output from false, but none given"
-            );
-        }
-
-        {
-            let gen = dummy_legacy_internal_generator("ⓓⓔⓕⓘⓝⓘⓣⓔⓛⓨ ⓝⓞⓣ ⓐⓢⓒⓘⓘ");
-            let err = gen.secret().unwrap_err();
-            assert_eq!(
-                err.to_string(),
-                "generator alphabet contains non-ascii characters"
             );
         }
     }
