@@ -20,9 +20,6 @@ use crate::kbs2::util;
 /// directory.
 pub static CONFIG_BASENAME: &str = "config.toml";
 
-/// A deprecated alternative default config basename.
-pub static LEGACY_CONFIG_BASENAME: &str = "kbs2.conf";
-
 /// The default generate age key is placed in this file, relative to
 /// the configuration directory.
 pub static DEFAULT_KEY_BASENAME: &str = "key";
@@ -490,17 +487,7 @@ pub fn load<P: AsRef<Path>>(config_dir: P) -> Result<Config> {
     let config_dir = config_dir.as_ref();
     let config_path = config_dir.join(CONFIG_BASENAME);
 
-    let contents = if config_path.is_file() {
-        fs::read_to_string(config_path)?
-    } else {
-        // Try the legacy config file. This behavior will be removed in a future stable release.
-        util::warn(&format!(
-            "{} not found in config dir; trying {}",
-            CONFIG_BASENAME, LEGACY_CONFIG_BASENAME
-        ));
-        util::warn("note: this behavior will be removed in a future stable release");
-        fs::read_to_string(config_dir.join(LEGACY_CONFIG_BASENAME))?
-    };
+    let contents = fs::read_to_string(config_path)?;
 
     let mut config = Config {
         config_dir: config_dir
