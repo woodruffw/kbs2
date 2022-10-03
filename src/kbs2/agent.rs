@@ -205,10 +205,7 @@ impl Agent {
 
     // TODO(ww): These can be replaced with the UnixStream.peer_cred API once it stabilizes:
     // https://doc.rust-lang.org/std/os/unix/net/struct.UnixStream.html#method.peer_cred
-    #[cfg(any(
-        target_os = "linux",
-        target_os = "android",
-    ))]
+    #[cfg(any(target_os = "linux", target_os = "android",))]
     fn auth_client(&self, stream: &UnixStream) -> bool {
         use nix::sys::socket::getsockopt;
         use nix::sys::socket::sockopt::PeerCredentials;
