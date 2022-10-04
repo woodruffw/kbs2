@@ -1,6 +1,6 @@
 mod common;
 
-use clap::ArgEnum;
+use clap::ValueEnum;
 use clap_complete::Shell;
 use common::kbs2;
 
