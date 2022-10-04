@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::process;
 use std::{io, path::PathBuf};
 
@@ -8,7 +9,7 @@ use clap_complete::{generate, Shell};
 
 mod kbs2;
 
-fn app() -> Command<'static> {
+fn app() -> Command {
     // TODO(ww): Put this in a separate file, or switch to YAML.
     // The latter probably won't work with env!, though.
     Command::new(env!("CARGO_PKG_NAME"))
@@ -23,7 +24,9 @@ fn app() -> Command<'static> {
                 .value_name("DIR")
                 .value_parser(ValueParser::path_buf())
                 .env("KBS2_CONFIG_DIR")
-                .default_value_os(kbs2::config::DEFAULT_CONFIG_DIR.as_ref())
+                .default_value(<PathBuf as AsRef<OsStr>>::as_ref(
+                    &kbs2::config::DEFAULT_CONFIG_DIR,
+                ))
                 .value_hint(ValueHint::DirPath),
         )
         .arg(
@@ -80,7 +83,9 @@ fn app() -> Command<'static> {
                         .long("store-dir")
                         .value_name("DIR")
                         .value_parser(ValueParser::path_buf())
-                        .default_value_os(kbs2::config::DEFAULT_STORE_DIR.as_ref())
+                        .default_value(<PathBuf as AsRef<OsStr>>::as_ref(
+                            &kbs2::config::DEFAULT_STORE_DIR,
+                        ))
                         .value_hint(ValueHint::DirPath),
                 )
                 .arg(
@@ -104,7 +109,6 @@ fn app() -> Command<'static> {
                         .help("the kind of record to create")
                         .short('k')
                         .long("kind")
-                        .takes_value(true)
                         .value_parser(PossibleValuesParser::new(kbs2::record::RECORD_KINDS))
                         .default_value("login"),
                 )
@@ -127,7 +131,6 @@ fn app() -> Command<'static> {
                         .help("use the given generator to generate sensitive fields")
                         .short('G')
                         .long("generator")
-                        .takes_value(true)
                         .default_value("default"),
                 ),
         )
@@ -146,7 +149,6 @@ fn app() -> Command<'static> {
                         .help("list only records of this kind")
                         .short('k')
                         .long("kind")
-                        .takes_value(true)
                         .value_parser(PossibleValuesParser::new(kbs2::record::RECORD_KINDS)),
                 ),
         )
@@ -156,7 +158,7 @@ fn app() -> Command<'static> {
                     .help("the labels of the records to remove")
                     .index(1)
                     .required(true)
-                    .multiple_values(true),
+                    .num_args(1..),
             ),
         )
         .subcommand(
@@ -167,7 +169,7 @@ fn app() -> Command<'static> {
                         .help("the labels of the records to dump")
                         .index(1)
                         .required(true)
-                        .multiple_values(true),
+                        .num_args(1..),
                 )
                 .arg(
                     Arg::new("json")
