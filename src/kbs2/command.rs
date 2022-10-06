@@ -460,8 +460,8 @@ pub fn edit(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     if !process::Command::new(&editor)
         .args(&editor_args)
         .arg(file.path())
-        .output()
-        .map_or(false, |o| o.status.success())
+        .status()
+        .map_or(false, |o| o.success())
     {
         return Err(anyhow!("failed to run the editor"));
     }

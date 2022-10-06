@@ -17,6 +17,11 @@ All versions prior to 0.2.1 are untracked.
 * Support for deprecated "legacy" secret generators has been fully removed
 ([#419](https://github.com/woodruffw/kbs2/pull/419))
 
+### Fixed
+
+* `kbs2 edit` now allows for the use of command line text editors
+([#435](https://github.com/woodruffw/kbs2/pull/435))
+
 ## [0.6.0] - 2022-06-28
 
 ### Added
