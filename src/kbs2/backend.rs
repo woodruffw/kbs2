@@ -167,13 +167,10 @@ impl Backend for RageLib {
         let encryptor = age::Encryptor::with_user_passphrase(password);
 
         let mut wrapped_key = vec![];
-        // TODO(ww): https://github.com/str4d/rage/pull/158
-        let mut writer = encryptor
-            .wrap_output(ArmoredWriter::wrap_output(
-                &mut wrapped_key,
-                Format::AsciiArmor,
-            )?)
-            .map_err(|e| anyhow!("wrap_output failed (backend reports: {:?})", e))?;
+        let mut writer = encryptor.wrap_output(ArmoredWriter::wrap_output(
+            &mut wrapped_key,
+            Format::AsciiArmor,
+        )?)?;
         writer.write_all(key.expose_secret().as_bytes())?;
         writer.finish().and_then(|armor| armor.finish())?;
 
