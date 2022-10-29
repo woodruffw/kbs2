@@ -193,7 +193,9 @@ impl Backend for RageLib {
     }
 
     fn encrypt(&self, record: &Record) -> Result<String> {
-        let encryptor = age::Encryptor::with_recipients(vec![Box::new(self.pubkey.clone())]);
+        #[allow(clippy::unwrap_used)]
+        let encryptor =
+            age::Encryptor::with_recipients(vec![Box::new(self.pubkey.clone())]).unwrap();
         let mut encrypted = vec![];
         let mut writer = encryptor
             .wrap_output(ArmoredWriter::wrap_output(
