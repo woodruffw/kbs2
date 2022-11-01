@@ -6,9 +6,9 @@ use std::path::{Path, PathBuf};
 use std::process;
 
 use anyhow::{anyhow, Result};
+use arboard::Clipboard;
 use atty::Stream;
 use clap::ArgMatches;
-use clipboard::{ClipboardContext, ClipboardProvider};
 use daemonize::Daemonize;
 use inquire::Confirm;
 use nix::unistd::{fork, ForkResult};
@@ -306,28 +306,7 @@ pub fn pass(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         unsafe {
             match fork() {
                 Ok(ForkResult::Child) => {
-                    // NOTE(ww): More dumbness: cfg! gets expanded into a boolean literal,
-                    // so it can't be used to conditionally compile code that only exists on
-                    // one platform.
-                    #[cfg(target_os = "linux")]
-                    {
-                        match session.config.commands.pass.x11_clipboard {
-                            // NOTE(ww): Why, might you ask, is clip_primary its own function?
-                            // It's because the clipboard crate has a bad abstraction:
-                            // ClipboardContext is the top-level type, but it's aliased to
-                            // X11Clipboard<Clipboard>. That means we can't produce it on a match.
-                            // The other option would be to create a ClipboardProvider trait object,
-                            // but it doesn't implement Sized. So we have to do things the dumb
-                            // way here. Alternatively, I could just be missing something obvious.
-                            config::X11Clipboard::Primary => clip_primary(password, &session)?,
-                            config::X11Clipboard::Clipboard => clip(password, &session)?,
-                        };
-                    }
-
-                    #[cfg(target_os = "macos")]
-                    {
-                        clip(password, &session)?;
-                    }
+                    clip(password, &session)?;
                 }
                 Err(_) => return Err(anyhow!("clipboard fork failed")),
                 _ => {}
@@ -352,44 +331,13 @@ fn clip(password: String, session: &Session) -> Result<()> {
     let clipboard_duration = session.config.commands.pass.clipboard_duration;
     let clear_after = session.config.commands.pass.clear_after;
 
-    let mut ctx: ClipboardContext =
-        ClipboardProvider::new().map_err(|_| anyhow!("unable to grab the clipboard"))?;
-    ctx.set_contents(password)
-        .map_err(|_| anyhow!("unable to store to the clipboard"))?;
+    let mut clipboard = Clipboard::new()?;
+    clipboard.set_text(&password)?;
 
     std::thread::sleep(std::time::Duration::from_secs(clipboard_duration));
 
     if clear_after {
-        ctx.set_contents("".to_owned())
-            .map_err(|_| anyhow!("unable to clear the clipboard"))?;
-
-        if let Some(clear_hook) = &session.config.commands.pass.clear_hook {
-            log::debug!("clear-hook: {}", clear_hook);
-            session.config.call_hook(clear_hook, &[])?;
-        }
-    }
-
-    Ok(())
-}
-
-#[doc(hidden)]
-#[cfg(target_os = "linux")]
-fn clip_primary(password: String, session: &Session) -> Result<()> {
-    use clipboard::x11_clipboard::{Primary, X11ClipboardContext};
-
-    let clipboard_duration = session.config.commands.pass.clipboard_duration;
-    let clear_after = session.config.commands.pass.clear_after;
-
-    let mut ctx: X11ClipboardContext<Primary> =
-        ClipboardProvider::new().map_err(|_| anyhow!("unable to grab the clipboard"))?;
-    ctx.set_contents(password)
-        .map_err(|_| anyhow!("unable to store to the clipboard"))?;
-
-    std::thread::sleep(std::time::Duration::from_secs(clipboard_duration));
-
-    if clear_after {
-        ctx.set_contents("".to_owned())
-            .map_err(|_| anyhow!("unable to clear the clipboard"))?;
+        clipboard.clear()?;
 
         if let Some(clear_hook) = &session.config.commands.pass.clear_hook {
             log::debug!("clear-hook: {}", clear_hook);
