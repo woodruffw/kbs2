@@ -63,6 +63,7 @@ impl Input for LoginFields {
 
         let mut password = Pass::new("Password?")
             .with_help_message("Press [enter] to auto-generate")
+            .without_confirmation()
             .prompt()?;
 
         if password.is_empty() {
