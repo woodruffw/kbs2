@@ -17,6 +17,9 @@ All versions prior to 0.2.1 are untracked.
 * Support for deprecated "legacy" secret generators has been fully removed
 ([#419](https://github.com/woodruffw/kbs2/pull/419))
 
+* Support for `commands.pass.x11-clipboard` has been removed
+([#460](https://github.com/woodruffw/kbs2/pull/460))
+
 ### Fixed
 
 * `kbs2 edit` now allows for the use of command line text editors
