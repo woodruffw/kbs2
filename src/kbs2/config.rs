@@ -283,8 +283,6 @@ pub struct PassConfig {
     pub clipboard_duration: u64,
     #[serde(rename = "clear-after")]
     pub clear_after: bool,
-    #[serde(rename = "x11-clipboard")]
-    pub x11_clipboard: X11Clipboard,
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]
     #[serde(rename = "pre-hook")]
     pub pre_hook: Option<String>,
@@ -307,7 +305,6 @@ impl Default for PassConfig {
         PassConfig {
             clipboard_duration: 10,
             clear_after: true,
-            x11_clipboard: X11Clipboard::Clipboard,
             pre_hook: None,
             post_hook: None,
             clear_hook: None,
