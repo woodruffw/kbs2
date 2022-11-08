@@ -378,7 +378,7 @@ fn main() -> Result<()> {
     #[allow(clippy::unwrap_used)]
     let config_dir = matches.get_one::<PathBuf>("config-dir").unwrap();
     log::debug!("config dir: {:?}", config_dir);
-    std::fs::create_dir_all(&config_dir)?;
+    std::fs::create_dir_all(config_dir)?;
 
     // There are two special cases that are not handled in `run`:
     //
@@ -394,7 +394,7 @@ fn main() -> Result<()> {
     }
 
     // Everything else (i.e., all other subcommands) go through here.
-    let config = kbs2::config::load(&config_dir)?;
+    let config = kbs2::config::load(config_dir)?;
     match run(&matches, &config) {
         Ok(()) => Ok(()),
         Err(e) => {
