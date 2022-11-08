@@ -13,7 +13,7 @@ fn main() {
 // https://github.com/alacritty/alacritty/blob/8ea6c3b/alacritty/build.rs
 fn commit_hash() -> Option<String> {
     Command::new("git")
-        .args(&["rev-parse", "--short", "HEAD"])
+        .args(["rev-parse", "--short", "HEAD"])
         .output()
         .ok()
         .filter(|output| output.status.success())
