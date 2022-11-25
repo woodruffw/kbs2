@@ -67,7 +67,7 @@ atty = "0.2.14"
 clap = { version = "4.0.26", features = ["deprecated", "env"] }
 clap_complete = "4.0.5"
 daemonize = "0.4"
-env_logger = "0.9"
+env_logger = "0.10"
 home = "0.5"
 inquire = "0.5"
 lazy_static = "1.4.0"
