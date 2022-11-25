@@ -65,7 +65,7 @@ anyhow = "1.0"
 arboard = "3.2"
 atty = "0.2.14"
 clap = { version = "4.0.26", features = ["deprecated", "env"] }
-clap_complete = "4.0.5"
+clap_complete = "4.0.6"
 daemonize = "0.4"
 env_logger = "0.9"
 home = "0.5"
