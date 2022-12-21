@@ -1,7 +1,7 @@
 kbs2
 ====
 
-[![Build Status](https://img.shields.io/github/workflow/status/woodruffw/kbs2/CI/master)](https://github.com/woodruffw/kbs2/actions?query=workflow%3ACI)
+[![CI](https://github.com/woodruffw/kbs2/actions/workflows/ci.yml/badge.svg)](https://github.com/woodruffw/kbs2/actions/workflows/ci.yml)
 [![Crates.io](https://img.shields.io/crates/v/kbs2)](https://crates.io/crates/kbs2)
 [![Packaging status](https://repology.org/badge/tiny-repos/kbs2.svg)](https://repology.org/project/kbs2/versions)
 
