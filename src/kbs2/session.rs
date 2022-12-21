@@ -85,7 +85,7 @@ impl<'a> Session<'a> {
         }
 
         let record_path = Path::new(&self.config.store).join(label);
-        let record_contents = fs::read_to_string(&record_path).map_err(|e| match e.kind() {
+        let record_contents = fs::read_to_string(record_path).map_err(|e| match e.kind() {
             io::ErrorKind::NotFound => anyhow!("no such record: {}", label),
             _ => e.into(),
         })?;
@@ -101,7 +101,7 @@ impl<'a> Session<'a> {
         let record_path = Path::new(&self.config.store).join(&record.label);
 
         let record_contents = self.backend.encrypt(record)?;
-        std::fs::write(&record_path, &record_contents)?;
+        std::fs::write(record_path, record_contents)?;
 
         Ok(())
     }
@@ -110,7 +110,7 @@ impl<'a> Session<'a> {
     pub fn delete_record(&self, label: &str) -> Result<()> {
         let record_path = Path::new(&self.config.store).join(label);
 
-        std::fs::remove_file(&record_path).map_err(|e| match e.kind() {
+        std::fs::remove_file(record_path).map_err(|e| match e.kind() {
             io::ErrorKind::NotFound => anyhow!("no such record: {}", label),
             _ => e.into(),
         })
@@ -177,7 +177,7 @@ mod tests {
 
         Session {
             backend,
-            config: config,
+            config,
         }
     }
 

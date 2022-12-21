@@ -47,7 +47,7 @@ impl Generator for config::InternalGeneratorConfig {
         // 3. Shuffle the result
 
         let mut rng = rand::thread_rng();
-        let mut secret = Vec::with_capacity(self.length as usize);
+        let mut secret = Vec::with_capacity(self.length);
         for alphabet in self.alphabets.iter() {
             if alphabet.is_empty() {
                 return Err(anyhow!("generator alphabet(s) must not be empty"));

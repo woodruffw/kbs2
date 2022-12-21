@@ -47,7 +47,7 @@ pub fn init(matches: &ArgMatches, config_dir: &Path) -> Result<()> {
 
     #[allow(clippy::unwrap_used)]
     let password = if !*matches.get_one::<bool>("insecure-not-wrapped").unwrap() {
-        Some(util::get_password(None, &Pinentry::default())?)
+        Some(util::get_password(None, Pinentry::default())?)
     } else {
         None
     };

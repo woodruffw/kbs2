@@ -11,14 +11,14 @@ fn test_kbs2_new_login() {
 
     session
         .command()
-        .args(&["new", "-k", "login", "test-record"])
+        .args(["new", "-k", "login", "test-record"])
         .write_stdin("fakeuser\x01fakepass")
         .assert()
         .success();
 
     let dump = session
         .command()
-        .args(&["dump", "--json", "test-record"])
+        .args(["dump", "--json", "test-record"])
         .output()
         .unwrap()
         .json();
@@ -38,14 +38,14 @@ fn test_kbs2_new_environment() {
 
     session
         .command()
-        .args(&["new", "-k", "environment", "test-record"])
+        .args(["new", "-k", "environment", "test-record"])
         .write_stdin("fakevariable\x01fakevalue")
         .assert()
         .success();
 
     let dump = session
         .command()
-        .args(&["dump", "--json", "test-record"])
+        .args(["dump", "--json", "test-record"])
         .output()
         .unwrap()
         .json();
@@ -65,14 +65,14 @@ fn test_kbs2_new_unstructured() {
 
     session
         .command()
-        .args(&["new", "-k", "unstructured", "test-record"])
+        .args(["new", "-k", "unstructured", "test-record"])
         .write_stdin("fakevalue")
         .assert()
         .success();
 
     let dump = session
         .command()
-        .args(&["dump", "--json", "test-record"])
+        .args(["dump", "--json", "test-record"])
         .output()
         .unwrap()
         .json();

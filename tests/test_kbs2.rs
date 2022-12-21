@@ -24,7 +24,7 @@ fn test_kbs2_completions() {
 
     for shell in Shell::value_variants() {
         let output = kbs2()
-            .args(&["--completions", &shell.to_string()])
+            .args(["--completions", &shell.to_string()])
             .output()
             .unwrap();
         assert!(output.status.success());
