@@ -204,7 +204,7 @@ mod tests {
     fn test_read_guarded() {
         {
             let mut small = NamedTempFile::new().unwrap();
-            small.write(b"test").unwrap();
+            small.write_all(b"test").unwrap();
             small.flush().unwrap();
 
             let contents = read_guarded(small.path(), 1024);
@@ -214,7 +214,7 @@ mod tests {
 
         {
             let mut toobig = NamedTempFile::new().unwrap();
-            toobig.write(b"slightlytoobig").unwrap();
+            toobig.write_all(b"slightlytoobig").unwrap();
             toobig.flush().unwrap();
 
             assert!(read_guarded(toobig.path(), 10).is_err());

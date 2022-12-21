@@ -175,10 +175,7 @@ mod tests {
             }
         };
 
-        Session {
-            backend,
-            config,
-        }
+        Session { backend, config }
     }
 
     // TODO: Figure out how to test Session::new. Doing so will require an interface for
