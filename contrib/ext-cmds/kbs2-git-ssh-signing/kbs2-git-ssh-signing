@@ -22,7 +22,7 @@ ssh-add -q - <<< "${privkey}"
 # We have to do through this through a named pipe instead of
 # a normal pipeline because `ssh-keygen -y` doesn't understand
 # `-f -` for stdin, and `/dev/stdin` isn't guaranteed to have the
-# right ownership bits (e.g. on macOS, where it has 0660 instead
+# right permission bits (e.g. on macOS, where it has 0660 instead
 # of SSH's expected 0600).
 fifo=$(mktemp -u)
 mkfifo -m 600 "${fifo}"
