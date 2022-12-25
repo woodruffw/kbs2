@@ -9,6 +9,11 @@ All versions prior to 0.2.1 are untracked.
 
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+* Contrib: Added the `kbs2-git-ssh-signing` script, which helps
+  integrate SSH keys stored in `kbs2` into `git`'s SSH signing workflow.
+
 ### Removed
 
 * Support for the deprecated `kbs2.conf` config file has been fully removed
