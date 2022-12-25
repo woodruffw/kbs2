@@ -12,7 +12,8 @@ All versions prior to 0.2.1 are untracked.
 ### Added
 
 * Contrib: Added the `kbs2-git-ssh-signing` script, which helps
-  integrate SSH keys stored in `kbs2` into `git`'s SSH signing workflow.
+  integrate SSH keys stored in `kbs2` into `git`'s SSH signing workflow
+  ([#491](https://github.com/woodruffw/kbs2/pull/491))
 
 ### Removed
 
