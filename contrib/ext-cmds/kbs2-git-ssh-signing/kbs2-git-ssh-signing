@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+# kbs2-git-ssh-signing: Add a kbs2-stored key to the ssh-agent,
+# and emit its public half in git's expected SSH signing key format.
+
+set -eo pipefail
+
+[[ -n "${KBS2_SUBCOMMAND}" ]] \
+  || { >&2 echo "Fatal: Not being run as a subcommand?"; exit 1; }
+
+record="${1}"
+
+[[ -n "${1}" ]] || { >&2 echo "Usage: kbs2 ssh-add <record>"; exit; }
+
+privkey="$(kbs2 dump --json "${record}" | jq --raw-output ".body.fields.contents")"
+
+# Add the key to the ssh-agent, in case it isn't already present.
+ssh-add -q - <<< "${privkey}"
+
+# Re-derive the public key from the private key, so we can emit
+# it in `key::` format for git.
+# We have to do through this through a named pipe instead of
+# a normal pipeline because `ssh-keygen -y` doesn't understand
+# `-f -` for stdin, and `/dev/stdin` isn't guaranteed to have the
+# right ownership bits (e.g. on macOS, where it has 0660 instead
+# of SSH's expected 0600).
+fifo=$(mktemp -u)
+mkfifo -m 600 "${fifo}"
+trap "rm ${fifo}" EXIT
+
+# NOTE: pipeline to ssh-keygen here only to resolve
+# the deadlock; the private key material goes through the FIFO.
+pubkey=$(cat <<< "${privkey}" > "${fifo}" | ssh-keygen -y -f "${fifo}")
+echo "key::${pubkey}"
