@@ -26,10 +26,16 @@ ssh-add -q - <<< "${privkey}"
 # of SSH's expected 0600).
 fifo=$(mktemp -u)
 mkfifo -m 600 "${fifo}"
+
+# NOTE: intentional pre-expansion here.
+# shellcheck disable=SC2064
 trap "rm ${fifo}" EXIT
 
 # NOTE: pipeline to ssh-keygen here only to resolve
 # the deadlock; the private key material goes through the FIFO.
+# SC doesn't like this because it can't see that the path
+# on both ends is a FIFO; if it wasn't, this would be a truncation bug.
+# shellcheck disable=SC2094,2260
 pubkey=$(cat <<< "${privkey}" > "${fifo}" | ssh-keygen -y -f "${fifo}")
 
 # NOTE: experimentally, the `key::` prefix is not required (since
