@@ -31,4 +31,8 @@ trap "rm ${fifo}" EXIT
 # NOTE: pipeline to ssh-keygen here only to resolve
 # the deadlock; the private key material goes through the FIFO.
 pubkey=$(cat <<< "${privkey}" > "${fifo}" | ssh-keygen -y -f "${fifo}")
-echo "key::${pubkey}"
+
+# NOTE: experimentally, the `key::` prefix is not required (since
+# the key here is already in `ssh-fmt ...` form). Including it causes
+# errors on some hosts, particularly Ubuntu 22.04 with git 2.34.1.
+echo "${pubkey}"
