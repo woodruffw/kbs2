@@ -88,7 +88,7 @@ pub fn current_timestamp() -> u64 {
 
 /// Print the given message on `stderr` with a warning prefix.
 pub fn warn(msg: &str) {
-    eprintln!("Warn: {}", msg);
+    eprintln!("Warn: {msg}");
 }
 
 /// Read the entire given file into a `Vec<u8>`, or fail if its on-disk size exceeds

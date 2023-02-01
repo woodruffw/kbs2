@@ -324,7 +324,7 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
         Some(("rekey", matches)) => kbs2::command::rekey(matches, config)?,
         Some(("config", matches)) => kbs2::command::config(matches, config)?,
         Some((cmd, matches)) => {
-            let cmd = format!("kbs2-{}", cmd);
+            let cmd = format!("kbs2-{cmd}");
 
             let ext_args: Vec<&str> = match matches.get_many::<String>("") {
                 Some(values) => values.map(AsRef::as_ref).collect(),
@@ -342,7 +342,7 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
                 .env("KBS2_MINOR_VERSION", env!("CARGO_PKG_VERSION_MINOR"))
                 .env("KBS2_PATCH_VERSION", env!("CARGO_PKG_VERSION_PATCH"))
                 .status()
-                .with_context(|| format!("no such command: {}", cmd))?;
+                .with_context(|| format!("no such command: {cmd}"))?;
 
             if !status.success() {
                 return Err(match status.code() {

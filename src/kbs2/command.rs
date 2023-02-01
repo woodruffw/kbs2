@@ -1,7 +1,7 @@
 use std::convert::TryInto;
 use std::env;
 use std::fmt::Write as _;
-use std::io::{self, Read, Seek, SeekFrom, Write};
+use std::io::{self, Read, Seek, Write};
 use std::path::{Path, PathBuf};
 use std::process;
 
@@ -213,7 +213,7 @@ pub fn list(matches: &ArgMatches, config: &config::Config) -> Result<()> {
             display.push_str(&label);
         }
 
-        println!("{}", display);
+        println!("{display}");
     }
 
     Ok(())
@@ -313,9 +313,9 @@ pub fn pass(matches: &ArgMatches, config: &config::Config) -> Result<()> {
             }
         }
     } else if atty::isnt(Stream::Stdout) {
-        print!("{}", password);
+        print!("{password}");
     } else {
-        println!("{}", password);
+        println!("{password}");
     }
 
     if let Some(post_hook) = &session.config.commands.pass.post_hook {
@@ -415,7 +415,7 @@ pub fn edit(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     }
 
     // Rewind, pull the changed contents, deserialize back into a record.
-    file.seek(SeekFrom::Start(0))?;
+    file.rewind()?;
     let mut record_contents = vec![];
     file.read_to_end(&mut record_contents)?;
 
@@ -477,8 +477,7 @@ pub fn rewrap(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
         std::fs::copy(&config.keyfile, &keyfile_backup)?;
         println!(
-            "Backup of the OLD wrapped keyfile saved to: {:?}",
-            keyfile_backup
+            "Backup of the OLD wrapped keyfile saved to: {keyfile_backup:?}"
         );
     }
 
@@ -525,8 +524,7 @@ pub fn rekey(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
         std::fs::copy(&config.keyfile, &keyfile_backup)?;
         println!(
-            "Backup of the OLD wrapped keyfile saved to: {:?}",
-            keyfile_backup
+            "Backup of the OLD wrapped keyfile saved to: {keyfile_backup:?}"
         );
 
         // Next, the config itself.
@@ -542,7 +540,7 @@ pub fn rekey(matches: &ArgMatches, config: &config::Config) -> Result<()> {
             Path::new(&config.config_dir).join(config::CONFIG_BASENAME),
             &config_backup,
         )?;
-        println!("Backup of the OLD config saved to: {:?}", config_backup);
+        println!("Backup of the OLD config saved to: {config_backup:?}");
 
         // Finally, every record in the store.
         let store_backup: PathBuf = format!("{}.old", &config.store).into();

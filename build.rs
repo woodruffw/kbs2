@@ -4,9 +4,9 @@ use std::process::Command;
 fn main() {
     let mut version = String::from(env!("CARGO_PKG_VERSION"));
     if let Some(commit_hash) = commit_hash() {
-        version = format!("{} ({})", version, commit_hash);
+        version = format!("{version} ({commit_hash})");
     }
-    println!("cargo:rustc-env=KBS2_BUILD_VERSION={}", version);
+    println!("cargo:rustc-env=KBS2_BUILD_VERSION={version}");
 }
 
 // Cribbed from Alacritty:
