@@ -476,9 +476,7 @@ pub fn rewrap(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         }
 
         std::fs::copy(&config.keyfile, &keyfile_backup)?;
-        println!(
-            "Backup of the OLD wrapped keyfile saved to: {keyfile_backup:?}"
-        );
+        println!("Backup of the OLD wrapped keyfile saved to: {keyfile_backup:?}");
     }
 
     let old = util::get_password(Some("OLD master password: "), &config.pinentry)?;
@@ -523,9 +521,7 @@ pub fn rekey(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         }
 
         std::fs::copy(&config.keyfile, &keyfile_backup)?;
-        println!(
-            "Backup of the OLD wrapped keyfile saved to: {keyfile_backup:?}"
-        );
+        println!("Backup of the OLD wrapped keyfile saved to: {keyfile_backup:?}");
 
         // Next, the config itself.
         let config_backup: PathBuf =
