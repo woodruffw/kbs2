@@ -365,8 +365,8 @@ fn deserialize_with_tilde<'de, D>(deserializer: D) -> std::result::Result<String
 where
     D: de::Deserializer<'de>,
 {
-    let unexpanded: &str = Deserialize::deserialize(deserializer)?;
-    Ok(shellexpand::tilde(unexpanded).into_owned())
+    let unexpanded: String = Deserialize::deserialize(deserializer)?;
+    Ok(shellexpand::tilde(&unexpanded).into_owned())
 }
 
 #[doc(hidden)]
@@ -377,10 +377,10 @@ fn deserialize_optional_with_tilde<'de, D>(
 where
     D: de::Deserializer<'de>,
 {
-    let unexpanded: Option<&str> = Deserialize::deserialize(deserializer)?;
+    let unexpanded: Option<String> = Deserialize::deserialize(deserializer)?;
 
     match unexpanded {
-        Some(unexpanded) => Ok(Some(shellexpand::tilde(unexpanded).into_owned())),
+        Some(unexpanded) => Ok(Some(shellexpand::tilde(&unexpanded).into_owned())),
         None => Ok(None),
     }
 }
