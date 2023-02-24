@@ -9,6 +9,8 @@ All versions prior to 0.2.1 are untracked.
 
 ## [Unreleased] - ReleaseDate
 
+## [0.7.1] - 2023-02-24
+
 ### Fixed
 
 * A regression in subcommand handling was fixed
@@ -228,7 +230,8 @@ cause `kbs2` to exit with 1, instead of 2.
 * CLI: `kbs2 lock` and `kbs2 unlock` were removed entirely as part of the `kbs2 agent` refactor.
 
 <!-- @next-url@ -->
-[Unreleased]: https://github.com/woodruffw/kbs2/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/woodruffw/kbs2/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/woodruffw/kbs2/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/woodruffw/kbs2/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/woodruffw/kbs2/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/woodruffw/kbs2/compare/v0.5.0...v0.5.1
