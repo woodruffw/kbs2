@@ -145,14 +145,9 @@ impl Config {
     /// Given the `name` of a configured generator, return that generator
     /// if it exists.
     pub fn generator(&self, name: &str) -> Option<&GeneratorConfig> {
-        for generator_config in self.generators.iter() {
-            // let generator = generator_config.as_dyn();
-            if generator_config.name() == name {
-                return Some(generator_config);
-            }
-        }
-
-        None
+        self.generators
+            .iter()
+            .find(|&generator_config| generator_config.name() == name)
     }
 
     /// Create a `RuntimeConfig` from this config and the given `matches`.
