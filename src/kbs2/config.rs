@@ -144,11 +144,11 @@ impl Config {
 
     /// Given the `name` of a configured generator, return that generator
     /// if it exists.
-    pub fn generator(&self, name: &str) -> Option<&dyn Generator> {
+    pub fn generator(&self, name: &str) -> Option<&GeneratorConfig> {
         for generator_config in self.generators.iter() {
-            let generator = generator_config.as_dyn();
-            if generator.name() == name {
-                return Some(generator);
+            // let generator = generator_config.as_dyn();
+            if generator_config.name() == name {
+                return Some(generator_config);
             }
         }
 
@@ -180,41 +180,8 @@ impl AsRef<OsStr> for Pinentry {
     }
 }
 
-/// The different types of generators known to `kbs2`.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum GeneratorConfig {
-    Command(ExternalGeneratorConfig),
-    Internal(InternalGeneratorConfig),
-}
-
-impl GeneratorConfig {
-    fn as_dyn(&self) -> &dyn Generator {
-        match self {
-            GeneratorConfig::Command(g) => g as &dyn Generator,
-            GeneratorConfig::Internal(g) => g as &dyn Generator,
-        }
-    }
-}
-
-impl Default for GeneratorConfig {
-    fn default() -> Self {
-        GeneratorConfig::Internal(Default::default())
-    }
-}
-
-/// The configuration settings for an external (i.e., separate command) generator.
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ExternalGeneratorConfig {
-    /// The name of the generator.
-    pub name: String,
-
-    /// The command to run to generate a secret.
-    pub command: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct InternalGeneratorConfig {
+pub struct GeneratorConfig {
     /// The name of the generator.
     pub name: String,
 
@@ -225,9 +192,9 @@ pub struct InternalGeneratorConfig {
     pub length: usize,
 }
 
-impl Default for InternalGeneratorConfig {
+impl Default for GeneratorConfig {
     fn default() -> Self {
-        InternalGeneratorConfig {
+        GeneratorConfig {
             name: "default".into(),
             alphabets: vec![
                 "abcdefghijklmnopqrstuvwxyz".into(),
@@ -339,7 +306,7 @@ pub struct RuntimeConfig<'a> {
 }
 
 impl<'a> RuntimeConfig<'a> {
-    pub fn generator(&self) -> Result<&dyn Generator> {
+    pub fn generator(&self) -> Result<&GeneratorConfig> {
         // If the user explicitly requests a specific generator, use it.
         // Otherwise, use the default generator, which is always present.
         if let Some(generator) = self.matches.get_one::<String>("generator") {
@@ -449,7 +416,7 @@ pub fn initialize<P: AsRef<Path>>(
             post_hook: None,
             error_hook: None,
             reentrant_hooks: false,
-            generators: vec![GeneratorConfig::Internal(Default::default())],
+            generators: vec![Default::default()],
             commands: Default::default(),
         })?
     };
@@ -502,7 +469,7 @@ mod tests {
             post_hook: Some("false".into()),
             error_hook: Some("true".into()),
             reentrant_hooks: false,
-            generators: vec![GeneratorConfig::Internal(Default::default())],
+            generators: vec![Default::default()],
             commands: CommandConfigs {
                 rm: RmConfig {
                     post_hook: Some("this-command-does-not-exist".into()),

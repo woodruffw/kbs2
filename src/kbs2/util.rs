@@ -2,7 +2,6 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use std::process::{Command, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Result};
@@ -23,30 +22,6 @@ pub fn parse_and_split_args(argv: &str) -> Result<(String, Vec<String>)> {
         .ok_or_else(|| anyhow!("missing one or more arguments in command"))?;
 
     Ok((command, args))
-}
-
-/// Given a command and its arguments, run the command and capture the resulting
-/// standard output.
-///
-/// NOTE: The command is run with no standard input or standard error.
-pub fn run_with_output(command: &str, args: &[&str]) -> Result<String> {
-    let output = Command::new(command)
-        .args(args)
-        .stdin(Stdio::null())
-        .stderr(Stdio::null())
-        .output()
-        .map_err(|_| anyhow!("failed to execute command: {}", command))?;
-
-    if output.stdout.is_empty() {
-        return Err(anyhow!("expected output from {}, but none given", command));
-    }
-
-    let mut output = String::from_utf8(output.stdout)?;
-    if output.ends_with('\n') {
-        output.pop();
-    }
-
-    Ok(output)
 }
 
 /// Securely retrieve a password from the user.
@@ -151,34 +126,6 @@ mod tests {
             let err = parse_and_split_args("").unwrap_err();
             assert_eq!(err.to_string(), "missing one or more arguments in command");
         }
-    }
-
-    #[test]
-    fn test_run_with_output() {
-        {
-            let output = run_with_output("echo", &["-n", "foo"]).unwrap();
-            assert_eq!(output, "foo");
-        }
-
-        {
-            let output = run_with_output("echo", &["foo"]).unwrap();
-            assert_eq!(output, "foo");
-        }
-
-        {
-            let err = run_with_output("this-command-should-not-exist", &[]).unwrap_err();
-            assert_eq!(
-                err.to_string(),
-                "failed to execute command: this-command-should-not-exist"
-            );
-        }
-
-        {
-            let err = run_with_output("true", &[]).unwrap_err();
-            assert_eq!(err.to_string(), "expected output from true, but none given");
-        }
-
-        // TODO: Small error test here for the case where the output isn't UTF-8.
     }
 
     // TODO: Figure out a good way to test util::get_password.

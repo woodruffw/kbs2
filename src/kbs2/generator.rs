@@ -2,7 +2,6 @@ use anyhow::{anyhow, Result};
 use rand::seq::{IteratorRandom, SliceRandom};
 
 use crate::kbs2::config;
-use crate::kbs2::util;
 
 /// Represents the operations that all generators are capable of.
 pub trait Generator {
@@ -13,20 +12,7 @@ pub trait Generator {
     fn secret(&self) -> Result<String>;
 }
 
-impl Generator for config::ExternalGeneratorConfig {
-    fn name(&self) -> &str {
-        &self.name
-    }
-
-    fn secret(&self) -> Result<String> {
-        let (command, args) = util::parse_and_split_args(&self.command)?;
-        let args = args.iter().map(AsRef::as_ref).collect::<Vec<&str>>();
-
-        util::run_with_output(&command, &args)
-    }
-}
-
-impl Generator for config::InternalGeneratorConfig {
+impl Generator for config::GeneratorConfig {
     fn name(&self) -> &str {
         &self.name
     }
@@ -87,15 +73,8 @@ impl Generator for config::InternalGeneratorConfig {
 mod tests {
     use super::*;
 
-    fn dummy_command_generator(command: &str) -> Box<dyn Generator> {
-        Box::new(config::ExternalGeneratorConfig {
-            name: "dummy-command".into(),
-            command: command.into(),
-        })
-    }
-
     fn dummy_internal_generator(alphabets: &[&str]) -> Box<dyn Generator> {
-        Box::new(config::InternalGeneratorConfig {
+        Box::new(config::GeneratorConfig {
             name: "dummy-internal".into(),
             alphabets: alphabets.iter().map(|a| (*a).into()).collect(),
             length: 5,
@@ -103,35 +82,10 @@ mod tests {
     }
 
     #[test]
-    fn test_name() {
-        {
-            let gen = dummy_command_generator("true");
-            assert_eq!(gen.name(), "dummy-command");
-        }
-    }
-
-    #[test]
-    fn test_secret() {
-        {
-            let gen = dummy_command_generator("echo fake-password");
-            assert_eq!(gen.secret().unwrap(), "fake-password");
-        }
-
-        {
-            let gen = dummy_command_generator("false");
-            let err = gen.secret().unwrap_err();
-            assert_eq!(
-                err.to_string(),
-                "expected output from false, but none given"
-            );
-        }
-    }
-
-    #[test]
     fn test_internal_generator_invariants() {
         // Fails with no alphabets.
         {
-            let gen = config::InternalGeneratorConfig {
+            let gen = config::GeneratorConfig {
                 name: "dummy-internal".into(),
                 alphabets: vec![],
                 length: 10,
@@ -145,7 +99,7 @@ mod tests {
 
         // Fails with a length of 0.
         {
-            let gen = config::InternalGeneratorConfig {
+            let gen = config::GeneratorConfig {
                 name: "dummy-internal".into(),
                 alphabets: vec!["abcd".into()],
                 length: 0,
@@ -176,7 +130,7 @@ mod tests {
 
         // Fails if there are more alphabets than available length.
         {
-            let gen = config::InternalGeneratorConfig {
+            let gen = config::GeneratorConfig {
                 name: "dummy-internal".into(),
                 alphabets: vec!["abc", "def", "ghi"]
                     .into_iter()
@@ -195,7 +149,7 @@ mod tests {
         {
             let alphabets = ["abcd", "1234", "!@#$"];
 
-            let gen = config::InternalGeneratorConfig {
+            let gen = config::GeneratorConfig {
                 name: "dummy-internal".into(),
                 alphabets: alphabets.into_iter().map(Into::into).collect(),
                 length: 10,
