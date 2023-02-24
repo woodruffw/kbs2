@@ -9,6 +9,11 @@ All versions prior to 0.2.1 are untracked.
 
 ## [Unreleased] - ReleaseDate
 
+### Fixed
+
+* A regression in subcommand handling was fixed
+([#514](https://github.com/woodruffw/kbs2/pull/514))
+
 ## [0.7.0] - 2023-02-24
 
 ### Added

@@ -1,4 +1,4 @@
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::process;
 use std::{io, path::PathBuf};
 
@@ -326,8 +326,8 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
         Some((cmd, matches)) => {
             let cmd = format!("kbs2-{cmd}");
 
-            let ext_args: Vec<&str> = match matches.get_many::<String>("") {
-                Some(values) => values.map(AsRef::as_ref).collect(),
+            let ext_args: Vec<_> = match matches.get_many::<OsString>("") {
+                Some(values) => values.collect(),
                 None => vec![],
             };
 
