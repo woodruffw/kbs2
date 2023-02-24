@@ -17,6 +17,7 @@ use secrecy::{ExposeSecret, Secret};
 use crate::kbs2::agent;
 use crate::kbs2::backend::{self, Backend};
 use crate::kbs2::config::{self, Pinentry};
+use crate::kbs2::generator::Generator;
 use crate::kbs2::input::Input;
 use crate::kbs2::record::{
     self, EnvironmentFields, LoginFields, Record, RecordBody, UnstructuredFields,

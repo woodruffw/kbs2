@@ -1000,18 +1000,12 @@ the `post-hook`.
 `kbs2` supports *generators* for producing sensitive values, allowing users to automatically
 generate passwords and environment variables.
 
-Generators come in two flavors: "external" generators and "internal" generators. Both are
-configured as entries in `[[generators]]`.
+Generators are configured as entries in `[[generators]]`.
 
-The following configures two generators: a "external" generator named "pwgen" that executes
-`pwgen` to get a new secret, and an "internal" generator named "hexonly" that generates
-a secret from the configured alphabet and length.
+The following configures an generator named "hexonly" that generates a secret from the
+configured alphabet and length.
 
 ```toml
-[[generators]]
-name = "pwgen"
-command = "pwgen 16 1"
-
 [[generators]]
 name = "hexonly"
 alphabets = ["0123456789abcdef"]
@@ -1033,10 +1027,6 @@ alphabets = [
 ]
 length = 16
 ```
-
-`kbs2` also supports a legacy generator configuration that takes a single `alphabet`
-instead of `alphabets`. This configuration is deprecated and will be removed in
-an upcoming release.
 
 These generators can be used with `kbs2 new`. For example, the following will
 use the `hexonly` generator when the user presses `[enter]` instead of manually

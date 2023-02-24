@@ -5,6 +5,7 @@ use inquire::{Password as Pass, Text};
 
 use super::record::{EnvironmentFields, LoginFields, RecordBody, UnstructuredFields};
 use crate::kbs2::config::RuntimeConfig;
+use crate::kbs2::generator::Generator;
 
 /// The input separator used when input is gathered in "terse" mode.
 pub static TERSE_IFS: &str = "\x01";

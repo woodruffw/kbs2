@@ -26,6 +26,9 @@ All versions prior to 0.2.1 are untracked.
 * Support for `commands.pass.x11-clipboard` has been removed
 ([#460](https://github.com/woodruffw/kbs2/pull/460))
 
+* Support for "external" generators has been removed
+([#513](https://github.com/woodruffw/kbs2/pull/513))
+
 ### Fixed
 
 * `kbs2 edit` now allows for the use of command line text editors

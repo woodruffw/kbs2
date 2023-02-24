@@ -160,7 +160,7 @@ mod tests {
             post_hook: None,
             error_hook: None,
             reentrant_hooks: false,
-            generators: vec![config::GeneratorConfig::Internal(Default::default())],
+            generators: vec![Default::default()],
             commands: Default::default(),
         }
     }
