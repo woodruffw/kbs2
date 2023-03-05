@@ -1,3 +1,11 @@
+//! The entrypoint for the `kbs2` CLI.
+
+#![deny(rustdoc::broken_intra_doc_links)]
+#![deny(missing_docs)]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+#![deny(clippy::panic)]
+
 use std::ffi::{OsStr, OsString};
 use std::process;
 use std::{io, path::PathBuf};
@@ -162,6 +170,29 @@ fn app() -> Command {
             ),
         )
         .subcommand(
+            Command::new("rename")
+                .about("rename a record")
+                .arg(
+                    Arg::new("old-label")
+                        .help("the record's current label")
+                        .index(1)
+                        .required(true),
+                )
+                .arg(
+                    Arg::new("new-label")
+                        .help("the new record label")
+                        .index(2)
+                        .required(true),
+                )
+                .arg(
+                    Arg::new("force")
+                        .help("overwrite, if already present")
+                        .short('f')
+                        .long("force")
+                        .action(ArgAction::SetTrue),
+                ),
+        )
+        .subcommand(
             Command::new("dump")
                 .about("dump one or more records")
                 .arg(
@@ -315,6 +346,7 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
         Some(("new", matches)) => kbs2::command::new(matches, config)?,
         Some(("list", matches)) => kbs2::command::list(matches, config)?,
         Some(("rm", matches)) => kbs2::command::rm(matches, config)?,
+        Some(("rename", matches)) => kbs2::command::rename(matches, config)?,
         Some(("dump", matches)) => kbs2::command::dump(matches, config)?,
         Some(("pass", matches)) => kbs2::command::pass(matches, config)?,
         Some(("env", matches)) => kbs2::command::env(matches, config)?,

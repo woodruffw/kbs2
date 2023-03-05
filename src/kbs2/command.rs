@@ -245,6 +245,35 @@ pub fn rm(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     Ok(())
 }
 
+/// Implements the `kbs2 rename` command.
+pub fn rename(matches: &ArgMatches, config: &config::Config) -> Result<()> {
+    log::debug!("renaming a record");
+
+    let session: Session = config.try_into()?;
+
+    #[allow(clippy::unwrap_used)]
+    let old_label: &str = matches.get_one::<String>("old-label").unwrap();
+
+    #[allow(clippy::unwrap_used)]
+    let new_label: &str = matches.get_one::<String>("new-label").unwrap();
+
+    #[allow(clippy::unwrap_used)]
+    if session.has_record(new_label) && !matches.get_one::<bool>("force").unwrap() {
+        return Err(anyhow!("refusing to overwrite a record without --force"));
+    }
+
+    session.rename_record(old_label, new_label)?;
+
+    if let Some(post_hook) = &session.config.commands.rename.post_hook {
+        log::debug!("post-hook: {}", post_hook);
+        session
+            .config
+            .call_hook(post_hook, &[old_label, new_label])?;
+    }
+
+    Ok(())
+}
+
 /// Implements the `kbs2 dump` command.
 pub fn dump(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     log::debug!("dumping a record");

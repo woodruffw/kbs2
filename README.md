@@ -352,6 +352,38 @@ Remove the `foobar` record:
 $ kbs2 rm foobar
 ```
 
+### `kbs2 rename`
+
+#### Usage
+
+```
+rename a record
+
+Usage: kbs2 rename [OPTIONS] <old-label> <new-label>
+
+Arguments:
+  <old-label>  the record's current label
+  <new-label>  the new record label
+
+Options:
+  -f, --force  overwrite, if already present
+  -h, --help   Print help
+```
+
+#### Examples
+
+Rename the `foo` record to `bar`:
+
+```console
+$ kbs2 rename foo bar
+```
+
+Rename `foo` to `bar`, even if `bar` already exists:
+
+```console
+$ kbs2 rename --force foo bar
+```
+
 ### `kbs2 dump`
 
 #### Usage
@@ -994,6 +1026,14 @@ immediately after record removal during `kbs2 rm` (and **only** `kbs2 rm`).
 
 The label of each record removed by `kbs2 rm` is passed as a separate argument to
 the `post-hook`.
+
+### `commands.rename.post-hook` (default: `None`)
+
+The `command.rename.post-hook` setting is like the global `post-hook` setting, except that it runs
+immediately after record removal during `kbs2 rename` (and **only** `kbs2 rename`).
+
+The record's old and new names are passed as separate arguments to the `post-hook`,
+in that order.
 
 ### Generators
 
