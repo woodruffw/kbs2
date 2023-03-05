@@ -19,6 +19,7 @@ Quick links:
   * [`kbs2 new`](#kbs2-new)
   * [`kbs2 list`](#kbs2-list)
   * [`kbs2 rm`](#kbs2-rm)
+  * [`kbs2 rename`](#kbs2-rename)
   * [`kbs2 dump`](#kbs2-dump)
   * [`kbs2 pass`](#kbs2-pass)
   * [`kbs2 env`](#kbs2-env)
