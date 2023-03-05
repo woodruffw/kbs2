@@ -9,11 +9,16 @@ All versions prior to 0.2.1 are untracked.
 
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+* CLI: The `kbs2 rename` command has been added
+([#518](https://github.com/woodruffw/kbs2/pull/518))
+
 ## [0.7.1] - 2023-02-24
 
 ### Fixed
 
-* A regression in subcommand handling was fixed
+* CLI: A regression in subcommand handling was fixed
 ([#514](https://github.com/woodruffw/kbs2/pull/514))
 
 ## [0.7.0] - 2023-02-24
@@ -26,21 +31,21 @@ All versions prior to 0.2.1 are untracked.
 
 ### Removed
 
-* Support for the deprecated `kbs2.conf` config file has been fully removed
-([#418](https://github.com/woodruffw/kbs2/pull/418))
+* Config: Support for the deprecated `kbs2.conf` config file has been fully
+removed ([#418](https://github.com/woodruffw/kbs2/pull/418))
 
-* Support for deprecated "legacy" secret generators has been fully removed
-([#419](https://github.com/woodruffw/kbs2/pull/419))
+* Config/CLI: Support for deprecated "legacy" secret generators has been fully
+removed ([#419](https://github.com/woodruffw/kbs2/pull/419))
 
-* Support for `commands.pass.x11-clipboard` has been removed
+* Config: Support for `commands.pass.x11-clipboard` has been removed
 ([#460](https://github.com/woodruffw/kbs2/pull/460))
 
-* Support for "external" generators has been removed
+* Config: Support for "external" generators has been removed
 ([#513](https://github.com/woodruffw/kbs2/pull/513))
 
 ### Fixed
 
-* `kbs2 edit` now allows for the use of command line text editors
+* CLI: `kbs2 edit` now allows for the use of command line text editors
 ([#435](https://github.com/woodruffw/kbs2/pull/435))
 
 ## [0.6.0] - 2022-06-28
