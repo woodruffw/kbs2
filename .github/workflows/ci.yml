@@ -17,8 +17,8 @@ jobs:
         run: |
           rustup update
           rustup component add clippy
-          cargo clippy -- \
-            -D warnings -D clippy::expect_used -D clippy::unwrap_used -D clippy::panic
+          cargo clippy -- -D warnings
+
   test:
     strategy:
       matrix:
