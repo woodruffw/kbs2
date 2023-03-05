@@ -1,3 +1,11 @@
+//! The entrypoint for the `kbs2` CLI.
+
+#![deny(rustdoc::broken_intra_doc_links)]
+#![deny(missing_docs)]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+#![deny(clippy::panic)]
+
 use std::ffi::{OsStr, OsString};
 use std::process;
 use std::{io, path::PathBuf};
