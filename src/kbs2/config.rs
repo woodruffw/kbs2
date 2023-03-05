@@ -218,6 +218,9 @@ pub struct CommandConfigs {
     /// Settings for `kbs2 rm`.
     pub rm: RmConfig,
 
+    /// Settings for `kbs2 rename`.
+    pub rename: RenameConfig,
+
     /// External command settings.
     pub ext: HashMap<String, HashMap<String, toml::Value>>,
 }
@@ -288,6 +291,15 @@ pub struct EditConfig {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct RmConfig {
+    #[serde(deserialize_with = "deserialize_optional_with_tilde")]
+    #[serde(rename = "post-hook")]
+    pub post_hook: Option<String>,
+}
+
+/// Configuration settings for `kbs2 rename`.
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
+pub struct RenameConfig {
     #[serde(deserialize_with = "deserialize_optional_with_tilde")]
     #[serde(rename = "post-hook")]
     pub post_hook: Option<String>,

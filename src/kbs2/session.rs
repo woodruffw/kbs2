@@ -115,6 +115,17 @@ impl<'a> Session<'a> {
             _ => e.into(),
         })
     }
+
+    /// Renames a record.
+    pub fn rename_record(&self, old_label: &str, new_label: &str) -> Result<()> {
+        let mut record = self.get_record(old_label)?;
+
+        record.label = new_label.into();
+        self.add_record(&record)?;
+        self.delete_record(old_label)?;
+
+        Ok(())
+    }
 }
 
 impl<'a> TryFrom<&'a config::Config> for Session<'a> {
@@ -315,6 +326,23 @@ mod tests {
 
             let err = session.delete_record("does-not-exist").unwrap_err();
             assert_eq!(err.to_string(), "no such record: does-not-exist");
+        }
+    }
+
+    #[test]
+    fn test_rename_record() {
+        {
+            let store = tempdir().unwrap();
+            let config = dummy_config(&store);
+            let session = dummy_session(&config);
+            let record = dummy_login("foo", "bar", "baz");
+
+            session.add_record(&record).unwrap();
+            assert!(session.has_record("foo"));
+
+            session.rename_record("foo", "bar").unwrap();
+            assert!(!session.has_record("foo"));
+            assert!(session.has_record("bar"));
         }
     }
 }
