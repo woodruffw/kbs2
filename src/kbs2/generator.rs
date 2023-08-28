@@ -61,7 +61,7 @@ impl Generator for config::GeneratorConfig {
         // Pad out with the combined alphabet.
         let combined_alphabet = self.alphabets.iter().flat_map(|a| a.chars());
         let remainder = combined_alphabet.choose_multiple(&mut rng, self.length - secret.len());
-        secret.extend(remainder.into_iter());
+        secret.extend(remainder);
 
         // Shuffle and return.
         secret.shuffle(&mut rng);
