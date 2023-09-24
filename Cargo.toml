@@ -72,7 +72,7 @@ inquire = "0.6"
 lazy_static = "1.4"
 libc = "0.2"
 log = "0.4"
-nix = "0.26"
+nix = { version = "0.27", features = ["process", "user", "socket"] }
 pinentry = "0.5"
 rand = "0.8"
 rpassword = "7.1"
