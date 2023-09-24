@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::fs;
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
-use std::os::unix::io::AsRawFd;
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -210,7 +209,7 @@ impl Agent {
         use nix::sys::socket::getsockopt;
         use nix::sys::socket::sockopt::PeerCredentials;
 
-        if let Ok(cred) = getsockopt(stream.as_raw_fd(), PeerCredentials) {
+        if let Ok(cred) = getsockopt(stream, PeerCredentials) {
             cred.uid() == Uid::effective().as_raw()
         } else {
             log::error!("getsockopt failed; treating as auth failure");
