@@ -226,6 +226,8 @@ impl Agent {
         target_os = "dragonfly",
     ))]
     fn auth_client(&self, stream: &UnixStream) -> bool {
+        use std::os::unix::io::AsRawFd;
+
         use nix::unistd;
 
         if let Ok((peer_uid, _)) = unistd::getpeereid(stream.as_raw_fd()) {
