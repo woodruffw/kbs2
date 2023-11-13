@@ -75,7 +75,7 @@ log = "0.4"
 nix = { version = "0.27", features = ["process", "user", "socket"] }
 pinentry = "0.5"
 rand = "0.8"
-rpassword = "7.1"
+rpassword = "7.3"
 secrecy = "0.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
