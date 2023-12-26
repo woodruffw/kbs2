@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
+use std::io::{stdin, IsTerminal};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -329,7 +330,7 @@ impl<'a> RuntimeConfig<'a> {
     }
 
     pub fn terse(&self) -> bool {
-        atty::isnt(atty::Stream::Stdin) || *self.matches.get_one::<bool>("terse").unwrap_or(&false)
+        !stdin().is_terminal() || *self.matches.get_one::<bool>("terse").unwrap_or(&false)
     }
 }
 
