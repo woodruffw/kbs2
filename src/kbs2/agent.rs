@@ -238,6 +238,63 @@ impl Agent {
         }
     }
 
+    /// Handles an inner request payload, i.e. one of potentially several
+    /// requests made during a client's connection.
+    fn handle_request_body(&mut self, body: RequestBody) -> Response {
+        match body {
+            RequestBody::UnwrapKey(pubkey, keyfile, password) => {
+                let password = Secret::new(password);
+                // If the running agent is already tracking an unwrapped key for this
+                // pubkey, return early with a success.
+                #[allow(clippy::map_entry)]
+                if self.unwrapped_keys.contains_key(&pubkey) {
+                    log::debug!(
+                        "client requested unwrap for already unwrapped keyfile: {}",
+                        keyfile
+                    );
+                    Response::Success("OK; agent already has unwrapped key".into())
+                } else {
+                    match RageLib::unwrap_keyfile(&keyfile, password) {
+                        Ok(unwrapped_key) => {
+                            self.unwrapped_keys.insert(pubkey, (keyfile, unwrapped_key));
+                            Response::Success("OK; unwrapped key ready".into())
+                        }
+                        Err(e) => {
+                            log::error!("keyfile unwrap failed: {:?}", e);
+                            Response::Failure(FailureKind::Unwrap(e.to_string()))
+                        }
+                    }
+                }
+            }
+            RequestBody::QueryUnwrappedKey(pubkey) => {
+                if self.unwrapped_keys.contains_key(&pubkey) {
+                    Response::Success("OK".into())
+                } else {
+                    Response::Failure(FailureKind::Query)
+                }
+            }
+            RequestBody::GetUnwrappedKey(pubkey) => {
+                if let Some((_, unwrapped_key)) = self.unwrapped_keys.get(&pubkey) {
+                    log::debug!("successful key request for pubkey: {}", pubkey);
+                    Response::Success(unwrapped_key.expose_secret().into())
+                } else {
+                    log::error!("unknown pubkey requested: {}", &pubkey);
+                    Response::Failure(FailureKind::Query)
+                }
+            }
+            RequestBody::FlushKeys => {
+                self.unwrapped_keys.clear();
+                log::debug!("successfully flushed all unwrapped keys");
+                Response::Success("OK".into())
+            }
+            RequestBody::Quit => {
+                self.quitting = true;
+                log::debug!("agent exit requested");
+                Response::Success("OK".into())
+            }
+        }
+    }
+
     /// Handles a single client connection.
     /// Individual clients may issue multiple requests in a single session.
     fn handle_client(&mut self, stream: UnixStream) {
@@ -279,58 +336,7 @@ impl Agent {
                 return;
             }
 
-            let resp = match req.body {
-                RequestBody::UnwrapKey(pubkey, keyfile, password) => {
-                    let password = Secret::new(password);
-                    // If the running agent is already tracking an unwrapped key for this
-                    // pubkey, return early with a success.
-                    #[allow(clippy::map_entry)]
-                    if self.unwrapped_keys.contains_key(&pubkey) {
-                        log::debug!(
-                            "client requested unwrap for already unwrapped keyfile: {}",
-                            keyfile
-                        );
-                        Response::Success("OK; agent already has unwrapped key".into())
-                    } else {
-                        match RageLib::unwrap_keyfile(&keyfile, password) {
-                            Ok(unwrapped_key) => {
-                                self.unwrapped_keys.insert(pubkey, (keyfile, unwrapped_key));
-                                Response::Success("OK; unwrapped key ready".into())
-                            }
-                            Err(e) => {
-                                log::error!("keyfile unwrap failed: {:?}", e);
-                                Response::Failure(FailureKind::Unwrap(e.to_string()))
-                            }
-                        }
-                    }
-                }
-                RequestBody::QueryUnwrappedKey(pubkey) => {
-                    if self.unwrapped_keys.contains_key(&pubkey) {
-                        Response::Success("OK".into())
-                    } else {
-                        Response::Failure(FailureKind::Query)
-                    }
-                }
-                RequestBody::GetUnwrappedKey(pubkey) => {
-                    if let Some((_, unwrapped_key)) = self.unwrapped_keys.get(&pubkey) {
-                        log::debug!("successful key request for pubkey: {}", pubkey);
-                        Response::Success(unwrapped_key.expose_secret().into())
-                    } else {
-                        log::error!("unknown pubkey requested: {}", &pubkey);
-                        Response::Failure(FailureKind::Query)
-                    }
-                }
-                RequestBody::FlushKeys => {
-                    self.unwrapped_keys.clear();
-                    log::debug!("successfully flushed all unwrapped keys");
-                    Response::Success("OK".into())
-                }
-                RequestBody::Quit => {
-                    self.quitting = true;
-                    log::debug!("agent exit requested");
-                    Response::Success("OK".into())
-                }
-            };
+            let resp = self.handle_request_body(req.body);
 
             // This can fail, but we don't care.
             let _ = resp.write(&mut writer);
