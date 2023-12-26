@@ -1,13 +1,12 @@
 use std::convert::TryInto;
 use std::env;
 use std::fmt::Write as _;
-use std::io::{self, Read, Seek, Write};
+use std::io::{self, stdin, IsTerminal, Read, Seek, Write};
 use std::path::{Path, PathBuf};
 use std::process;
 
 use anyhow::{anyhow, Result};
 use arboard::Clipboard;
-use atty::Stream;
 use clap::ArgMatches;
 use daemonize::Daemonize;
 use inquire::Confirm;
@@ -342,7 +341,7 @@ pub fn pass(matches: &ArgMatches, config: &config::Config) -> Result<()> {
                 _ => {}
             }
         }
-    } else if atty::isnt(Stream::Stdout) {
+    } else if !stdin().is_terminal() {
         print!("{password}");
     } else {
         println!("{password}");
