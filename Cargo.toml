@@ -59,7 +59,7 @@ depends = "$auto, libxcb-shape0-dev, libxcb-xfixes0-dev"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-age = { version = "0.9", features = ["armor"] }
+age = { version = "0.10", features = ["armor"] }
 anyhow = "1.0"
 arboard = "3.3"
 clap = { version = "4.4", features = ["deprecated", "env"] }
