@@ -82,7 +82,7 @@ shellexpand = "3.1"
 shell-words = "1.1"
 tempfile = "3"
 toml = "0.8"
-whoami = "1.4"
+whoami = "1.5"
 xdg = "2.5"
 
 [dev-dependencies]
