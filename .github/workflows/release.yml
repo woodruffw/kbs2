@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: create release
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         env:
           # NOTE(ww): GitHub actions cannot trigger other GitHub actions by default,
           # but we need that behavior to trigger the 'publish' workflow.
