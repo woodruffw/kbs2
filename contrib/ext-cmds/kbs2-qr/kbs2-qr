@@ -25,4 +25,7 @@ fi
 
 [[ -n "${1}" ]] || { echo "Usage: kbs2 qr <login>"; exit; }
 
-kbs2 pass "${1}" | qrencode -s 12 -o - | ${display}
+password=$(kbs2 pass "${1}")
+[[ -z "${password}" ]] && { echo "No such login: ${1}"; exit 1; }
+
+qrencode -s 12 -o - <<< "${password}" | ${display}
