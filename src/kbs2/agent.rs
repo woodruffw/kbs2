@@ -230,7 +230,7 @@ impl Agent {
 
         use nix::unistd;
 
-        if let Ok((peer_uid, _)) = unistd::getpeereid(stream.as_raw_fd()) {
+        if let Ok((peer_uid, _)) = unistd::getpeereid(stream) {
             peer_uid == Uid::effective()
         } else {
             log::error!("getpeereid failed; treating as auth failure");
