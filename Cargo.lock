@@ -1028,6 +1028,7 @@ dependencies = [
  "toml 0.8.19",
  "whoami",
  "xdg",
+ "zeroize",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
-use secrecy::Zeroize;
 use serde::{Deserialize, Serialize};
+use zeroize::Zeroize;
 
 use crate::kbs2::util;
 
