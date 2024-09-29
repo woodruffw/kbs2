@@ -45,7 +45,7 @@ pub fn get_password<S: AsRef<OsStr>>(
         log::debug!("no pinentry binary, falling back on rpassword");
 
         rpassword::prompt_password(prompt)
-            .map(SecretString::new)
+            .map(SecretString::from)
             .map_err(|e| anyhow!("password prompt failed: {}", e.to_string()))
     }
 }

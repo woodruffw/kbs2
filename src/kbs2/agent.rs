@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use anyhow::{anyhow, Context, Result};
 use nix::unistd::Uid;
-use secrecy::{ExposeSecret, Secret, SecretString};
+use secrecy::{ExposeSecret, SecretString};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
@@ -243,7 +243,7 @@ impl Agent {
     fn handle_request_body(&mut self, body: RequestBody) -> Response {
         match body {
             RequestBody::UnwrapKey(pubkey, keyfile, password) => {
-                let password = Secret::new(password);
+                let password = SecretString::from(password);
                 // If the running agent is already tracking an unwrapped key for this
                 // pubkey, return early with a success.
                 #[allow(clippy::map_entry)]
