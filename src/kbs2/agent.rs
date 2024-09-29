@@ -109,7 +109,7 @@ trait Message {
         Self: Serialize,
     {
         serde_json::to_writer(&mut writer, &self)?;
-        writer.write_all(&[b'\n'])?;
+        writer.write_all(b"\n")?;
         writer.flush()?;
 
         Ok(())
