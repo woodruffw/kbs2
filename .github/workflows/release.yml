@@ -5,13 +5,15 @@ on:
 
 name: release
 
+permissions: {}
+
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - name: create release
         id: create_release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
         env:
           # NOTE(ww): GitHub actions cannot trigger other GitHub actions by default,
           # but we need that behavior to trigger the 'publish' workflow.
