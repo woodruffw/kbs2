@@ -313,7 +313,7 @@ pub struct RuntimeConfig<'a> {
     pub matches: &'a ArgMatches,
 }
 
-impl<'a> RuntimeConfig<'a> {
+impl RuntimeConfig<'_> {
     pub fn generator(&self) -> Result<&GeneratorConfig> {
         // If the user explicitly requests a specific generator, use it.
         // Otherwise, use the default generator, which is always present.
