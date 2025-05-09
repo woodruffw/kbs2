@@ -438,7 +438,7 @@ pub fn edit(matches: &ArgMatches, config: &config::Config) -> Result<()> {
         .args(&editor_args)
         .arg(file.path())
         .status()
-        .map_or(false, |o| o.success())
+        .is_ok_and(|o| o.success())
     {
         return Err(anyhow!("failed to run the editor"));
     }

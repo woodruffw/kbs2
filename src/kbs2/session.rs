@@ -21,7 +21,7 @@ pub struct Session<'a> {
 
 impl<'a> Session<'a> {
     /// Creates a new session, given a `Config`.
-    fn new(config: &'a config::Config) -> Result<Session> {
+    fn new(config: &'a config::Config) -> Result<Session<'a>> {
         // NOTE(ww): I don't like that we do this here, but I'm not sure where else to put it.
         if config.wrapped && config.agent_autostart {
             Agent::spawn()?;
