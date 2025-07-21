@@ -16,13 +16,6 @@ publish = false # handled by GitHub Actions
 push = true
 
 [[package.metadata.release.pre-release-replacements]]
-file = "README.md"
-# TODO: https://github.com/sunng87/cargo-release/issues/241
-search = "\\d+\\.\\d+\\.\\d+"
-replace = "{{version}}"
-exactly = 3
-
-[[package.metadata.release.pre-release-replacements]]
 file = "CHANGELOG.md"
 search = "Unreleased"
 replace = "{{version}}"

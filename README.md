@@ -55,22 +55,6 @@ See the matrix below for a list of repositories containing `kbs2`.
 
 **These packages are the recommended way to install `kbs2` if you are not developing it.**
 
-#### Debian/Ubuntu
-
-*This is an official package.*
-
-If you're running a Debian or Ubuntu distribution on AMD64, you can use the `.deb` packages
-attached to the [latest release](https://github.com/woodruffw/kbs2/releases/latest).
-
-By way of example:
-
-```console
-$ wget https://github.com/woodruffw/kbs2/releases/download/v0.7.3/kbs2_0.7.3_amd64.deb
-$ sudo dpkg -i kbs2_0.7.3_amd64.deb
-# don't forget to request kbs2's dependencies
-$ sudo apt-get -f install
-```
-
 #### Arch Linux
 
 *This is a community-maintained package.*
