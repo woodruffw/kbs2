@@ -392,7 +392,7 @@ pub fn initialize<P: AsRef<Path>>(
         RageLib::create_keypair(&keyfile)?
     };
 
-    log::debug!("public key: {}", public_key);
+    log::debug!("public key: {public_key}");
 
     let serialized = {
         let config_dir = config_dir

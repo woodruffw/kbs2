@@ -175,7 +175,7 @@ impl Agent {
             .spawn()?;
 
         for attempt in 0..10 {
-            log::debug!("waiting for agent, loop {}...", attempt);
+            log::debug!("waiting for agent, loop {attempt}...");
             thread::sleep(Duration::from_millis(10));
             if agent_path.exists() {
                 return Ok(());
@@ -248,10 +248,7 @@ impl Agent {
                 // pubkey, return early with a success.
                 #[allow(clippy::map_entry)]
                 if self.unwrapped_keys.contains_key(&pubkey) {
-                    log::debug!(
-                        "client requested unwrap for already unwrapped keyfile: {}",
-                        keyfile
-                    );
+                    log::debug!("client requested unwrap for already unwrapped keyfile: {keyfile}");
                     Response::Success("OK; agent already has unwrapped key".into())
                 } else {
                     match RageLib::unwrap_keyfile(&keyfile, password) {
@@ -260,7 +257,7 @@ impl Agent {
                             Response::Success("OK; unwrapped key ready".into())
                         }
                         Err(e) => {
-                            log::error!("keyfile unwrap failed: {:?}", e);
+                            log::error!("keyfile unwrap failed: {e:?}");
                             Response::Failure(FailureKind::Unwrap(e.to_string()))
                         }
                     }
@@ -275,7 +272,7 @@ impl Agent {
             }
             RequestBody::GetUnwrappedKey(pubkey) => {
                 if let Some((_, unwrapped_key)) = self.unwrapped_keys.get(&pubkey) {
-                    log::debug!("successful key request for pubkey: {}", pubkey);
+                    log::debug!("successful key request for pubkey: {pubkey}");
                     Response::Success(unwrapped_key.expose_secret().into())
                 } else {
                     log::error!("unknown pubkey requested: {}", &pubkey);
@@ -312,7 +309,7 @@ impl Agent {
             let line = match line {
                 Ok(line) => line,
                 Err(e) => {
-                    log::error!("i/o error: {:?}", e);
+                    log::error!("i/o error: {e:?}");
                     // This can fail, but we don't care.
                     let _ = Response::Failure(FailureKind::Io(e.to_string())).write(&mut writer);
                     return;
@@ -322,7 +319,7 @@ impl Agent {
             let req: Request = match serde_json::from_str(&line) {
                 Ok(req) => req,
                 Err(e) => {
-                    log::error!("malformed req: {:?}", e);
+                    log::error!("malformed req: {e:?}");
                     // This can fail, but we don't care.
                     let _ =
                         Response::Failure(FailureKind::Malformed(e.to_string())).write(&mut writer);
@@ -372,7 +369,7 @@ impl Agent {
                     }
                 }
                 Err(e) => {
-                    log::error!("connect error: {:?}", e);
+                    log::error!("connect error: {e:?}");
                     continue;
                 }
             }
@@ -425,7 +422,7 @@ impl Client {
     /// Instruct the agent to unwrap the given keyfile, using the given password.
     /// The keyfile path and its unwrapped contents are associated with the given pubkey.
     pub fn add_key(&self, pubkey: &str, keyfile: &str, password: SecretString) -> Result<()> {
-        log::debug!("add_key: requesting that agent unwrap {}", keyfile);
+        log::debug!("add_key: requesting that agent unwrap {keyfile}");
 
         let body = RequestBody::UnwrapKey(
             pubkey.into(),
@@ -436,7 +433,7 @@ impl Client {
 
         match resp {
             Response::Success(msg) => {
-                log::debug!("agent reports success: {}", msg);
+                log::debug!("agent reports success: {msg}");
                 Ok(())
             }
             Response::Failure(kind) => Err(anyhow!("adding key to agent failed: {:?}", kind)),
@@ -445,7 +442,7 @@ impl Client {
 
     /// Ask the agent whether it has an unwrapped key for the given pubkey.
     pub fn query_key(&self, pubkey: &str) -> Result<bool> {
-        log::debug!("query_key: asking whether agent has key for {}", pubkey);
+        log::debug!("query_key: asking whether agent has key for {pubkey}");
 
         let body = RequestBody::QueryUnwrappedKey(pubkey.into());
         let resp = self.request(body)?;
@@ -459,7 +456,7 @@ impl Client {
 
     /// Ask the agent for the unwrapped key material for the given pubkey.
     pub fn get_key(&self, pubkey: &str) -> Result<String> {
-        log::debug!("get_key: requesting unwrapped key for {}", pubkey);
+        log::debug!("get_key: requesting unwrapped key for {pubkey}");
 
         let body = RequestBody::GetUnwrappedKey(pubkey.into());
         let resp = self.request(body)?;

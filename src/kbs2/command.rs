@@ -142,7 +142,7 @@ pub fn new(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     let session: Session = config.try_into()?;
 
     if let Some(pre_hook) = &session.config.commands.new.pre_hook {
-        log::debug!("pre-hook: {}", pre_hook);
+        log::debug!("pre-hook: {pre_hook}");
         session.config.call_hook(pre_hook, &[])?;
     }
 
@@ -171,7 +171,7 @@ pub fn new(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     session.add_record(&record)?;
 
     if let Some(post_hook) = &session.config.commands.new.post_hook {
-        log::debug!("post-hook: {}", post_hook);
+        log::debug!("post-hook: {post_hook}");
         session.config.call_hook(post_hook, &[label])?;
     }
 
@@ -237,7 +237,7 @@ pub fn rm(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     }
 
     if let Some(post_hook) = &session.config.commands.rm.post_hook {
-        log::debug!("post-hook: {}", post_hook);
+        log::debug!("post-hook: {post_hook}");
         session.config.call_hook(post_hook, &labels)?;
     }
 
@@ -264,7 +264,7 @@ pub fn rename(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     session.rename_record(old_label, new_label)?;
 
     if let Some(post_hook) = &session.config.commands.rename.post_hook {
-        log::debug!("post-hook: {}", post_hook);
+        log::debug!("post-hook: {post_hook}");
         session
             .config
             .call_hook(post_hook, &[old_label, new_label])?;
@@ -313,7 +313,7 @@ pub fn pass(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     let session: Session = config.try_into()?;
 
     if let Some(pre_hook) = &session.config.commands.pass.pre_hook {
-        log::debug!("pre-hook: {}", pre_hook);
+        log::debug!("pre-hook: {pre_hook}");
         session.config.call_hook(pre_hook, &[])?;
     }
 
@@ -348,7 +348,7 @@ pub fn pass(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     }
 
     if let Some(post_hook) = &session.config.commands.pass.post_hook {
-        log::debug!("post-hook: {}", post_hook);
+        log::debug!("post-hook: {post_hook}");
         session.config.call_hook(post_hook, &[])?;
     }
 
@@ -369,7 +369,7 @@ fn clip(password: String, session: &Session) -> Result<()> {
         clipboard.clear()?;
 
         if let Some(clear_hook) = &session.config.commands.pass.clear_hook {
-            log::debug!("clear-hook: {}", clear_hook);
+            log::debug!("clear-hook: {clear_hook}");
             session.config.call_hook(clear_hook, &[])?;
         }
     }
@@ -425,7 +425,7 @@ pub fn edit(matches: &ArgMatches, config: &config::Config) -> Result<()> {
 
     let (editor, editor_args) = util::parse_and_split_args(&editor)?;
 
-    log::debug!("editor: {}, args: {:?}", editor, editor_args);
+    log::debug!("editor: {editor}, args: {editor_args:?}");
 
     #[allow(clippy::unwrap_used)]
     let label = matches.get_one::<String>("label").unwrap();
@@ -457,7 +457,7 @@ pub fn edit(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     session.add_record(&record)?;
 
     if let Some(post_hook) = &session.config.commands.edit.post_hook {
-        log::debug!("post-hook: {}", post_hook);
+        log::debug!("post-hook: {post_hook}");
         session.config.call_hook(post_hook, &[])?;
     }
 

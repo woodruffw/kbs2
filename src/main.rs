@@ -338,7 +338,7 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
     }
 
     if let Some(pre_hook) = &config.pre_hook {
-        log::debug!("pre-hook: {}", pre_hook);
+        log::debug!("pre-hook: {pre_hook}");
         config.call_hook(pre_hook, &[])?;
     }
 
@@ -363,7 +363,7 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
                 None => vec![],
             };
 
-            log::debug!("external command requested: {} (args: {:?})", cmd, ext_args);
+            log::debug!("external command requested: {cmd} (args: {ext_args:?})");
 
             let status = process::Command::new(&cmd)
                 .args(&ext_args)
@@ -387,7 +387,7 @@ fn run(matches: &ArgMatches, config: &kbs2::config::Config) -> Result<()> {
     }
 
     if let Some(post_hook) = &config.post_hook {
-        log::debug!("post-hook: {}", post_hook);
+        log::debug!("post-hook: {post_hook}");
         config.call_hook(post_hook, &[])?;
     }
 
@@ -409,7 +409,7 @@ fn main() -> Result<()> {
 
     #[allow(clippy::unwrap_used)]
     let config_dir = matches.get_one::<PathBuf>("config-dir").unwrap();
-    log::debug!("config dir: {:?}", config_dir);
+    log::debug!("config dir: {config_dir:?}");
     std::fs::create_dir_all(config_dir)?;
 
     // There are two special cases that are not handled in `run`:
@@ -431,7 +431,7 @@ fn main() -> Result<()> {
         Ok(()) => Ok(()),
         Err(e) => {
             if let Some(error_hook) = &config.error_hook {
-                log::debug!("error-hook: {}", error_hook);
+                log::debug!("error-hook: {error_hook}");
                 config.call_hook(error_hook, &[&e.to_string()])?;
             }
 
