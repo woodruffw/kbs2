@@ -4,9 +4,9 @@ use std::io::Read;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use age::secrecy::SecretString;
 use anyhow::{anyhow, Result};
 use pinentry::PassphraseInput;
-use secrecy::SecretString;
 
 /// Given an input string formatted according to shell quoting rules,
 /// split it into its command and argument parts and return each.
@@ -45,7 +45,7 @@ pub fn get_password<S: AsRef<OsStr>>(
         log::debug!("no pinentry binary, falling back on rpassword");
 
         rpassword::prompt_password(prompt)
-            .map(SecretString::new)
+            .map(SecretString::from)
             .map_err(|e| anyhow!("password prompt failed: {}", e.to_string()))
     }
 }

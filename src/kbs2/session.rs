@@ -182,7 +182,7 @@ mod tests {
 
             RageLib {
                 pubkey: key.to_public(),
-                identities: vec![key],
+                identity: key,
             }
         };
 

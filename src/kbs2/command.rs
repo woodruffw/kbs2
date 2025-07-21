@@ -5,13 +5,13 @@ use std::io::{self, stdin, IsTerminal, Read, Seek, Write};
 use std::path::{Path, PathBuf};
 use std::process;
 
+use age::secrecy::{ExposeSecret as _, SecretBox};
 use anyhow::{anyhow, Result};
 use arboard::Clipboard;
 use clap::ArgMatches;
 use daemonize::Daemonize;
 use inquire::Confirm;
 use nix::unistd::{fork, ForkResult};
-use secrecy::{ExposeSecret, Secret};
 
 use crate::kbs2::agent;
 use crate::kbs2::backend::{self, Backend};
@@ -586,14 +586,17 @@ pub fn rekey(matches: &ArgMatches, config: &config::Config) -> Result<()> {
     }
 
     // Decrypt and collect all records.
-    let records: Vec<Secret<record::Record>> = {
+    let records: Vec<SecretBox<record::Record>> = {
         let records: Result<Vec<record::Record>> = session
             .record_labels()?
             .iter()
             .map(|l| session.get_record(l))
             .collect();
 
-        records?.into_iter().map(Secret::new).collect()
+        records?
+            .into_iter()
+            .map(|r| SecretBox::new(Box::new(r)))
+            .collect()
     };
 
     // Get a new master password.
