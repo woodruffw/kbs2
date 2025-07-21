@@ -6,10 +6,10 @@ use std::io::{stdin, IsTerminal};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+use age::secrecy::SecretString;
 use anyhow::{anyhow, Result};
 use clap::ArgMatches;
 use lazy_static::lazy_static;
-use secrecy::SecretString;
 use serde::{de, Deserialize, Serialize};
 use xdg::BaseDirectories;
 
@@ -392,7 +392,7 @@ pub fn initialize<P: AsRef<Path>>(
         RageLib::create_keypair(&keyfile)?
     };
 
-    log::debug!("public key: {}", public_key);
+    log::debug!("public key: {public_key}");
 
     let serialized = {
         let config_dir = config_dir

@@ -48,7 +48,7 @@ impl<'a> Session<'a> {
         for entry in fs::read_dir(store)? {
             let path = entry?.path();
             if !path.is_file() {
-                log::debug!("skipping non-file in store: {:?}", path);
+                log::debug!("skipping non-file in store: {path:?}");
                 continue;
             }
 
@@ -182,7 +182,7 @@ mod tests {
 
             RageLib {
                 pubkey: key.to_public(),
-                identities: vec![key],
+                identity: key,
             }
         };
 

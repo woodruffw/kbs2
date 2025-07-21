@@ -1,4 +1,4 @@
-use secrecy::Zeroize;
+use age::secrecy::zeroize::Zeroize;
 use serde::{Deserialize, Serialize};
 
 use crate::kbs2::util;

@@ -1,10 +1,12 @@
+use std::fs;
 use std::io::{Read, Write};
 use std::path::Path;
+use std::str::FromStr;
 
 use age::armor::{ArmoredReader, ArmoredWriter, Format};
-use age::{Decryptor, IdentityFileEntry};
+use age::secrecy::{ExposeSecret as _, SecretString};
+use age::Decryptor;
 use anyhow::{anyhow, Context, Result};
-use secrecy::{ExposeSecret, SecretString};
 
 use crate::kbs2::agent;
 use crate::kbs2::config;
@@ -53,7 +55,7 @@ pub trait Backend {
 /// Encapsulates the age crate (i.e., the `rage` CLI's backing library).
 pub struct RageLib {
     pub pubkey: age::x25519::Recipient,
-    pub identities: Vec<age::x25519::Identity>,
+    pub identity: age::x25519::Identity,
 }
 
 impl RageLib {
@@ -63,7 +65,7 @@ impl RageLib {
             .parse::<age::x25519::Recipient>()
             .map_err(|e| anyhow!("unable to parse public key (backend reports: {:?})", e))?;
 
-        let identities = if config.wrapped {
+        let identity = if config.wrapped {
             log::debug!("config specifies a wrapped key");
 
             let client = agent::Client::new().with_context(|| "failed to connect to kbs2 agent")?;
@@ -81,30 +83,17 @@ impl RageLib {
                 .with_context(|| format!("agent has no unwrapped key for {}", config.keyfile))?;
 
             log::debug!("parsing unwrapped key");
-            age::IdentityFile::from_buffer(unwrapped_key.as_bytes())?
+            age::x25519::Identity::from_str(&unwrapped_key)
+                .map_err(|e| anyhow!("failed to parse unwrapped key ({e:?})",))?
         } else {
-            age::IdentityFile::from_file(config.keyfile.clone())?
-        }
-        .into_identities();
+            let unwrapped_key = fs::read_to_string(&config.keyfile)?;
+            log::debug!("parsing unwrapped key from file");
+            age::x25519::Identity::from_str(&unwrapped_key)
+                .map_err(|e| anyhow!("failed to parse unwrapped key ({e:?})",))?
+        };
         log::debug!("successfully parsed a private key!");
 
-        if identities.len() != 1 {
-            return Err(anyhow!(
-                "expected exactly one private key in the keyfile, but got {}",
-                identities.len()
-            ));
-        }
-
-        let identities = identities
-            .into_iter()
-            .map(|i| match i {
-                // NOTE(ww): We're not using the plugin feature of the `age` crate,
-                // so this is the only variant.
-                IdentityFileEntry::Native(i) => i,
-            })
-            .collect();
-
-        Ok(RageLib { pubkey, identities })
+        Ok(RageLib { pubkey, identity })
     }
 }
 
@@ -128,31 +117,28 @@ impl Backend for RageLib {
     fn unwrap_keyfile<P: AsRef<Path>>(keyfile: P, password: SecretString) -> Result<SecretString> {
         let wrapped_key = util::read_guarded(&keyfile, MAX_WRAPPED_KEY_FILESIZE)?;
 
+        // NOTE(ww): A work factor of 22 is an educated guess here; rage has generated messages
+        // that have needed 17 and 18 before, so this should (hopefully) give us some
+        // breathing room.
+        let mut identity = age::scrypt::Identity::new(password);
+        identity.set_max_work_factor(22);
+
         // Create a new decryptor for the wrapped key.
-        let decryptor = match Decryptor::new(ArmoredReader::new(wrapped_key.as_slice())) {
-            Ok(Decryptor::Passphrase(d)) => d,
-            Ok(_) => {
-                return Err(anyhow!(
-                    "key unwrap failed; not a password-wrapped keyfile?"
-                ));
-            }
-            Err(e) => {
-                return Err(anyhow!(
-                    "unable to load private key (backend reports: {:?})",
-                    e
-                ));
-            }
-        };
+        let decryptor = Decryptor::new(ArmoredReader::new(wrapped_key.as_slice()))
+            .map_err(|e| anyhow!("unable to load private key (backend reports: {:?})", e))?;
+
+        if !decryptor.is_scrypt() {
+            return Err(anyhow!(
+                "key unwrap failed: not a password-wrapped keyfile?"
+            ));
+        }
 
         // ...and decrypt (i.e., unwrap) using the master password.
         log::debug!("beginning key unwrap...");
         let mut unwrapped_key = String::new();
 
-        // NOTE(ww): A work factor of 22 is an educated guess here; rage has generated messages
-        // that have needed 17 and 18 before, so this should (hopefully) give us some
-        // breathing room.
         decryptor
-            .decrypt(&password, Some(22))
+            .decrypt([&identity as &dyn age::Identity].into_iter())
             .map_err(|e| anyhow!("unable to decrypt (backend reports: {:?})", e))
             .and_then(|mut r| {
                 r.read_to_string(&mut unwrapped_key)
@@ -160,7 +146,7 @@ impl Backend for RageLib {
             })?;
         log::debug!("finished key unwrap!");
 
-        Ok(SecretString::new(unwrapped_key))
+        Ok(SecretString::from(unwrapped_key))
     }
 
     fn wrap_key(key: SecretString, password: SecretString) -> Result<Vec<u8>> {
@@ -192,7 +178,8 @@ impl Backend for RageLib {
     fn encrypt(&self, record: &Record) -> Result<String> {
         #[allow(clippy::unwrap_used)]
         let encryptor =
-            age::Encryptor::with_recipients(vec![Box::new(self.pubkey.clone())]).unwrap();
+            age::Encryptor::with_recipients([&self.pubkey as &dyn age::Recipient].into_iter())
+                .unwrap();
         let mut encrypted = vec![];
         let mut writer = encryptor
             .wrap_output(ArmoredWriter::wrap_output(
@@ -207,19 +194,13 @@ impl Backend for RageLib {
     }
 
     fn decrypt(&self, encrypted: &str) -> Result<Record> {
-        let decryptor = match age::Decryptor::new(ArmoredReader::new(encrypted.as_bytes()))
-            .map_err(|e| anyhow!("unable to load private key (backend reports: {:?})", e))?
-        {
-            age::Decryptor::Recipients(d) => d,
-            // NOTE(ww): we should be fully unwrapped (if we were wrapped to begin with)
-            // in this context, so all other kinds of keys should be unreachable here.
-            _ => unreachable!(),
-        };
+        let decryptor = age::Decryptor::new(ArmoredReader::new(encrypted.as_bytes()))
+            .map_err(|e| anyhow!("unable to load private key (backend reports: {:?})", e))?;
 
         let mut decrypted = String::new();
 
         decryptor
-            .decrypt(self.identities.iter().map(|i| i as &dyn age::Identity))
+            .decrypt([&self.identity as &dyn age::Identity].into_iter())
             .map_err(|e| anyhow!("unable to decrypt (backend reports: {:?})", e))
             .and_then(|mut r| {
                 r.read_to_string(&mut decrypted)
@@ -250,7 +231,7 @@ mod tests {
 
         RageLib {
             pubkey: key.to_public(),
-            identities: vec![key],
+            identity: key,
         }
     }
 
@@ -260,7 +241,7 @@ mod tests {
 
         RageLib {
             pubkey: key1.to_public(),
-            identities: vec![key2],
+            identity: key2,
         }
     }
 
