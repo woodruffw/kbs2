@@ -93,7 +93,7 @@ trait Message {
         // one line before expecting a response), but it's one less thing to think about.
         // NOTE(ww): Safe unwrap: we only perform after checking `is_ok`, and we capture
         // the error by using `Result<Vec<_>, _>` with `collect`.
-        #[allow(clippy::unwrap_used)]
+        #[allow(clippy::unwrap_used, clippy::unbuffered_bytes)]
         let data: Result<Vec<_>, _> = reader
             .bytes()
             .take_while(|b| b.is_ok() && *b.as_ref().unwrap() != b'\n')
