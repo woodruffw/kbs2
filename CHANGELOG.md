@@ -9,6 +9,11 @@ All versions prior to 0.2.1 are untracked.
 
 ## [Unreleased] - ReleaseDate
 
+### Fixed
+
+* Build: Fixed a build-time unused import warning on macOS and other BSD-like
+  hosts ([#789](https://github.com/woodruffw/kbs2/pull/789))
+
 ## [0.7.2] - 2023-03-05
 
 ### Added
