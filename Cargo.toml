@@ -58,24 +58,24 @@ arboard = "3.4"
 clap = { version = "4.5", features = ["deprecated", "env"] }
 clap_complete = "4.5"
 daemonize = "0.5"
-env_logger = "0.10"
+env_logger = "0.11"
 home = "0.5"
-inquire = "0.6"
+inquire = "0.7"
 lazy_static = "1.5"
 libc = "0.2"
 log = "0.4"
-nix = { version = "0.29", features = ["process", "user", "socket"] }
+nix = { version = "0.30", features = ["process", "user", "socket"] }
 pinentry = "0.6"
-rand = "0.8"
+rand = "0.9"
 rpassword = "7.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 shellexpand = "3.1"
 shell-words = "1.1"
 tempfile = "3"
-toml = "0.8"
+toml = "0.9"
 whoami = "1.5"
-xdg = "2.5"
+xdg = "3.0"
 
 [dev-dependencies]
 assert_cmd = "2"
